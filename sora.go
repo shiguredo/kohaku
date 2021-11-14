@@ -37,18 +37,10 @@ type SoraConnectionStats struct {
 	Stats []json.RawMessage `json:"stats" binding:"required"`
 }
 
-type SoraNodeErlangVmMemoryStats struct {
+type SoraNodeErlangVmStats struct {
 	SoraStats
 
-	TotalMemory        uint64 `json:"total_memory"`
-	TotalProcesses     uint64 `json:"total_processes"`
-	TotalProcessesUsed uint64 `json:"total_processes_used"`
-	TotalSystem        uint64 `json:"total_system"`
-	TotalAtom          uint64 `json:"total_atom"`
-	TotalAtomUsed      uint64 `json:"total_atom_used"`
-	TotalBinary        uint64 `json:"total_binary"`
-	TotalCode          uint64 `json:"total_code"`
-	TotalETS           uint64 `json:"total_ets"`
+	Stats []json.RawMessage `json:"stats" binding:"required"`
 }
 
 func MaximumNumberOfBytesFunc(fl validator.FieldLevel) bool {
