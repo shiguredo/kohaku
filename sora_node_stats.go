@@ -55,7 +55,7 @@ func CollectorSoraNodeErlangVmStats(pool *pgxpool.Pool, stats SoraNodeErlangVmSt
 
 // TODO(v): sqlc 化
 func InsertSoraNode(ctx context.Context, pool *pgxpool.Pool, stats SoraNodeErlangVmStats) error {
-	sq := goqu.Select("channel_id").
+	sq := goqu.Select("label").
 		From("sora_node").
 		Where(goqu.Ex{
 			"label":     stats.Label,
