@@ -1,5 +1,7 @@
 -- https://www.w3.org/TR/webrtc-stats/#dom-rtcstats
 
+CREATE EXTENSION IF NOT EXISTS timescaledb;
+
 DROP TABLE IF EXISTS sora_connection;
 CREATE TABLE IF NOT EXISTS sora_connection (
     id bigserial NOT NULL PRIMARY KEY,
