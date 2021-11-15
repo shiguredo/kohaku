@@ -30,7 +30,7 @@ func CollectorSoraNodeErlangVmStats(pool *pgxpool.Pool, stats SoraNodeErlangVmSt
 		// その後 type をみて struct をさらに別途デコードする
 		// codec とかは定数かした方がいいのかもしれない
 		switch stats.Type {
-		case "memroy":
+		case "memory":
 			s := new(ErlangVmMemoryStats)
 			if err := json.Unmarshal(v, &s); err != nil {
 				return err
