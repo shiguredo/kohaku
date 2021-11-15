@@ -504,18 +504,18 @@ CREATE TABLE IF NOT EXISTS erlang_vm_memory_stats (
     label varchar(255) NOT NULL,
     node_name varchar(255) NOT NULL,
 
-    memory numeric NOT NULL,
-    processes numeric NOT NULL,
-    processes_used numeric NOT NULL,
-    system numeric NOT NULL,
-    atom numeric NOT NULL,
-    atom_used numeric NOT NULL,
-    binary numeric NOT NULL,
-    code numeric NOT NULL,
-    ets numeric NOT NULL
+    type_memory numeric NOT NULL,
+    type_processes numeric NOT NULL,
+    type_processes_used numeric NOT NULL,
+    type_system numeric NOT NULL,
+    type_atom numeric NOT NULL,
+    type_atom_used numeric NOT NULL,
+    type_binary numeric NOT NULL,
+    type_code numeric NOT NULL,
+    type_ets numeric NOT NULL
 );
 SELECT create_hypertable('erlang_vm_memory_stats', 'time');
-ALTER TABLE rtc_ice_candidate_stats SET (
+ALTER TABLE erlang_vm_memory_stats SET (
     timescaledb.compress,
     timescaledb.compress_segmentby = 'label'
 );
