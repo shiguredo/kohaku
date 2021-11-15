@@ -500,6 +500,9 @@ DROP TABLE IF EXISTS erlang_vm_memory_stats;
 CREATE TABLE IF NOT EXISTS erlang_vm_memory_stats (
     time timestamptz NOT NULL,
 
+    stats_timestamp double precision NOT NULL,
+    stats_type varchar(255) NOT NULL,
+
     version varchar(255) NOT NULL,
     label varchar(255) NOT NULL,
     node_name varchar(255) NOT NULL,

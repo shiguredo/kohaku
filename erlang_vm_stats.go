@@ -1,7 +1,10 @@
 package kohaku
 
+import "time"
+
 type ErlangVmStats struct {
-	Type string `json:"type" validate:"required" db:"stats_type"`
+	Type      string    `json:"type" validate:"required" db:"stats_type"`
+	Timestamp time.Time `json:"timestamp" validate:"required" db:"stats_timestamp"`
 }
 
 type ErlangVmMemoryStats struct {
