@@ -21,14 +21,13 @@ func CollectorUserAgentStats(pool *pgxpool.Pool, stats SoraConnectionStats) erro
 	}
 
 	for _, v := range stats.Stats {
-		stats := new(RTCStats)
+		rtcStats := new(RTCStats)
 		if err := json.Unmarshal(v, &stats); err != nil {
 			return err
 		}
 
-		// その後 type をみて struct をさらに別途デコードする
-		// codec とかは定数かした方がいいのかもしれない
-		switch *stats.Type {
+		// Type が送られてこない場合を考慮してる
+		switch *rtcStats.Type {
 		case "codec":
 			s := new(RTCCodecStats)
 			if err := json.Unmarshal(v, &s); err != nil {
@@ -317,7 +316,7 @@ func CollectorUserAgentStats(pool *pgxpool.Pool, stats SoraConnectionStats) erro
 			}
 		default:
 			// TODO: return err にする
-			fmt.Println(stats.ID)
+			fmt.Println(rtcStats.ID)
 		}
 
 	}

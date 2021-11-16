@@ -15,20 +15,21 @@ func CollectorSoraNodeErlangVmStats(pool *pgxpool.Pool, stats SoraNodeErlangVmSt
 	}
 
 	erlangVm := &ErlangVm{
-		Time:     stats.Timestamp,
+		Time: stats.Timestamp,
+
 		Label:    stats.Label,
 		Version:  stats.Version,
 		NodeName: stats.NodeName,
 	}
 
 	for _, v := range stats.Stats {
-		stats := new(ErlangVmStats)
+		erlangVmStats := new(ErlangVmStats)
 		if err := json.Unmarshal(v, &stats); err != nil {
 			return err
 		}
 
 		// type をみて struct をさらに別途デコードする
-		switch stats.Type {
+		switch erlangVmStats.Type {
 		case "erlang-vm-memory":
 			s := new(ErlangVmMemoryStats)
 			if err := json.Unmarshal(v, &s); err != nil {
@@ -47,6 +48,7 @@ func CollectorSoraNodeErlangVmStats(pool *pgxpool.Pool, stats SoraNodeErlangVmSt
 				return err
 			}
 		default:
+			// TODO: warning ログを出す
 		}
 	}
 	return nil
