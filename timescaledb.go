@@ -2,6 +2,7 @@ package kohaku
 
 import "time"
 
+// 使ってない
 type SoraNode struct {
 	Timestamp time.Time `db:"timestamp"`
 
@@ -10,6 +11,7 @@ type SoraNode struct {
 	NodeName string `db:"node_name"`
 }
 
+// 使ってない
 type SoraConnection struct {
 	SoraNode
 
@@ -27,9 +29,9 @@ type SoraConnection struct {
 type ErlangVm struct {
 	Time *time.Time `db:"time"`
 
-	Label    string `db:"label"`
-	Version  string `db:"version"`
-	NodeName string `db:"node_name"`
+	Label    string `db:"sora_label"`
+	Version  string `db:"sora_version"`
+	NodeName string `db:"sora_node_name"`
 }
 
 type ErlangVmMemory struct {
