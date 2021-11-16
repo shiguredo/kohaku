@@ -519,6 +519,6 @@ CREATE TABLE IF NOT EXISTS erlang_vm_memory_stats (
 SELECT create_hypertable('erlang_vm_memory_stats', 'time');
 ALTER TABLE erlang_vm_memory_stats SET (
     timescaledb.compress,
-    timescaledb.compress_segmentby = 'label'
+    timescaledb.compress_segmentby = 'sora_label'
 );
 SELECT add_compression_policy('erlang_vm_memory_stats', INTERVAL '3 days'); 
