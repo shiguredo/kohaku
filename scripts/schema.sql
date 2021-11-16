@@ -2,6 +2,20 @@
 
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 
+DROP TABLE IF EXISTS sora_node;
+CREATE TABLE IF NOT EXISTS sora_node (
+    id bigserial NOT NULL PRIMARY KEY,
+
+    -- クライアント側から送られてきたタイムスタンプ
+    timestamp timestamptz NOT NULL,
+
+    version varchar(255) NOT NULL,
+    label varchar(255) NOT NULL,
+    node_name varchar(255) NOT NULL,
+
+    created_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
 DROP TABLE IF EXISTS sora_connection;
 CREATE TABLE IF NOT EXISTS sora_connection (
     id bigserial NOT NULL PRIMARY KEY,
@@ -27,7 +41,6 @@ CREATE TABLE IF NOT EXISTS sora_connection (
 
     created_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-
 
 DROP TABLE IF EXISTS rtc_codec_stats;
 CREATE TABLE IF NOT EXISTS rtc_codec_stats (
@@ -481,20 +494,6 @@ ALTER TABLE rtc_ice_candidate_stats SET (
     timescaledb.compress_segmentby = 'sora_connection_id'
 );
 SELECT add_compression_policy('rtc_ice_candidate_stats', INTERVAL '3 days');
-
-DROP TABLE IF EXISTS sora_node;
-CREATE TABLE IF NOT EXISTS sora_node (
-    id bigserial NOT NULL PRIMARY KEY,
-
-    -- クライアント側から送られてきたタイムスタンプ
-    timestamp timestamptz NOT NULL,
-
-    version varchar(255) NOT NULL,
-    label varchar(255) NOT NULL,
-    node_name varchar(255) NOT NULL,
-
-    created_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
 
 DROP TABLE IF EXISTS erlang_vm_memory_stats;
 CREATE TABLE IF NOT EXISTS erlang_vm_memory_stats (
