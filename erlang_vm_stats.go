@@ -1,16 +1,13 @@
 package kohaku
 
-import "time"
-
 type ErlangVmStats struct {
-	Type      string    `json:"type" validate:"required" db:"stats_type"`
-	Timestamp time.Time `json:"timestamp" validate:"required" db:"stats_timestamp"`
+	Type string `json:"type" db:"stats_type"`
 }
 
 type ErlangVmMemoryStats struct {
 	ErlangVmStats
 
-	Memory        uint64 `json:"memory" db:"type_memory"`
+	Total         uint64 `json:"total" db:"type_total"`
 	Processes     uint64 `json:"processes" db:"type_processes"`
 	ProcessesUsed uint64 `json:"processes_used" db:"type_processes_used"`
 	System        uint64 `json:"system" db:"type_system"`

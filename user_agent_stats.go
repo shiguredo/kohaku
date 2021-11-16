@@ -22,7 +22,7 @@ func CollectorUserAgentStats(pool *pgxpool.Pool, stats SoraConnectionStats) erro
 
 	for _, v := range stats.Stats {
 		rtcStats := new(RTCStats)
-		if err := json.Unmarshal(v, &stats); err != nil {
+		if err := json.Unmarshal(v, &rtcStats); err != nil {
 			return err
 		}
 

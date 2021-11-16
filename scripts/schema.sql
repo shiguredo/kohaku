@@ -503,10 +503,9 @@ CREATE TABLE IF NOT EXISTS erlang_vm_memory_stats (
     sora_label varchar(255) NOT NULL,
     sora_node_name varchar(255) NOT NULL,
 
-    stats_timestamp double precision NOT NULL,
     stats_type varchar(255) NOT NULL,
 
-    type_memory numeric NOT NULL,
+    type_total numeric NOT NULL,
     type_processes numeric NOT NULL,
     type_processes_used numeric NOT NULL,
     type_system numeric NOT NULL,

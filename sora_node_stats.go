@@ -3,6 +3,7 @@ package kohaku
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -24,7 +25,7 @@ func CollectorSoraNodeErlangVmStats(pool *pgxpool.Pool, stats SoraNodeErlangVmSt
 
 	for _, v := range stats.Stats {
 		erlangVmStats := new(ErlangVmStats)
-		if err := json.Unmarshal(v, &stats); err != nil {
+		if err := json.Unmarshal(v, &erlangVmStats); err != nil {
 			return err
 		}
 
@@ -48,7 +49,8 @@ func CollectorSoraNodeErlangVmStats(pool *pgxpool.Pool, stats SoraNodeErlangVmSt
 				return err
 			}
 		default:
-			// TODO: warning ログを出す
+			// TODO: return err にする
+			fmt.Println(erlangVmStats.Type)
 		}
 	}
 	return nil
