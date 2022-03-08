@@ -19,7 +19,7 @@ require (
 )
 
 require (
-	github.com/go-playground/validator/v10 v10.10.0
+	github.com/go-playground/validator/v10 v10.10.1
 	github.com/jackc/pgconn v1.11.0
 	github.com/jackc/pgtype v1.10.0
 	github.com/ory/dockertest/v3 v3.8.1
