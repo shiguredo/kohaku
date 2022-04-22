@@ -8,7 +8,7 @@ require (
 	github.com/go-playground/validator/v10 v10.10.1
 	github.com/goccy/go-yaml v1.9.5
 	github.com/jackc/pgconn v1.11.0
-	github.com/jackc/pgtype v1.10.0
+	github.com/jackc/pgtype v1.11.0
 	github.com/jackc/pgx/v4 v4.15.0
 	github.com/ory/dockertest/v3 v3.8.1
 	github.com/rs/zerolog v1.26.1
