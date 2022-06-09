@@ -10,32 +10,39 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4/pgxpool"
-	db "github.com/shiguredo/kohaku/db/sqlc"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	zlog "github.com/rs/zerolog/log"
+	db "github.com/shiguredo/kohaku/gen/sqlc"
 
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
-	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
-
-	"github.com/rs/zerolog"
-	zlog "github.com/rs/zerolog/log"
 )
 
 type Server struct {
 	config *KohakuConfig
 	pool   *pgxpool.Pool
 	query  *db.Queries
+	echo   *echo.Echo
 	http.Server
 }
 
 func NewServer(c *KohakuConfig, pool *pgxpool.Pool) *Server {
-	r := gin.New()
+	e := echo.New()
 
-	r.Use(httpLogger())
-	r.Use(gin.Recovery())
+	validator := validator.New()
+	if err := validator.RegisterValidation("maxb", maximumNumberOfBytesFunc); err != nil {
+		zlog.Error().Err(err).Send()
+		panic(err)
+	}
+
+	e.Validator = &Validator{validator: validator}
+
+	// e.Use(httpLogger())
+	e.Use(middleware.Recover())
 
 	// TODO(v): こいつ自身の統計情報を /stats でとれた方がいい
 
@@ -51,8 +58,9 @@ func NewServer(c *KohakuConfig, pool *pgxpool.Pool) *Server {
 		query:  db.New(pool),
 		Server: http.Server{
 			Addr:    fmt.Sprintf(":%d", c.CollectorPort),
-			Handler: h2c.NewHandler(r, h2s),
+			Handler: h2c.NewHandler(e, h2s),
 		},
+		echo: e,
 	}
 
 	http2H2c := c.HTTP2H2c
@@ -61,6 +69,7 @@ func NewServer(c *KohakuConfig, pool *pgxpool.Pool) *Server {
 			clientCAPath := c.HTTP2VerifyCacertPath
 			certPool, err := appendCerts(clientCAPath)
 			if err != nil {
+				zlog.Error().Err(err).Send()
 				panic(err)
 			}
 
@@ -73,15 +82,9 @@ func NewServer(c *KohakuConfig, pool *pgxpool.Pool) *Server {
 	}
 
 	// 統計情報を突っ込むところ
-	r.POST("/collector", validateHTTPVersion(), s.collector)
+	e.POST("/collector", s.collector, validateHTTPVersion)
 	// ヘルスチェック
-	r.POST("/health", s.health)
-
-	// Custom Validation Functions の登録
-	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		// TODO: タグ名を変更する
-		v.RegisterValidation("maxb", maximumNumberOfBytesFunc)
-	}
+	e.POST("/health", s.health)
 
 	return s
 }
@@ -113,53 +116,54 @@ func (s *Server) Start(c *KohakuConfig) error {
 	return nil
 }
 
-func validateHTTPVersion() gin.HandlerFunc {
-	return func(c *gin.Context) {
+func validateHTTPVersion(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
 		// prior knowledge ではない場合
-		if upgrade, ok := c.Request.Header["Upgrade"]; ok && upgrade[0] == "h2c" {
-			c.AbortWithStatus(http.StatusBadRequest)
-			return
+		if upgrade, ok := c.Request().Header["Upgrade"]; ok && upgrade[0] == "h2c" {
+			return echo.NewHTTPError(http.StatusBadRequest)
 		}
 
-		if c.Request.Proto != "HTTP/2.0" {
-			err := fmt.Errorf("http version not supported: %s", c.Request.Proto)
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		if c.Request().Proto != "HTTP/2.0" {
+			err := fmt.Errorf("http version not supported: %s", c.Request().Proto)
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
+
+		return next(c)
 	}
 }
 
-func httpLogger() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Next()
+// func httpLogger() gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		c.Next()
+//
+// 		event := logEvent(c.Writer.Status())
+//
+// 		req := c.Request
+//
+// 		event.
+// 			Int("status", c.Writer.Status()).
+// 			Str("address", req.RemoteAddr).
+// 			Str("method", req.Method).
+// 			Str("path", req.URL.Path).
+// 			Int64("len", req.ContentLength).
+// 			Msg("")
+// 	}
+// }
 
-		event := logEvent(c.Writer.Status())
-
-		req := c.Request
-
-		event.
-			Int("status", c.Writer.Status()).
-			Str("address", req.RemoteAddr).
-			Str("method", req.Method).
-			Str("path", req.URL.Path).
-			Int64("len", req.ContentLength).
-			Msg("")
-	}
-}
-
-func logEvent(status int) *zerolog.Event {
-	var event *zerolog.Event
-
-	switch status / 100 {
-	case 5:
-		event = zlog.Error()
-	case 4:
-		event = zlog.Warn()
-	default:
-		event = zlog.Info()
-	}
-
-	return event
-}
+// func logEvent(status int) *zerolog.Event {
+// 	var event *zerolog.Event
+//
+// 	switch status / 100 {
+// 	case 5:
+// 		event = zlog.Error()
+// 	case 4:
+// 		event = zlog.Warn()
+// 	default:
+// 		event = zlog.Info()
+// 	}
+//
+// 	return event
+// }
 
 func appendCerts(clientCAPath string) (*x509.CertPool, error) {
 	certPool := x509.NewCertPool()
@@ -193,4 +197,15 @@ func appendCerts(clientCAPath string) (*x509.CertPool, error) {
 		}
 	}
 	return certPool, nil
+}
+
+type Validator struct {
+	validator *validator.Validate
+}
+
+func (v *Validator) Validate(i interface{}) error {
+	if err := v.validator.Struct(i); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	return nil
 }

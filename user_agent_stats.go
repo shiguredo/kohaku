@@ -6,13 +6,13 @@ import (
 	"fmt"
 
 	"github.com/doug-martin/goqu/v9"
-	"github.com/gin-gonic/gin"
-	db "github.com/shiguredo/kohaku/db/sqlc"
+	"github.com/labstack/echo/v4"
+	db "github.com/shiguredo/kohaku/gen/sqlc"
 )
 
 // TODO(v): sqlc したいが厳しそう
-func (s *Server) collectorUserAgentStats(c *gin.Context, stats soraConnectionStats) error {
-	if err := s.InsertSoraConnections(c, stats); err != nil {
+func (s *Server) collectorUserAgentStats(c echo.Context, stats soraConnectionStats) error {
+	if err := s.InsertSoraConnections(c.Request().Context(), stats); err != nil {
 		return err
 	}
 

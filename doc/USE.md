@@ -1,3 +1,33 @@
+## Kohaku の使い方
+
+### ビルド
+
+```
+$ make
+```
+
+
+### 設定
+
+config.example.yaml をコピーして、接続先の DB の URL（timescale_url） や各証明書等を設定します。
+
+```
+$ cp config.example.yaml config.yaml
+```
+
+
+### 起動
+
+上記で用意した config.yaml を指定して kohaku サーバを立ち上げます。
+
+```
+$ ./bin/kohaku -c config.yaml
+```
+
+## TimescaleDB のスキーマ
+
+db ディレクトリ以下に `schema.sql` がありますのでこちらをご利用ください。
+
 ## mTLS で使用するクライアント証明書の作成と設定
 
 mTLS で使用するクライアント証明書と、クライアント証明書を発行する CA 証明書の作成例を記載します。
@@ -49,6 +79,8 @@ $ openssl ecparam -out client.key -name prime256v1 -genkey
 
 
 #### CSR 及び証明書の作成
+
+subj は適宜変更してください。
 
 ```
 $ openssl req -new \

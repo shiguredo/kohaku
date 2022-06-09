@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"golang.org/x/net/http2"
 
@@ -21,6 +22,9 @@ type CertPair struct {
 
 const (
 	port = 15890
+
+	// millisecond
+	waitingTime = 100
 )
 
 var (
@@ -81,10 +85,12 @@ func NewClient(nextProto string, c *CertPair) (*http.Client, error) {
 }
 
 func TestMutualTLS(t *testing.T) {
-	server = NewServer(config, pgPool)
+	s := NewServer(config, pgPool)
 	go (func() {
-		server.Start(config)
+		s.Start(config)
 	})()
+
+	time.Sleep(waitingTime * time.Millisecond)
 
 	// Setup
 	client, err := NewClient("http/1.1", certPair)
@@ -105,10 +111,12 @@ func TestMutualTLS(t *testing.T) {
 }
 
 func TestInvalidClientCertificate(t *testing.T) {
-	server = NewServer(config, pgPool)
+	s := NewServer(config, pgPool)
 	go (func() {
-		server.Start(config)
+		s.Start(config)
 	})()
+
+	time.Sleep(waitingTime * time.Millisecond)
 
 	// Setup
 	invalidCertPair := &CertPair{
@@ -127,10 +135,12 @@ func TestInvalidClientCertificate(t *testing.T) {
 }
 
 func TestH2(t *testing.T) {
-	server = NewServer(config, pgPool)
+	s := NewServer(config, pgPool)
 	go (func() {
-		server.Start(config)
+		s.Start(config)
 	})()
+
+	time.Sleep(waitingTime * time.Millisecond)
 
 	// Setup
 	client, err := NewClient("h2", certPair)
@@ -155,10 +165,12 @@ func TestH2C(t *testing.T) {
 		HTTP2H2c:      true,
 		CollectorPort: 25890,
 	}
-	server = NewServer(h2cConfig, pgPool)
+	s := NewServer(h2cConfig, pgPool)
 	go (func() {
-		server.Start(h2cConfig)
+		s.Start(h2cConfig)
 	})()
+
+	time.Sleep(waitingTime * time.Millisecond)
 
 	// Setup
 	client, err := NewClient("h2c", nil)

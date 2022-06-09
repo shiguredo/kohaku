@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	ConfigFilePath = flag.String("c", "../config.yaml", "kohaku 設定ファイルへのパス(yaml)")
+	ConfigFilePath = flag.String("c", "./config.yaml", "kohaku 設定ファイルへのパス(yaml)")
 	Config         *KohakuConfig
 )
 
