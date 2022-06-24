@@ -13,7 +13,7 @@ require (
 	github.com/ory/dockertest/v3 v3.9.1
 	github.com/rs/zerolog v1.27.0
 	github.com/shiguredo/lumberjack/v3 v3.0.0
-	github.com/stretchr/testify v1.7.4
+	github.com/stretchr/testify v1.7.5
 	golang.org/x/net v0.0.0-20220607020251-c690dde0001d
 )
 
