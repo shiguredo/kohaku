@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/doug-martin/goqu/v9 v9.18.0
-	github.com/go-playground/validator/v10 v10.11.0
+	github.com/go-playground/validator/v10 v10.11.1
 	github.com/goccy/go-yaml v1.9.5
 	github.com/jackc/pgconn v1.13.0
 	github.com/jackc/pgtype v1.12.0
