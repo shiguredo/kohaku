@@ -11,7 +11,7 @@ require (
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/labstack/echo/v4 v4.10.0
 	github.com/ory/dockertest/v3 v3.9.1
-	github.com/rs/zerolog v1.28.0
+	github.com/rs/zerolog v1.29.0
 	github.com/shiguredo/lumberjack/v3 v3.0.0
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/net v0.5.0
