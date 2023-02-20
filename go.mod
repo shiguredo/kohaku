@@ -9,7 +9,7 @@ require (
 	github.com/jackc/pgconn v1.14.0
 	github.com/jackc/pgtype v1.14.0
 	github.com/jackc/pgx/v4 v4.18.0
-	github.com/labstack/echo/v4 v4.10.0
+	github.com/labstack/echo/v4 v4.10.1
 	github.com/ory/dockertest/v3 v3.9.1
 	github.com/rs/zerolog v1.29.0
 	github.com/shiguredo/lumberjack/v3 v3.0.0
@@ -43,7 +43,7 @@ require (
 	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.16 // indirect
+	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/term v0.0.0-20221105221325-4eb28fa6025c // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
@@ -61,7 +61,7 @@ require (
 	golang.org/x/mod v0.6.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
-	golang.org/x/time v0.2.0 // indirect
+	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.2.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
