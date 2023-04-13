@@ -19,3 +19,12 @@ services:
       # https://github.com/timescale/timescaledb-docker/tree/main/docker-entrypoint-initdb.d
       # timescaledb 側で 001 と 002 があるのでその後に実行するために 100 からスタート
       - ./db/schema.sql:/docker-entrypoint-initdb.d/100_schema.sql
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - 3000:3000
+    volumes:
+      - ./.grafana:/var/lib/grafana
+    depends_on:
+      - timescaledb

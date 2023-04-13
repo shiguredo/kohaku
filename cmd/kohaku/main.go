@@ -15,7 +15,7 @@ import (
 
 func main() {
 
-	configFilePath := flag.String("c", "./ayame.ini", "ayame の設定ファイルへのパス(ini)")
+	configFilePath := flag.String("c", "./kohaku.ini", "kohaku の設定ファイルへのパス(ini)")
 	flag.Parse()
 
 	config, err := kohaku.NewConfig(*configFilePath)

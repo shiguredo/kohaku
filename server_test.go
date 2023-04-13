@@ -31,11 +31,10 @@ var (
 	url = fmt.Sprintf("https://localhost:%d/health", port)
 
 	config = &Config{
-		HTTP2H2c:              false,
 		HTTP2FullchainFile:    "cert/server/server.pem",
 		HTTP2PrivkeyFile:      "cert/server/server.key",
 		HTTP2VerifyCacertPath: "cert/client/ca.pem",
-		ListenPortNumber:      port,
+		ListenPort:            port,
 	}
 
 	certPair = &CertPair{
@@ -85,9 +84,9 @@ func NewClient(nextProto string, c *CertPair) (*http.Client, error) {
 }
 
 func TestMutualTLS(t *testing.T) {
-	s := NewServer(config, pgPool)
+	s, _ := NewServer(config, pgPool)
 	go (func() {
-		s.Start(config)
+		s.Start(context.Background(), config)
 	})()
 
 	time.Sleep(waitingTime * time.Millisecond)
@@ -111,9 +110,9 @@ func TestMutualTLS(t *testing.T) {
 }
 
 func TestInvalidClientCertificate(t *testing.T) {
-	s := NewServer(config, pgPool)
+	s, _ := NewServer(config, pgPool)
 	go (func() {
-		s.Start(config)
+		s.Start(context.Background(), config)
 	})()
 
 	time.Sleep(waitingTime * time.Millisecond)
@@ -135,9 +134,9 @@ func TestInvalidClientCertificate(t *testing.T) {
 }
 
 func TestH2(t *testing.T) {
-	s := NewServer(config, pgPool)
+	s, _ := NewServer(config, pgPool)
 	go (func() {
-		s.Start(config)
+		s.Start(context.Background(), config)
 	})()
 
 	time.Sleep(waitingTime * time.Millisecond)
@@ -147,38 +146,6 @@ func TestH2(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-
-	ctx := context.Background()
-	req, _ := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(""))
-	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-
-	assert.Equal(t, "HTTP/2.0", resp.Proto)
-	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
-}
-
-func TestH2C(t *testing.T) {
-	h2cConfig := &Config{
-		HTTP2H2c:         true,
-		ListenPortNumber: 25890,
-	}
-	s := NewServer(h2cConfig, pgPool)
-	go (func() {
-		s.Start(h2cConfig)
-	})()
-
-	time.Sleep(waitingTime * time.Millisecond)
-
-	// Setup
-	client, err := NewClient("h2c", nil)
-	if err != nil {
-		panic(err)
-	}
-
-	url := fmt.Sprintf("http://localhost:%d/health", 25890)
 
 	ctx := context.Background()
 	req, _ := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(""))

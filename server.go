@@ -99,7 +99,7 @@ func NewServer(c *Config, pool *pgxpool.Pool) (*Server, error) {
 
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Skipper: func(c echo.Context) bool {
-			// /health の時はログを吐き出さない
+			// /.ok の時はログを吐き出さない
 			return strings.HasPrefix(c.Request().URL.Path, "/.ok")
 		},
 	}))
@@ -108,6 +108,7 @@ func NewServer(c *Config, pool *pgxpool.Pool) (*Server, error) {
 	e.Use(middleware.Recover())
 
 	validator := validator.New()
+	// string をバイナリ文字列の長さとしてのチェックをできるようにする
 	if err := validator.RegisterValidation("maxb", maximumNumberOfBytesFunc); err != nil {
 		zlog.Error().Err(err).Send()
 		return nil, err
@@ -115,10 +116,11 @@ func NewServer(c *Config, pool *pgxpool.Pool) (*Server, error) {
 
 	e.Validator = &Validator{validator: validator}
 
-	// 統計情報を突っ込むところ
-	e.POST("/collector", s.collector)
 	// ヘルスチェック
 	e.POST("/.ok", s.ok)
+
+	// 統計情報を突っ込むところ
+	e.POST("/collector", s.collector)
 
 	echoExporter := echo.New()
 	echoExporter.HideBanner = true
@@ -128,6 +130,7 @@ func NewServer(c *Config, pool *pgxpool.Pool) (*Server, error) {
 	prom.SetMetricsPath(echoExporter)
 
 	s.echo = e
+	// exporter
 	s.echoExporter = echoExporter
 
 	return s, nil

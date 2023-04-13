@@ -1,4 +1,6 @@
 .DS_Store
-config.yaml
-bin/kohaku
-kohaku.log
+bin/*
+.grafana/*
+
+config.ini
+kohaku.jsonl

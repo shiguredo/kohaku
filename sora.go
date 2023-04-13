@@ -38,6 +38,7 @@ type soraConnectionStats struct {
 	Stats []json.RawMessage `json:"stats" validate:"required"`
 }
 
+// 最大バイトサイズ
 func maximumNumberOfBytesFunc(fl validator.FieldLevel) bool {
 	param := fl.Param()
 

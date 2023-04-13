@@ -12,7 +12,7 @@ import (
 func TestHealth(t *testing.T) {
 	// Setup
 	e := server.echo
-	req := httptest.NewRequest(http.MethodPost, "/health", strings.NewReader(""))
+	req := httptest.NewRequest(http.MethodPost, "/.ok", strings.NewReader(""))
 	req.Proto = "HTTP/2.0"
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)

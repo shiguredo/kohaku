@@ -157,7 +157,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	server = NewServer(&Config{}, pgPool)
+	server, _ = NewServer(&Config{}, pgPool)
 
 	code := m.Run()
 
