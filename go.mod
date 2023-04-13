@@ -3,18 +3,21 @@ module github.com/shiguredo/kohaku
 go 1.20
 
 require (
-	github.com/BurntSushi/toml v1.2.1
-	github.com/doug-martin/goqu/v9 v9.18.0
 	github.com/go-playground/validator/v10 v10.12.0
 	github.com/jackc/pgconn v1.14.0
 	github.com/jackc/pgtype v1.14.0
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/labstack/echo/v4 v4.10.2
-	github.com/ory/dockertest/v3 v3.9.1
 	github.com/rs/zerolog v1.29.0
 	github.com/shiguredo/lumberjack/v3 v3.0.0
-	github.com/stretchr/testify v1.8.2
 	golang.org/x/net v0.9.0
+	golang.org/x/sync v0.1.0
+	gopkg.in/ini.v1 v1.67.0
+)
+
+require (
+	github.com/ory/dockertest/v3 v3.9.1
+	github.com/stretchr/testify v1.8.2
 )
 
 require (
@@ -30,9 +33,6 @@ require (
 	github.com/prometheus/common v0.40.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
-)
-
-require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
@@ -75,13 +75,11 @@ require (
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/mod v0.8.0 // indirect
-	golang.org/x/sync v0.1.0
 	golang.org/x/sys v0.7.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
-	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHealth(t *testing.T) {
+func TestOK(t *testing.T) {
 	// Setup
 	e := server.echo
 	req := httptest.NewRequest(http.MethodPost, "/.ok", strings.NewReader(""))

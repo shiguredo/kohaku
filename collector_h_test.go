@@ -14,10 +14,9 @@ import (
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/labstack/echo/v4"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
+	"github.com/stretchr/testify/assert"
 )
 
 // TODO(v): mockDB を導入する
