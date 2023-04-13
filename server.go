@@ -173,7 +173,7 @@ func (s *Server) Start(ctx context.Context, c *Config) error {
 func (s *Server) StartExporter(ctx context.Context, config *Config) error {
 	ch := make(chan error)
 	go func() {
-		err := s.echoExporter.Start(net.JoinHostPort(config.ListenAddr, strconv.Itoa(config.ListenPort)))
+		err := s.echoExporter.Start(net.JoinHostPort(config.ListenExporterAddr, strconv.Itoa(config.ListenExporterPort)))
 		if err != nil {
 			ch <- err
 		}

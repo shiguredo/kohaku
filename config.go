@@ -35,8 +35,8 @@ type Config struct {
 	HTTP2MaxReadFrameSize     uint32 `ini:"http2_max_read_frame_size"`
 	HTTP2IdleTimeout          uint32 `ini:"http2_idle_timeout"`
 
-	ListenPrometheusAddr string `ini:"listen_prometheus_addr"`
-	ListenPrometheusPort int    `ini:"listen_prometheus_port"`
+	ListenExporterAddr string `ini:"listen_exporter_addr"`
+	ListenExporterPort int    `ini:"listen_exporter_port"`
 }
 
 func NewConfig(configFilePath string) (*Config, error) {
@@ -65,12 +65,12 @@ func setDefaultsConfig(config *Config) {
 		config.LogDir = defaultLogName
 	}
 
-	if config.ListenPrometheusAddr == "" {
-		config.ListenPrometheusAddr = defaultListenPrometheusAddr
+	if config.ListenExporterAddr == "" {
+		config.ListenExporterAddr = defaultListenPrometheusAddr
 	}
 
-	if config.ListenPrometheusPort == 0 {
-		config.ListenPrometheusPort = defaultListenPrometheusPort
+	if config.ListenExporterPort == 0 {
+		config.ListenExporterPort = defaultListenPrometheusPort
 	}
 
 	zlog.Info().Bool("debug", config.Debug).Msg("KohakuConf")
@@ -81,6 +81,6 @@ func setDefaultsConfig(config *Config) {
 	zlog.Info().Str("listen_addr", config.ListenAddr).Msg("KohakuConf")
 	zlog.Info().Int("listen_port", config.ListenPort).Msg("KohakuConf")
 
-	zlog.Info().Str("listen_prometheus_addr", config.ListenPrometheusAddr).Msg("KohakuConf")
-	zlog.Info().Int("listen_prometheus_port", config.ListenPrometheusPort).Msg("KohakuConf")
+	zlog.Info().Str("listen_prometheus_addr", config.ListenExporterAddr).Msg("KohakuConf")
+	zlog.Info().Int("listen_prometheus_port", config.ListenExporterPort).Msg("KohakuConf")
 }

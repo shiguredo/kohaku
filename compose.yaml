@@ -21,7 +21,7 @@ services:
       - ./db/schema.sql:/docker-entrypoint-initdb.d/100_schema.sql
 
   grafana:
-    image: grafana/grafana
+    image: grafana/grafana:latest
     ports:
       - 3000:3000
     volumes:
