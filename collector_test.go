@@ -157,7 +157,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	server = NewServer(&KohakuConfig{}, pgPool)
+	server = NewServer(&Config{}, pgPool)
 
 	code := m.Run()
 

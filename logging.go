@@ -2,7 +2,6 @@ package kohaku
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"strings"
 	"time"
@@ -20,22 +19,14 @@ var (
 	logRotateMaxAge = 30
 )
 
-// InitLogger ロガーを初期化します
-func InitLogger(logDir string, logName string, debug bool, isStdout bool) error {
+// InitLogger ロガーを初期化する
+func InitLogger(config *Config) error {
 
-	if f, err := os.Stat(logDir); os.IsNotExist(err) || !f.IsDir() {
+	if f, err := os.Stat(config.LogDir); os.IsNotExist(err) || !f.IsDir() {
 		return err
 	}
 
-	logPath := fmt.Sprintf("%s/%s", logDir, logName)
-
-	writer := &lumberjack.Logger{
-		Filename:   logPath,
-		MaxSize:    logRotateMaxSize,
-		MaxBackups: logRotateMaxBackups,
-		MaxAge:     logRotateMaxAge,
-		Compress:   false,
-	}
+	logPath := fmt.Sprintf("%s/%s", config.LogDir, config.LogName)
 
 	// https://github.com/rs/zerolog/issues/77
 	zerolog.TimestampFunc = func() time.Time {
@@ -44,22 +35,26 @@ func InitLogger(logDir string, logName string, debug bool, isStdout bool) error 
 
 	zerolog.TimeFieldFormat = time.RFC3339Nano
 
-	var writers io.Writer
-	writers = zerolog.MultiLevelWriter(writer)
-
-	if debug {
+	if config.Debug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	} else {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 	// log_stdout: true の時はコンソールにもだす
-	if isStdout {
-		consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05.000000Z"}
-		format(&consoleWriter)
-		writers = zerolog.MultiLevelWriter(writers, consoleWriter)
+	if config.LogStdout {
+		writer := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05.000000Z"}
+		format(&writer)
+		log.Logger = zerolog.New(writer).With().Caller().Timestamp().Logger()
+	} else {
+		writer := &lumberjack.Logger{
+			Filename:   logPath,
+			MaxSize:    logRotateMaxSize,
+			MaxBackups: logRotateMaxBackups,
+			MaxAge:     logRotateMaxAge,
+			Compress:   false,
+		}
+		log.Logger = zerolog.New(writer).With().Caller().Timestamp().Logger()
 	}
-
-	log.Logger = zerolog.New(writers).With().Caller().Timestamp().Logger()
 
 	return nil
 }

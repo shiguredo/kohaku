@@ -30,12 +30,12 @@ const (
 var (
 	url = fmt.Sprintf("https://localhost:%d/health", port)
 
-	config = &KohakuConfig{
+	config = &Config{
 		HTTP2H2c:              false,
 		HTTP2FullchainFile:    "cert/server/server.pem",
 		HTTP2PrivkeyFile:      "cert/server/server.key",
 		HTTP2VerifyCacertPath: "cert/client/ca.pem",
-		CollectorPort:         port,
+		ListenPortNumber:      port,
 	}
 
 	certPair = &CertPair{
@@ -161,9 +161,9 @@ func TestH2(t *testing.T) {
 }
 
 func TestH2C(t *testing.T) {
-	h2cConfig := &KohakuConfig{
-		HTTP2H2c:      true,
-		CollectorPort: 25890,
+	h2cConfig := &Config{
+		HTTP2H2c:         true,
+		ListenPortNumber: 25890,
 	}
 	s := NewServer(h2cConfig, pgPool)
 	go (func() {

@@ -1,168 +1,194 @@
 package kohaku
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	zlog "github.com/rs/zerolog/log"
 	db "github.com/shiguredo/kohaku/gen/sqlc"
 
 	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 
 	"github.com/go-playground/validator/v10"
 )
 
 type Server struct {
-	config *KohakuConfig
-	pool   *pgxpool.Pool
-	query  *db.Queries
-	echo   *echo.Echo
+	config *Config
+
+	pool  *pgxpool.Pool
+	query *db.Queries
+
+	echo         *echo.Echo
+	echoExporter *echo.Echo
+
 	http.Server
 }
 
-func NewServer(c *KohakuConfig, pool *pgxpool.Pool) *Server {
-	e := echo.New()
-
-	validator := validator.New()
-	if err := validator.RegisterValidation("maxb", maximumNumberOfBytesFunc); err != nil {
-		zlog.Error().Err(err).Send()
-		panic(err)
+func NewPool(connStr string) (*pgxpool.Pool, error) {
+	config, err := pgxpool.ParseConfig(connStr)
+	if err != nil {
+		return nil, err
 	}
 
-	e.Validator = &Validator{validator: validator}
+	pool, err := pgxpool.ConnectConfig(context.Background(), config)
+	if err != nil {
+		return nil, err
+	}
 
-	// e.Use(httpLogger())
-	e.Use(middleware.Recover())
+	if err := pool.Ping(context.Background()); err != nil {
+		return nil, err
+	}
 
-	// TODO(v): こいつ自身の統計情報を /stats でとれた方がいい
+	return pool, nil
+}
 
+func NewServer(c *Config, pool *pgxpool.Pool) (*Server, error) {
 	h2s := &http2.Server{
 		MaxConcurrentStreams: c.HTTP2MaxConcurrentStreams,
 		MaxReadFrameSize:     c.HTTP2MaxReadFrameSize,
 		IdleTimeout:          time.Duration(c.HTTP2IdleTimeout) * time.Second,
 	}
 
+	e := echo.New()
+
 	s := &Server{
 		config: c,
 		pool:   pool,
 		query:  db.New(pool),
 		Server: http.Server{
-			Addr:    fmt.Sprintf(":%d", c.CollectorPort),
-			Handler: h2c.NewHandler(e, h2s),
+			Addr:    net.JoinHostPort("", strconv.Itoa(c.ListenPort)),
+			Handler: e,
 		},
 		echo: e,
 	}
 
-	http2H2c := c.HTTP2H2c
-	if !http2H2c {
-		if c.HTTP2VerifyCacertPath != "" {
-			clientCAPath := c.HTTP2VerifyCacertPath
-			certPool, err := appendCerts(clientCAPath)
-			if err != nil {
-				zlog.Error().Err(err).Send()
-				panic(err)
-			}
-
-			tlsConfig := &tls.Config{
-				ClientAuth: tls.RequireAndVerifyClientCert,
-				ClientCAs:  certPool,
-			}
-			s.Server.TLSConfig = tlsConfig
+	// クライアント認証をするかどうかのチェック
+	if c.HTTP2VerifyCacertPath != "" {
+		clientCAPath := c.HTTP2VerifyCacertPath
+		certPool, err := appendCerts(clientCAPath)
+		if err != nil {
+			zlog.Error().Err(err).Send()
+			return nil, err
 		}
+
+		tlsConfig := &tls.Config{
+			ClientAuth: tls.RequireAndVerifyClientCert,
+			ClientCAs:  certPool,
+		}
+		s.Server.TLSConfig = tlsConfig
 	}
+
+	if err := http2.ConfigureServer(&s.Server, h2s); err != nil {
+		return nil, err
+	}
+
+	e.Pre(middleware.RemoveTrailingSlash())
+
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Skipper: func(c echo.Context) bool {
+			// /health の時はログを吐き出さない
+			return strings.HasPrefix(c.Request().URL.Path, "/.ok")
+		},
+	}))
+
+	// e.Use(httpLogger())
+	e.Use(middleware.Recover())
+
+	validator := validator.New()
+	if err := validator.RegisterValidation("maxb", maximumNumberOfBytesFunc); err != nil {
+		zlog.Error().Err(err).Send()
+		return nil, err
+	}
+
+	e.Validator = &Validator{validator: validator}
 
 	// 統計情報を突っ込むところ
-	e.POST("/collector", s.collector, validateHTTPVersion)
+	e.POST("/collector", s.collector)
 	// ヘルスチェック
-	e.POST("/health", s.health)
+	e.POST("/.ok", s.ok)
 
-	return s
+	echoExporter := echo.New()
+	echoExporter.HideBanner = true
+	prom := prometheus.NewPrometheus("echo", nil)
+
+	e.Use(prom.HandlerFunc)
+	prom.SetMetricsPath(echoExporter)
+
+	s.echo = e
+	s.echoExporter = echoExporter
+
+	return s, nil
 }
 
-func (s *Server) Start(c *KohakuConfig) error {
-	http2H2c := c.HTTP2H2c
+func (s *Server) Start(ctx context.Context, c *Config) error {
+	http2FullchainFile := s.config.HTTP2FullchainFile
+	http2PrivkeyFile := s.config.HTTP2PrivkeyFile
 
-	if http2H2c {
-		if err := s.ListenAndServe(); err != http.ErrServerClosed {
-			return err
-		}
-	} else {
-		http2FullchainFile := c.HTTP2FullchainFile
-		http2PrivkeyFile := c.HTTP2PrivkeyFile
+	if _, err := os.Stat(http2FullchainFile); err != nil {
+		return fmt.Errorf("http2FullchainFile error: %s", err)
+	}
 
-		if _, err := os.Stat(http2FullchainFile); err != nil {
-			return fmt.Errorf("http2FullchainFile error: %s", err)
-		}
+	if _, err := os.Stat(http2PrivkeyFile); err != nil {
+		return fmt.Errorf("http2PrivkeyFile error: %s", err)
+	}
 
-		if _, err := os.Stat(http2PrivkeyFile); err != nil {
-			return fmt.Errorf("http2PrivkeyFile error: %s", err)
-		}
-
+	ch := make(chan error)
+	go func() {
+		defer close(ch)
 		if err := s.ListenAndServeTLS(http2FullchainFile, http2PrivkeyFile); err != http.ErrServerClosed {
-			return err
+			ch <- err
 		}
-	}
+	}()
 
-	return nil
-}
-
-func validateHTTPVersion(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		// prior knowledge ではない場合
-		if upgrade, ok := c.Request().Header["Upgrade"]; ok && upgrade[0] == "h2c" {
-			return echo.NewHTTPError(http.StatusBadRequest)
+	defer func() {
+		if err := s.Shutdown(ctx); err != nil {
+			zlog.Error().Err(err).Send()
 		}
+	}()
 
-		if c.Request().Proto != "HTTP/2.0" {
-			err := fmt.Errorf("http version not supported: %s", c.Request().Proto)
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-		}
-
-		return next(c)
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-ch:
+		return err
 	}
 }
 
-// func httpLogger() gin.HandlerFunc {
-// 	return func(c *gin.Context) {
-// 		c.Next()
-//
-// 		event := logEvent(c.Writer.Status())
-//
-// 		req := c.Request
-//
-// 		event.
-// 			Int("status", c.Writer.Status()).
-// 			Str("address", req.RemoteAddr).
-// 			Str("method", req.Method).
-// 			Str("path", req.URL.Path).
-// 			Int64("len", req.ContentLength).
-// 			Msg("")
-// 	}
-// }
+func (s *Server) StartExporter(ctx context.Context, config *Config) error {
+	ch := make(chan error)
+	go func() {
+		err := s.echoExporter.Start(net.JoinHostPort(config.ListenAddr, strconv.Itoa(config.ListenPort)))
+		if err != nil {
+			ch <- err
+		}
+	}()
 
-// func logEvent(status int) *zerolog.Event {
-// 	var event *zerolog.Event
-//
-// 	switch status / 100 {
-// 	case 5:
-// 		event = zlog.Error()
-// 	case 4:
-// 		event = zlog.Warn()
-// 	default:
-// 		event = zlog.Info()
-// 	}
-//
-// 	return event
-// }
+	defer func() {
+		if err := s.echoExporter.Shutdown(ctx); err != nil {
+			zlog.Error().Err(err).Send()
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-ch:
+		return err
+	}
+}
 
 func appendCerts(clientCAPath string) (*x509.CertPool, error) {
 	certPool := x509.NewCertPool()
@@ -176,26 +202,29 @@ func appendCerts(clientCAPath string) (*x509.CertPool, error) {
 			return nil, err
 		}
 		for _, f := range files {
-			clientCA, err := os.ReadFile(filepath.Join(clientCAPath, f.Name()))
-			if err != nil {
+			clientCAPath := filepath.Join(clientCAPath, f.Name())
+			if err := appendCertsFromPEM(certPool, clientCAPath); err != nil {
 				return nil, err
-			}
-			ok := certPool.AppendCertsFromPEM(clientCA)
-			if !ok {
-				return nil, fmt.Errorf("failed to append certificates: %s", filepath.Join(clientCAPath, f.Name()))
 			}
 		}
 	} else {
-		clientCA, err := os.ReadFile(clientCAPath)
-		if err != nil {
+		if err := appendCertsFromPEM(certPool, clientCAPath); err != nil {
 			return nil, err
-		}
-		ok := certPool.AppendCertsFromPEM(clientCA)
-		if !ok {
-			return nil, fmt.Errorf("failed to append certificates: %s", clientCAPath)
 		}
 	}
 	return certPool, nil
+}
+
+func appendCertsFromPEM(certPool *x509.CertPool, filepath string) error {
+	clientCA, err := os.ReadFile(filepath)
+	if err != nil {
+		return err
+	}
+	ok := certPool.AppendCertsFromPEM(clientCA)
+	if !ok {
+		return fmt.Errorf("failed to append certificates: %s", filepath)
+	}
+	return nil
 }
 
 type Validator struct {

@@ -1,65 +1,86 @@
 package kohaku
 
 import (
-	"flag"
-	"fmt"
-	"os"
-
-	"github.com/BurntSushi/toml"
-	"github.com/rs/zerolog/log"
+	zlog "github.com/rs/zerolog/log"
+	"gopkg.in/ini.v1"
 )
 
-var (
-	ConfigFilePath = flag.String("c", "./config.toml", "kohaku 設定ファイルへのパス(toml)")
-	Config         *KohakuConfig
+const (
+	defaultLogDir  = "."
+	defaultLogName = "kohaku.jsonl"
+
+	defaultListenPrometheusAddr = "0.0.0.0"
+	defaultListenPrometheusPort = 4000
 )
 
-type KohakuConfig struct {
-	LogDebug  bool   `toml:"log_debug"`
-	LogDir    string `toml:"log_dir"`
-	LogName   string `toml:"log_name"`
-	LogStdout bool   `toml:"log_stdout"`
+type Config struct {
+	Debug bool `ini:"debug"`
 
-	CollectorPort int `toml:"collector_port"`
+	LogDir    string `ini:"log_dir"`
+	LogName   string `ini:"log_name"`
+	LogLevel  string `ini:"log_level"`
+	LogDebug  bool   `ini:"log_debug"`
+	LogStdout bool   `ini:"log_stdout"`
 
-	TimescaleURL          string `toml:"timescale_url"`
-	TimescaleSSLMode      string `toml:"timescale_sslmode"`
-	TimescaleRootcertFile string `toml:"timescale_rootcert_file"`
+	ListenAddr string `ini:"listen_addr"`
+	ListenPort int    `ini:"listen_port"`
 
-	// TODO(v): 名前検討
-	HTTP2FullchainFile string `toml:"http2_fullchain_file"`
-	// TODO(v): 名前検討
-	HTTP2PrivkeyFile string `toml:"http2_privkey_file"`
-	// TODO: 名前検討
-	HTTP2VerifyCacertPath string `toml:"http2_verify_cacert_path"`
+	PostgresURI string `ini:"postgres_uri"`
 
-	HTTP2H2c                  bool   `toml:"http2_h2c"`
-	HTTP2MaxConcurrentStreams uint32 `toml:"http2_max_concurrent_streams"`
-	HTTP2MaxReadFrameSize     uint32 `toml:"http2_max_read_frame_size"`
-	HTTP2IdleTimeout          uint32 `toml:"http2_idle_timeout"`
+	HTTP2FullchainFile    string `ini:"http2_fullchain_file"`
+	HTTP2PrivkeyFile      string `ini:"http2_privkey_file"`
+	HTTP2VerifyCacertPath string `ini:"http2_verify_cacert_path"`
+
+	HTTP2MaxConcurrentStreams uint32 `ini:"http2_max_concurrent_streams"`
+	HTTP2MaxReadFrameSize     uint32 `ini:"http2_max_read_frame_size"`
+	HTTP2IdleTimeout          uint32 `ini:"http2_idle_timeout"`
+
+	ListenPrometheusAddr string `ini:"listen_prometheus_addr"`
+	ListenPrometheusPort int    `ini:"listen_prometheus_port"`
 }
 
-// LoadConfigFromFlags 起動パラメータから設定ファイルを読み込みます
-func LoadConfigFromFlags(configPath *string) error {
-	tmpConfig, err := LoadConfig(*configPath)
-	log.Printf("config file path: %s", *configPath)
-	if err != nil {
-		return err
-	}
-	Config = tmpConfig
+func NewConfig(configFilePath string) (*Config, error) {
+	config := new(Config)
 
-	return nil
-}
-
-// LoadConfig 設定ファイルのパスからファイルを読み込み、設定値をバインドした KohakuConfig を返します
-func LoadConfig(configPath string) (*KohakuConfig, error) {
-	buf, err := os.ReadFile(configPath)
+	iniConfig, err := ini.InsensitiveLoad(configFilePath)
 	if err != nil {
 		return nil, err
 	}
-	var config KohakuConfig
-	if err := toml.Unmarshal(buf, &config); err != nil {
-		return nil, fmt.Errorf("KohakuConfig bind error: %s", err)
+
+	if err := iniConfig.StrictMapTo(config); err != nil {
+		return nil, err
 	}
-	return &config, nil
+
+	setDefaultsConfig(config)
+
+	return config, nil
+}
+
+func setDefaultsConfig(config *Config) {
+	if config.LogDir == "" {
+		config.LogDir = defaultLogDir
+	}
+
+	if config.LogName == "" {
+		config.LogDir = defaultLogName
+	}
+
+	if config.ListenPrometheusAddr == "" {
+		config.ListenPrometheusAddr = defaultListenPrometheusAddr
+	}
+
+	if config.ListenPrometheusPort == 0 {
+		config.ListenPrometheusPort = defaultListenPrometheusPort
+	}
+
+	zlog.Info().Bool("debug", config.Debug).Msg("KohakuConf")
+	zlog.Info().Str("log_dir", config.LogDir).Msg("KohakuConf")
+	zlog.Info().Str("log_name", config.LogName).Msg("KohakuConf")
+	zlog.Info().Str("log_level", config.LogLevel).Msg("KohakuConf")
+
+	zlog.Info().Str("listen_addr", config.ListenAddr).Msg("KohakuConf")
+	zlog.Info().Int("listen_port", config.ListenPort).Msg("KohakuConf")
+
+	zlog.Info().Str("listen_prometheus_addr", config.ListenPrometheusAddr).Msg("KohakuConf")
+	zlog.Info().Int("listen_prometheus_port", config.ListenPrometheusPort).Msg("KohakuConf")
 }
