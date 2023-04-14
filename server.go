@@ -63,6 +63,7 @@ func NewServer(c *Config, pool *pgxpool.Pool) (*Server, error) {
 	}
 
 	e := echo.New()
+	e.HideBanner = true
 
 	s := &Server{
 		config: c,
@@ -151,7 +152,7 @@ func (s *Server) Start(ctx context.Context, c *Config) error {
 	ch := make(chan error)
 	go func() {
 		defer close(ch)
-		if err := s.ListenAndServeTLS(http2FullchainFile, http2PrivkeyFile); err != http.ErrServerClosed {
+		if err := s.echo.StartTLS(net.JoinHostPort(s.config.ListenAddr, strconv.Itoa(s.config.ListenPort)), http2FullchainFile, http2PrivkeyFile); err != http.ErrServerClosed {
 			ch <- err
 		}
 	}()

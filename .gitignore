@@ -1,6 +1,7 @@
 .DS_Store
 bin/*
 .grafana/*
+tmp/*
 
-config.ini
+kohaku.ini
 kohaku.jsonl
