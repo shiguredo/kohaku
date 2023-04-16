@@ -56,6 +56,53 @@ VALUES (
     @rtc_stats_data
   );
 
+
+
+-- name: InsertUserAgentStats2 :exec
+WITH existing_record AS (
+  SELECT *
+  FROM user_agents_stats
+  WHERE user_agents_stats.channel_id = @channel_id
+    AND user_agents_stats.connection_id = @connection_id
+    AND user_agents_stats.rtc_stats_type = @rtc_stats_type
+    AND user_agents_stats.rtc_stats_id = @rtc_stats_id
+),
+data_without_timestamp AS (
+  SELECT jsonb_strip_nulls(
+      jsonb_set(
+        existing_record.rtc_stats_data,
+        '{timestamp}',
+        'null'
+      )
+    ) as old_data,
+    jsonb_strip_nulls(
+      jsonb_set(@rtc_stats_data, '{timestamp}', 'null')
+    ) as new_data
+  FROM existing_record
+)
+INSERT INTO user_agents_stats (
+    timestamp,
+    channel_id,
+    connection_id,
+    rtc_stats_timestamp,
+    rtc_stats_type,
+    rtc_stats_id,
+    rtc_stats_data
+  )
+SELECT @timestamp,
+  @channel_id,
+  @connection_id,
+  @rtc_stats_timestamp,
+  @rtc_stats_type,
+  @rtc_stats_id,
+  @rtc_stats_data
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM data_without_timestamp
+  WHERE NOT (data_without_timestamp.old_data = data_without_timestamp.new_data)
+);
+
+
 -- test query
 
 -- name: TestGetRtcStatsType :one

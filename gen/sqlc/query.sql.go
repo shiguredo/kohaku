@@ -128,6 +128,74 @@ func (q *Queries) InsertUserAgentStats(ctx context.Context, arg InsertUserAgentS
 	return err
 }
 
+const InsertUserAgentStats2 = `-- name: InsertUserAgentStats2 :exec
+WITH existing_record AS (
+  SELECT timestamp, channel_id, connection_id, rtc_stats_timestamp, rtc_stats_type, rtc_stats_id, rtc_stats_data, created_at
+  FROM user_agents_stats
+  WHERE user_agents_stats.channel_id = $2
+    AND user_agents_stats.connection_id = $3
+    AND user_agents_stats.rtc_stats_type = $5
+    AND user_agents_stats.rtc_stats_id = $6
+),
+data_without_timestamp AS (
+  SELECT jsonb_strip_nulls(
+      jsonb_set(
+        existing_record.rtc_stats_data,
+        '{timestamp}',
+        'null'
+      )
+    ) as old_data,
+    jsonb_strip_nulls(
+      jsonb_set($7, '{timestamp}', 'null')
+    ) as new_data
+  FROM existing_record
+)
+INSERT INTO user_agents_stats (
+    timestamp,
+    channel_id,
+    connection_id,
+    rtc_stats_timestamp,
+    rtc_stats_type,
+    rtc_stats_id,
+    rtc_stats_data
+  )
+SELECT $1,
+  $2,
+  $3,
+  $4,
+  $5,
+  $6,
+  $7
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM data_without_timestamp
+  WHERE NOT (data_without_timestamp.old_data = data_without_timestamp.new_data)
+)
+`
+
+type InsertUserAgentStats2Params struct {
+	Timestamp         time.Time    `json:"timestamp"`
+	ChannelID         string       `json:"channel_id"`
+	ConnectionID      string       `json:"connection_id"`
+	RtcStatsTimestamp float64      `json:"rtc_stats_timestamp"`
+	RtcStatsType      string       `json:"rtc_stats_type"`
+	RtcStatsID        string       `json:"rtc_stats_id"`
+	RtcStatsData      pgtype.JSONB `json:"rtc_stats_data"`
+}
+
+func (q *Queries) InsertUserAgentStats2(ctx context.Context, arg InsertUserAgentStats2Params) error {
+	_, err := q.db.Exec(ctx, InsertUserAgentStats2,
+		arg.Timestamp,
+		arg.ChannelID,
+		arg.ConnectionID,
+		arg.RtcStatsTimestamp,
+		arg.RtcStatsType,
+		arg.RtcStatsID,
+		arg.RtcStatsData,
+	)
+	return err
+}
+
 const TestDropUserAgentStats = `-- name: TestDropUserAgentStats :exec
 DELETE FROM user_agents_stats
 `
