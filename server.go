@@ -56,32 +56,39 @@ func NewPool(connStr string) (*pgxpool.Pool, error) {
 }
 
 func NewServer(c *Config, pool *pgxpool.Pool) (*Server, error) {
-	h2s := &http2.Server{
-		MaxConcurrentStreams: c.HTTP2MaxConcurrentStreams,
-		MaxReadFrameSize:     c.HTTP2MaxReadFrameSize,
-		IdleTimeout:          time.Duration(c.HTTP2IdleTimeout) * time.Second,
-	}
-
-	e := echo.New()
-
 	s := &Server{
 		config: c,
 		pool:   pool,
 		query:  db.New(pool),
-		Server: http.Server{
-			Addr:    net.JoinHostPort("", strconv.Itoa(c.ListenPort)),
-			Handler: e,
-		},
-		echo: e,
+	}
+
+	s.setupEchoServer()
+	s.setupEchoExporter()
+
+	return s, nil
+}
+
+func (s *Server) setupEchoServer() error {
+	h2s := &http2.Server{
+		MaxConcurrentStreams: s.config.HTTP2MaxConcurrentStreams,
+		MaxReadFrameSize:     s.config.HTTP2MaxReadFrameSize,
+		IdleTimeout:          time.Duration(s.config.HTTP2IdleTimeout) * time.Second,
+	}
+
+	e := echo.New()
+
+	s.Server = http.Server{
+		Addr:    net.JoinHostPort("", strconv.Itoa(s.config.ListenPort)),
+		Handler: e,
 	}
 
 	// クライアント認証をするかどうかのチェック
-	if c.HTTP2VerifyCacertPath != "" {
-		clientCAPath := c.HTTP2VerifyCacertPath
+	if s.config.HTTP2VerifyCacertPath != "" {
+		clientCAPath := s.config.HTTP2VerifyCacertPath
 		certPool, err := appendCerts(clientCAPath)
 		if err != nil {
 			zlog.Error().Err(err).Send()
-			return nil, err
+			return err
 		}
 
 		tlsConfig := &tls.Config{
@@ -92,7 +99,7 @@ func NewServer(c *Config, pool *pgxpool.Pool) (*Server, error) {
 	}
 
 	if err := http2.ConfigureServer(&s.Server, h2s); err != nil {
-		return nil, err
+		return err
 	}
 
 	e.Pre(middleware.RemoveTrailingSlash())
@@ -111,7 +118,7 @@ func NewServer(c *Config, pool *pgxpool.Pool) (*Server, error) {
 	// string をバイナリ文字列の長さとしてのチェックをできるようにする
 	if err := validator.RegisterValidation("maxb", maximumNumberOfBytesFunc); err != nil {
 		zlog.Error().Err(err).Send()
-		return nil, err
+		return err
 	}
 
 	e.Validator = &Validator{validator: validator}
@@ -122,18 +129,20 @@ func NewServer(c *Config, pool *pgxpool.Pool) (*Server, error) {
 	// 統計情報を突っ込むところ
 	e.POST("/collector", s.collector)
 
+	s.echo = e
+
+	return nil
+}
+
+func (s *Server) setupEchoExporter() {
 	echoExporter := echo.New()
 	echoExporter.HideBanner = true
 	prom := prometheus.NewPrometheus("echo", nil)
 
-	e.Use(prom.HandlerFunc)
+	s.echo.Use(prom.HandlerFunc)
 	prom.SetMetricsPath(echoExporter)
 
-	s.echo = e
-	// exporter
 	s.echoExporter = echoExporter
-
-	return s, nil
 }
 
 func (s *Server) Start(ctx context.Context, c *Config) error {

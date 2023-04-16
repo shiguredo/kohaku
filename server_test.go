@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -12,6 +11,8 @@ import (
 
 	"golang.org/x/net/http2"
 
+	"github.com/jackc/pgx/v4/pgxpool"
+	db "github.com/shiguredo/kohaku/gen/sqlc"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,7 +29,7 @@ const (
 )
 
 var (
-	url = fmt.Sprintf("https://localhost:%d/health", port)
+	url = fmt.Sprintf("https://localhost:%d/.ok", port)
 
 	config = &Config{
 		HTTP2FullchainFile:    "cert/server/server.pem",
@@ -45,16 +46,6 @@ var (
 
 func NewClient(nextProto string, c *CertPair) (*http.Client, error) {
 	var client http.Client
-
-	if nextProto == "h2c" {
-		client.Transport = &http2.Transport{
-			AllowHTTP: true,
-			DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
-				return net.Dial(network, addr)
-			},
-		}
-		return &client, nil
-	}
 
 	cert, err := tls.LoadX509KeyPair(c.CertificateFile, c.KeyFile)
 	if err != nil {
@@ -84,7 +75,7 @@ func NewClient(nextProto string, c *CertPair) (*http.Client, error) {
 }
 
 func TestMutualTLS(t *testing.T) {
-	s, _ := NewServer(config, pgPool)
+	s := newTestServer(config, pgPool)
 	go (func() {
 		s.Start(context.Background(), config)
 	})()
@@ -110,7 +101,7 @@ func TestMutualTLS(t *testing.T) {
 }
 
 func TestInvalidClientCertificate(t *testing.T) {
-	s, _ := NewServer(config, pgPool)
+	s := newTestServer(config, pgPool)
 	go (func() {
 		s.Start(context.Background(), config)
 	})()
@@ -134,7 +125,7 @@ func TestInvalidClientCertificate(t *testing.T) {
 }
 
 func TestH2(t *testing.T) {
-	s, _ := NewServer(config, pgPool)
+	s := newTestServer(config, pgPool)
 	go (func() {
 		s.Start(context.Background(), config)
 	})()
@@ -157,4 +148,16 @@ func TestH2(t *testing.T) {
 
 	assert.Equal(t, "HTTP/2.0", resp.Proto)
 	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func newTestServer(c *Config, pool *pgxpool.Pool) *Server {
+	s := &Server{
+		config: c,
+		pool:   pool,
+		query:  db.New(pool),
+	}
+
+	s.setupEchoServer()
+
+	return s
 }
