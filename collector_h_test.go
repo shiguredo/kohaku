@@ -840,3 +840,71 @@ func TestMissingMultistream(t *testing.T) {
 // 		assert.Equal(t, `unexpected rtcStats.Type: unexpected_type`, httpErr.(*echo.HTTPError).Message)
 // 	}
 // }
+
+func TestDuplicate(t *testing.T) {
+	// Setup
+	e := server.echo
+
+	stats := make([]json.RawMessage, 0, 1)
+	stats = append(stats, json.RawMessage(`{
+        "channels": 2,
+        "id": "RTCCodec_audio_NB1bb0_Inbound_109",
+        "timestamp": 1640225763761.085,
+        "type": "codec",
+        "clockRate": 48000,
+        "mimeType": "audio/opus",
+        "payloadType": 109,
+        "sdpFmtpLine": "minptime=10;useinbandfec=1",
+        "transportId": "RTCTransport_data_1"
+      }`))
+	soraConnectionStatsJSON := collectorSoraConnectionStatsJSON
+	soraConnectionStatsJSON.Stats = stats
+	body, err := json.Marshal(soraConnectionStatsJSON)
+	if err != nil {
+		panic(err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/collector", bytes.NewReader(body))
+	req.Header.Set("content-type", "application/json")
+	req.Header.Set("x-sora-stats-exporter-type", "connection.user-agent")
+	req.Proto = "HTTP/2.0"
+	req.ProtoMajor = 2
+	req.ProtoMinor = 0
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	// Assertions
+	if assert.NoError(t, server.collector(c)) {
+		assert.Equal(t, http.StatusNoContent, rec.Code)
+
+		statsType, err := server.query.TestGetRtcStatsType(context.Background(), db.TestGetRtcStatsTypeParams{
+			ChannelID:    channelID,
+			ConnectionID: connectionID,
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, "codec", statsType)
+	}
+
+	req = httptest.NewRequest(http.MethodPost, "/collector", bytes.NewReader(body))
+	req.Header.Set("content-type", "application/json")
+	req.Header.Set("x-sora-stats-exporter-type", "connection.user-agent")
+	req.Proto = "HTTP/2.0"
+	req.ProtoMajor = 2
+	req.ProtoMinor = 0
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+
+	// Assertions
+	if assert.NoError(t, server.collector(c)) {
+		assert.Equal(t, http.StatusNoContent, rec.Code)
+
+		count, err := server.query.TestRtcStatsCounts(context.Background(), db.TestRtcStatsCountsParams{
+			RtcTypeStats: "codec",
+			ChannelID:    channelID,
+			ConnectionID: connectionID,
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, int64(1), count)
+	}
+
+	server.query.TestDropUserAgentStats(context.Background())
+}

@@ -36,29 +36,8 @@ WHERE NOT EXISTS (
       )
   );
 
+
 -- name: InsertUserAgentStats :exec
-INSERT INTO user_agents_stats (
-    timestamp,
-    channel_id,
-    connection_id,
-    rtc_stats_timestamp,
-    rtc_stats_type,
-    rtc_stats_id,
-    rtc_stats_data
-  )
-VALUES (
-    @timestamp,
-    @channel_id,
-    @connection_id,
-    @rtc_stats_timestamp,
-    @rtc_stats_type,
-    @rtc_stats_id,
-    @rtc_stats_data
-  );
-
-
-
--- name: InsertUserAgentStats2 :exec
 WITH existing_record AS (
   SELECT *
   FROM user_agents_stats
@@ -99,7 +78,7 @@ SELECT @timestamp,
 WHERE NOT EXISTS (
   SELECT 1
   FROM data_without_timestamp
-  WHERE NOT (data_without_timestamp.old_data = data_without_timestamp.new_data)
+  WHERE data_without_timestamp.old_data = data_without_timestamp.new_data
 );
 
 
@@ -115,3 +94,11 @@ LIMIT 1;
 
 -- name: TestDropUserAgentStats :exec
 DELETE FROM user_agents_stats;
+
+-- 指定した type のレコードがいくつあるかどうか
+-- name: TestRtcStatsCounts :one
+SELECT count(*)
+FROM user_agents_stats
+WHERE rtc_stats_type = @rtc_type_stats
+  AND channel_id = @channel_id
+  AND connection_id = @connection_id;

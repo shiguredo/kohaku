@@ -85,50 +85,6 @@ func (q *Queries) InsertSoraConnection(ctx context.Context, arg InsertSoraConnec
 }
 
 const InsertUserAgentStats = `-- name: InsertUserAgentStats :exec
-INSERT INTO user_agents_stats (
-    timestamp,
-    channel_id,
-    connection_id,
-    rtc_stats_timestamp,
-    rtc_stats_type,
-    rtc_stats_id,
-    rtc_stats_data
-  )
-VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7
-  )
-`
-
-type InsertUserAgentStatsParams struct {
-	Timestamp         time.Time    `json:"timestamp"`
-	ChannelID         string       `json:"channel_id"`
-	ConnectionID      string       `json:"connection_id"`
-	RtcStatsTimestamp float64      `json:"rtc_stats_timestamp"`
-	RtcStatsType      string       `json:"rtc_stats_type"`
-	RtcStatsID        string       `json:"rtc_stats_id"`
-	RtcStatsData      pgtype.JSONB `json:"rtc_stats_data"`
-}
-
-func (q *Queries) InsertUserAgentStats(ctx context.Context, arg InsertUserAgentStatsParams) error {
-	_, err := q.db.Exec(ctx, InsertUserAgentStats,
-		arg.Timestamp,
-		arg.ChannelID,
-		arg.ConnectionID,
-		arg.RtcStatsTimestamp,
-		arg.RtcStatsType,
-		arg.RtcStatsID,
-		arg.RtcStatsData,
-	)
-	return err
-}
-
-const InsertUserAgentStats2 = `-- name: InsertUserAgentStats2 :exec
 WITH existing_record AS (
   SELECT timestamp, channel_id, connection_id, rtc_stats_timestamp, rtc_stats_type, rtc_stats_id, rtc_stats_data, created_at
   FROM user_agents_stats
@@ -169,11 +125,11 @@ SELECT $1,
 WHERE NOT EXISTS (
   SELECT 1
   FROM data_without_timestamp
-  WHERE NOT (data_without_timestamp.old_data = data_without_timestamp.new_data)
+  WHERE data_without_timestamp.old_data = data_without_timestamp.new_data
 )
 `
 
-type InsertUserAgentStats2Params struct {
+type InsertUserAgentStatsParams struct {
 	Timestamp         time.Time    `json:"timestamp"`
 	ChannelID         string       `json:"channel_id"`
 	ConnectionID      string       `json:"connection_id"`
@@ -183,8 +139,8 @@ type InsertUserAgentStats2Params struct {
 	RtcStatsData      pgtype.JSONB `json:"rtc_stats_data"`
 }
 
-func (q *Queries) InsertUserAgentStats2(ctx context.Context, arg InsertUserAgentStats2Params) error {
-	_, err := q.db.Exec(ctx, InsertUserAgentStats2,
+func (q *Queries) InsertUserAgentStats(ctx context.Context, arg InsertUserAgentStatsParams) error {
+	_, err := q.db.Exec(ctx, InsertUserAgentStats,
 		arg.Timestamp,
 		arg.ChannelID,
 		arg.ConnectionID,
@@ -226,4 +182,26 @@ func (q *Queries) TestGetRtcStatsType(ctx context.Context, arg TestGetRtcStatsTy
 	var rtc_stats_type string
 	err := row.Scan(&rtc_stats_type)
 	return rtc_stats_type, err
+}
+
+const TestRtcStatsCounts = `-- name: TestRtcStatsCounts :one
+SELECT count(*)
+FROM user_agents_stats
+WHERE rtc_stats_type = $1
+  AND channel_id = $2
+  AND connection_id = $3
+`
+
+type TestRtcStatsCountsParams struct {
+	RtcTypeStats string `json:"rtc_type_stats"`
+	ChannelID    string `json:"channel_id"`
+	ConnectionID string `json:"connection_id"`
+}
+
+// 指定した type のレコードがいくつあるかどうか
+func (q *Queries) TestRtcStatsCounts(ctx context.Context, arg TestRtcStatsCountsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, TestRtcStatsCounts, arg.RtcTypeStats, arg.ChannelID, arg.ConnectionID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
