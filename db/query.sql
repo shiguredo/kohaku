@@ -26,7 +26,7 @@ SELECT @timestamp,
   @client_id,
   @connection_id
 WHERE NOT EXISTS (
-    SELECT id
+    SELECT 1
     FROM sora_connection
     WHERE (
         (channel_id = @channel_id::text)
@@ -55,3 +55,16 @@ VALUES (
     @rtc_stats_id,
     @rtc_stats_data
   );
+
+-- test query
+
+-- name: TestGetRtcStatsType :one
+SELECT rtc_stats_type
+FROM user_agents_stats
+WHERE channel_id = @channel_id
+  AND connection_id = @connection_id
+-- TODO: 最新を取るように order がほしい？
+LIMIT 1;
+
+-- name: TestDropUserAgentStats :exec
+DELETE FROM user_agents_stats;

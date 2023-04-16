@@ -40,7 +40,7 @@ SELECT $1,
   $11,
   $12
 WHERE NOT EXISTS (
-    SELECT id
+    SELECT 1
     FROM sora_connection
     WHERE (
         (channel_id = $9::text)
@@ -126,4 +126,36 @@ func (q *Queries) InsertUserAgentStats(ctx context.Context, arg InsertUserAgentS
 		arg.RtcStatsData,
 	)
 	return err
+}
+
+const TestDropUserAgentStats = `-- name: TestDropUserAgentStats :exec
+DELETE FROM user_agents_stats
+`
+
+func (q *Queries) TestDropUserAgentStats(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, TestDropUserAgentStats)
+	return err
+}
+
+const TestGetRtcStatsType = `-- name: TestGetRtcStatsType :one
+
+SELECT rtc_stats_type
+FROM user_agents_stats
+WHERE channel_id = $1
+  AND connection_id = $2
+LIMIT 1
+`
+
+type TestGetRtcStatsTypeParams struct {
+	ChannelID    string `json:"channel_id"`
+	ConnectionID string `json:"connection_id"`
+}
+
+// test query
+// TODO: 最新を取るように order がほしい？
+func (q *Queries) TestGetRtcStatsType(ctx context.Context, arg TestGetRtcStatsTypeParams) (string, error) {
+	row := q.db.QueryRow(ctx, TestGetRtcStatsType, arg.ChannelID, arg.ConnectionID)
+	var rtc_stats_type string
+	err := row.Scan(&rtc_stats_type)
+	return rtc_stats_type, err
 }

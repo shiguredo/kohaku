@@ -10,7 +10,11 @@ import (
 // ログレベル、ログメッセージを変更する
 func (s *Server) collector(c echo.Context) error {
 	if c.Request().ProtoMajor != 2 {
-		zlog.Error().Msg("PROTOCOL-VIOLATION")
+		zlog.Error().
+			Str("Proto", c.Request().Proto).
+			Int("ProtoMajor", c.Request().ProtoMajor).
+			Int("ProtoMinor", c.Request().ProtoMinor).
+			Msg("PROTOCOL-VIOLATION")
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
@@ -23,7 +27,7 @@ func (s *Server) collector(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 		if err := c.Validate(stats); err != nil {
-			zlog.Warn().Err(err).Str("type", t).Send()
+			zlog.Warn().Err(err).Bool("simulcast", *stats.Simulcast).Str("type", t).Send()
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 		if err := s.collectorUserAgentStats(c, *stats); err != nil {

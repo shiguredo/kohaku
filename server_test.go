@@ -44,7 +44,19 @@ var (
 	}
 )
 
-func NewClient(nextProto string, c *CertPair) (*http.Client, error) {
+func newTestServer(c *Config, pool *pgxpool.Pool) *Server {
+	s := &Server{
+		config: c,
+		pool:   pool,
+		query:  db.New(pool),
+	}
+
+	s.setupEchoServer()
+
+	return s
+}
+
+func newTestClient(nextProto string, c *CertPair) (*http.Client, error) {
 	var client http.Client
 
 	cert, err := tls.LoadX509KeyPair(c.CertificateFile, c.KeyFile)
@@ -83,7 +95,7 @@ func TestMutualTLS(t *testing.T) {
 	time.Sleep(waitingTime * time.Millisecond)
 
 	// Setup
-	client, err := NewClient("http/1.1", certPair)
+	client, err := newTestClient("http/1.1", certPair)
 	if err != nil {
 		panic(err)
 	}
@@ -113,7 +125,7 @@ func TestInvalidClientCertificate(t *testing.T) {
 		"cert/client/invalid.pem",
 		"cert/client/invalid.key",
 	}
-	client, err := NewClient("http/1.1", invalidCertPair)
+	client, err := newTestClient("http/1.1", invalidCertPair)
 	if err != nil {
 		panic(err)
 	}
@@ -133,7 +145,7 @@ func TestH2(t *testing.T) {
 	time.Sleep(waitingTime * time.Millisecond)
 
 	// Setup
-	client, err := NewClient("h2", certPair)
+	client, err := newTestClient("h2", certPair)
 	if err != nil {
 		panic(err)
 	}
@@ -148,16 +160,4 @@ func TestH2(t *testing.T) {
 
 	assert.Equal(t, "HTTP/2.0", resp.Proto)
 	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
-}
-
-func newTestServer(c *Config, pool *pgxpool.Pool) *Server {
-	s := &Server{
-		config: c,
-		pool:   pool,
-		query:  db.New(pool),
-	}
-
-	s.setupEchoServer()
-
-	return s
 }

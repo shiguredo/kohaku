@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO: HTTP/1.1 のテストを追加する
 func TestOK(t *testing.T) {
 	// Setup
 	e := server.echo
