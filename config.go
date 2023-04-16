@@ -10,7 +10,7 @@ const (
 	defaultLogName = "kohaku.jsonl"
 
 	defaultListenPrometheusAddr = "0.0.0.0"
-	defaultListenPrometheusPort = 4000
+	defaultListenPrometheusPort int = 4000
 )
 
 type Config struct {
@@ -81,6 +81,6 @@ func setDefaultsConfig(config *Config) {
 	zlog.Info().Str("listen_addr", config.ListenAddr).Msg("KohakuConf")
 	zlog.Info().Int("listen_port", config.ListenPort).Msg("KohakuConf")
 
-	zlog.Info().Str("listen_prometheus_addr", config.ListenExporterAddr).Msg("KohakuConf")
-	zlog.Info().Int("listen_prometheus_port", config.ListenExporterPort).Msg("KohakuConf")
+	zlog.Info().Str("listen_exporter_addr", config.ListenExporterAddr).Msg("KohakuConf")
+	zlog.Info().Int("listen_exporter_port", config.ListenExporterPort).Msg("KohakuConf")
 }
