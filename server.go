@@ -178,10 +178,7 @@ func (s *Server) Start(ctx context.Context, c *Config) error {
 	ch := make(chan error)
 	go func() {
 		defer close(ch)
-		if err := s.echo.StartTLS(
-			net.JoinHostPort(s.config.ListenAddr, strconv.Itoa(s.config.ListenPort)),
-			tlsFullchainFile, tlsPrivkeyFile,
-		); err != http.ErrServerClosed {
+		if err := s.ListenAndServeTLS(tlsFullchainFile, tlsPrivkeyFile); err != http.ErrServerClosed {
 			ch <- err
 		}
 	}()
@@ -227,7 +224,6 @@ func (s *Server) StartExporter(ctx context.Context, config *Config) error {
 			zlog.Error().Err(err).Send()
 		}
 	}()
-
 
 	select {
 	case <-ctx.Done():
