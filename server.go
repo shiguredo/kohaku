@@ -76,6 +76,10 @@ func (s *Server) setupEchoServer() error {
 	}
 
 	e := echo.New()
+	// stdout にバナー出さない
+	e.HideBanner = true
+	// stdout にポート番号出力しない
+	e.HidePort = true
 
 	s.Server = http.Server{
 		// TODO: ListenAddr は ListenPort と同じように設定ファイルから読み込む
@@ -136,14 +140,16 @@ func (s *Server) setupEchoServer() error {
 }
 
 func (s *Server) setupEchoExporter() {
-	echoExporter := echo.New()
-	echoExporter.HideBanner = true
+	e := echo.New()
+	e.HideBanner = true
+	e.HidePort = true
+
 	prom := prometheus.NewPrometheus("echo", nil)
 
 	s.echo.Use(prom.HandlerFunc)
-	prom.SetMetricsPath(echoExporter)
+	prom.SetMetricsPath(e)
 
-	s.echoExporter = echoExporter
+	s.echoExporter = e
 }
 
 func (s *Server) Start(ctx context.Context, c *Config) error {
@@ -161,7 +167,10 @@ func (s *Server) Start(ctx context.Context, c *Config) error {
 	ch := make(chan error)
 	go func() {
 		defer close(ch)
-		if err := s.ListenAndServeTLS(http2FullchainFile, http2PrivkeyFile); err != http.ErrServerClosed {
+		if err := s.echo.StartTLS(
+			net.JoinHostPort(s.config.ListenAddr, strconv.Itoa(s.config.ListenPort)),
+			http2FullchainFile, http2PrivkeyFile,
+		); err != http.ErrServerClosed {
 			ch <- err
 		}
 	}()
@@ -171,6 +180,11 @@ func (s *Server) Start(ctx context.Context, c *Config) error {
 			zlog.Error().Err(err).Send()
 		}
 	}()
+
+	zlog.Info().
+		Str("addr", s.config.ListenAddr).
+		Int("port", s.config.ListenPort).
+		Msg("SERVER-STARTED")
 
 	select {
 	case <-ctx.Done():
@@ -183,10 +197,14 @@ func (s *Server) Start(ctx context.Context, c *Config) error {
 func (s *Server) StartExporter(ctx context.Context, config *Config) error {
 	ch := make(chan error)
 	go func() {
-		err := s.echoExporter.Start(net.JoinHostPort(config.ExporterListenAddr, strconv.Itoa(config.ExporterListenPort)))
+		// TODO: StartTLS 可能にする?
+		err := s.echoExporter.Start(
+			net.JoinHostPort(config.ExporterListenAddr, strconv.Itoa(config.ExporterListenPort)),
+		)
 		if err != nil {
 			ch <- err
 		}
+		zlog.Info().Msg("EXPORTER-STARTED")
 	}()
 
 	defer func() {
@@ -194,6 +212,11 @@ func (s *Server) StartExporter(ctx context.Context, config *Config) error {
 			zlog.Error().Err(err).Send()
 		}
 	}()
+
+	zlog.Info().
+		Str("addr", s.config.ExporterListenAddr).
+		Int("port", s.config.ExporterListenPort).
+		Msg("EXPORTER-STARTED")
 
 	select {
 	case <-ctx.Done():

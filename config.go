@@ -35,12 +35,17 @@ type Config struct {
 	ListenAddr string `ini:"listen_addr"`
 	ListenPort int    `ini:"listen_port"`
 
+	// exporter で https を使うかどうか
+	// tailscale などを使う場合は不要
+	// https を使う場合は HTTP2 要の証明書を読み込む
+	ExporterHTTPS      bool   `ini:"exporter_https"`
 	ExporterListenAddr string `ini:"exporter_listen_addr"`
 	ExporterListenPort int    `ini:"exporter_listen_port"`
 
 	PostgresURI        string `ini:"postgres_uri"`
 	PostgresCACertFile string `ini:"postgres_ca_cert_file"`
 
+	// ここの HTTP2 は TLS の方がいい？
 	HTTP2FullchainFile    string `ini:"http2_fullchain_file"`
 	HTTP2PrivkeyFile      string `ini:"http2_privkey_file"`
 	HTTP2VerifyCacertPath string `ini:"http2_verify_cacert_path"`

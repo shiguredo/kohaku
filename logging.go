@@ -35,27 +35,12 @@ func InitLogger(config *Config) error {
 
 	// debug = true かつ log_stdout = true の場合は stdout には pretty logging 形式で出力する
 	if config.Debug && config.LogStdout {
-		writer := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05.000000Z"}
-		writer.FormatLevel = func(i interface{}) string {
-			return strings.ToUpper(fmt.Sprintf("[%s]", i))
-		}
-		// TODO: Caller をファイル名と行番号だけの表示で出力する
-		// 以下のようなフォーマット
-		// 2023-04-17 12:50:09.334758Z [INFO] [config.go:102] CONF | debug=true
-		writer.FormatMessage = func(i interface{}) string {
-			return fmt.Sprintf("%s |", i)
-		}
-		writer.FormatFieldName = func(i interface{}) string {
-			return fmt.Sprintf("%s=", i)
-		}
-		// TODO: カンマ区切りを同実現するかわからなかった
-		writer.FormatFieldValue = func(i interface{}) string {
-			return fmt.Sprintf("%s", i)
-		}
+		writer := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02T15:04:05.000000Z"}
+		prettyFormat(&writer)
 		log.Logger = zerolog.New(writer).With().Caller().Timestamp().Logger()
 	} else if config.LogStdout {
 		// log_stdout = true の時はコンソールにも JSON 形式で出力する
-		writer := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05.000000Z"}
+		writer := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02T15:04:05.000000Z"}
 		log.Logger = zerolog.New(writer).With().Caller().Timestamp().Logger()
 	} else {
 		// それ以外はファイルにだけ JSON 形式で出力する
@@ -72,5 +57,23 @@ func InitLogger(config *Config) error {
 	return nil
 }
 
-func format(w *zerolog.ConsoleWriter) {
+// 現時点での prettyFormat
+// 2023-04-17 12:51:56.333485Z [INFO] config.go:102 > CONF | debug=true
+func prettyFormat(w *zerolog.ConsoleWriter) {
+	w.FormatLevel = func(i interface{}) string {
+		return strings.ToUpper(fmt.Sprintf("[%s]", i))
+	}
+	// TODO: Caller をファイル名と行番号だけの表示で出力する
+	// 以下のようなフォーマット
+	// 2023-04-17 12:50:09.334758Z [INFO] [config.go:102] CONF | debug=true
+	w.FormatMessage = func(i interface{}) string {
+		return fmt.Sprintf("%s |", i)
+	}
+	w.FormatFieldName = func(i interface{}) string {
+		return fmt.Sprintf("%s=", i)
+	}
+	// TODO: カンマ区切りを同実現するかわからなかった
+	w.FormatFieldValue = func(i interface{}) string {
+		return fmt.Sprintf("%s", i)
+	}
 }
