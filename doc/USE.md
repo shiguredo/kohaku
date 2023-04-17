@@ -9,10 +9,10 @@ $ make
 
 ### 設定
 
-config.example.toml をコピーして、接続先の DB の URL（timescale_url） や各証明書等を設定します。
+kohaku.example.init をコピーして、接続先の DB の URL（postgres_uri） や各証明書等を設定します。
 
 ```
-$ cp config.example.toml config.toml
+$ cp kohaku.example.ini kohaku.ini
 ```
 
 
@@ -21,7 +21,7 @@ $ cp config.example.toml config.toml
 上記で用意した config.toml を指定して kohaku サーバを立ち上げます。
 
 ```
-$ ./bin/kohaku -c config.toml
+$ ./bin/kohaku -c kohaku.ini
 ```
 
 ## TimescaleDB のスキーマ
@@ -122,11 +122,7 @@ $ openssl ca -config openssl.cnf \
 
 ### kohaku 側への設定
 
-kohaku の設定ファイルで、 h2 を有効化と、mTLS で使用するクライアント認証用の CA 証明書ファイルを指定します。
-
-- http2_h2c
-
-    - false に設定して h2 を有効にします
+kohaku の設定ファイルで、 mTLS で使用するクライアント認証用の CA 証明書ファイルを指定します。
 
 - http2_verify_cacert_path
 
