@@ -31,10 +31,10 @@ type Server struct {
 	pool  *pgxpool.Pool
 	query *db.Queries
 
-	echo         *echo.Echo
-	echoExporter *echo.Echo
-
+	echo *echo.Echo
 	http.Server
+
+	echoExporter *echo.Echo
 }
 
 func NewPool(connStr string) (*pgxpool.Pool, error) {
@@ -72,6 +72,7 @@ func NewServer(c *Config, pool *pgxpool.Pool) (*Server, error) {
 	s.setupEchoExporter()
 
 	zlog.Info().
+		Bool("https", s.config.ExporterHTTPS).
 		Str("addr", s.config.ExporterListenAddr).
 		Int("port", s.config.ExporterListenPort).
 		Msg("EXPORTER-STARTED")
