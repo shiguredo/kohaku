@@ -44,4 +44,5 @@ ALTER TABLE sora_user_agents_stats SET (
     timescaledb.compress,
     timescaledb.compress_segmentby = 'channel_id, connection_id'
 );
-SELECT add_compression_policy('sora_user_agents_stats', INTERVAL '14 days');
+SELECT add_compression_policy('sora_user_agents_stats', INTERVAL '7 days');
+-- TODO: retention policy も設定する 30 日くらいでよさそう
