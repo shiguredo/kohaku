@@ -78,6 +78,7 @@ func (s *Server) setupEchoServer() error {
 	e := echo.New()
 
 	s.Server = http.Server{
+		// TODO: ListenAddr は ListenPort と同じように設定ファイルから読み込む
 		Addr:    net.JoinHostPort("", strconv.Itoa(s.config.ListenPort)),
 		Handler: e,
 	}
@@ -182,7 +183,7 @@ func (s *Server) Start(ctx context.Context, c *Config) error {
 func (s *Server) StartExporter(ctx context.Context, config *Config) error {
 	ch := make(chan error)
 	go func() {
-		err := s.echoExporter.Start(net.JoinHostPort(config.ListenExporterAddr, strconv.Itoa(config.ListenExporterPort)))
+		err := s.echoExporter.Start(net.JoinHostPort(config.ExporterListenAddr, strconv.Itoa(config.ExporterListenPort)))
 		if err != nil {
 			ch <- err
 		}
