@@ -27,7 +27,7 @@ type SoraConnection struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
-type UserAgentsStats struct {
+type SoraUserAgentsStats struct {
 	Timestamp         time.Time    `json:"timestamp"`
 	ChannelID         string       `json:"channel_id"`
 	ConnectionID      string       `json:"connection_id"`

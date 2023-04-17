@@ -228,7 +228,7 @@ func TestTypeOutboundRTPCollector(t *testing.T) {
 		}
 		assert.Equal(t, "outbound-rtp", statsType)
 	}
-	server.query.TestDropUserAgentStats(context.Background())
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }
 
 func TestTypeCodecCollector(t *testing.T) {
@@ -275,7 +275,7 @@ func TestTypeCodecCollector(t *testing.T) {
 		}
 		assert.Equal(t, "codec", statsType)
 	}
-	server.query.TestDropUserAgentStats(context.Background())
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }
 
 func TestTypeMediaSourceCollector(t *testing.T) {
@@ -333,7 +333,7 @@ func TestTypeMediaSourceCollector(t *testing.T) {
 		}
 		assert.Equal(t, "media-source", statsType)
 	}
-	server.query.TestDropUserAgentStats(context.Background())
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }
 
 func TestTypeDataChannelCollector(t *testing.T) {
@@ -421,7 +421,7 @@ func TestTypeDataChannelCollector(t *testing.T) {
 		}
 		assert.Equal(t, "data-channel", statsType)
 	}
-	server.query.TestDropUserAgentStats(context.Background())
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }
 
 func TestTypeCandidatePairCollector(t *testing.T) {
@@ -483,7 +483,7 @@ func TestTypeCandidatePairCollector(t *testing.T) {
 		}
 		assert.Equal(t, "candidate-pair", statsType)
 	}
-	server.query.TestDropUserAgentStats(context.Background())
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }
 
 func TestTypeRemoteInboundRTPCollector(t *testing.T) {
@@ -551,7 +551,7 @@ func TestTypeRemoteInboundRTPCollector(t *testing.T) {
 		}
 		assert.Equal(t, "remote-inbound-rtp", statsType)
 	}
-	server.query.TestDropUserAgentStats(context.Background())
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }
 
 func TestTypeTransportCollector(t *testing.T) {
@@ -605,7 +605,7 @@ func TestTypeTransportCollector(t *testing.T) {
 		assert.Equal(t, "transport", statsType)
 	}
 
-	server.query.TestDropUserAgentStats(context.Background())
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }
 
 func TestInvalidConnectionIDLength(t *testing.T) {
@@ -648,7 +648,7 @@ func TestInvalidConnectionIDLength(t *testing.T) {
 		assert.Equal(t, `code=400, message=Key: 'soraConnectionStats.ConnectionID' Error:Field validation for 'ConnectionID' failed on the 'len' tag`, httpErr.(*echo.HTTPError).Message)
 	}
 
-	server.query.TestDropUserAgentStats(context.Background())
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }
 
 func TestUnexpectedType(t *testing.T) {
@@ -693,7 +693,7 @@ func TestUnexpectedType(t *testing.T) {
 		assert.Equal(t, `Bad Request`, httpErr.(*echo.HTTPError).Message)
 	}
 
-	server.query.TestDropUserAgentStats(context.Background())
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }
 
 func TestMissingTimestamp(t *testing.T) {
@@ -906,5 +906,5 @@ func TestDuplicate(t *testing.T) {
 		assert.Equal(t, int64(1), count)
 	}
 
-	server.query.TestDropUserAgentStats(context.Background())
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }

@@ -46,10 +46,10 @@ func (s *Server) collectorUserAgentStats(c echo.Context, stats soraConnectionSta
 		}
 
 		/*
-		保存する、ただし channel_id と connection_id と rtc_stats_id と rtc_stats_type が同一の場合、
-		rtc_stats_timestamp 以外が変更されていた場合のみ更新する
+			保存する、ただし channel_id と connection_id と rtc_stats_id と rtc_stats_type が同一の場合、
+			rtc_stats_timestamp 以外が変更されていた場合のみ更新する
 		*/
-		if err := s.query.InsertUserAgentStats(c.Request().Context(), db.InsertUserAgentStatsParams{
+		if err := s.query.InsertSoraUserAgentStats(c.Request().Context(), db.InsertSoraUserAgentStatsParams{
 			Timestamp:         stats.Timestamp,
 			ChannelID:         stats.ChannelID,
 			ConnectionID:      stats.ConnectionID,

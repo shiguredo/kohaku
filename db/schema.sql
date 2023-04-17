@@ -24,8 +24,8 @@ CREATE TABLE IF NOT EXISTS sora_connection (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-DROP TABLE IF EXISTS user_agents_stats;
-CREATE TABLE IF NOT EXISTS user_agents_stats (
+DROP TABLE IF EXISTS sora_user_agents_stats;
+CREATE TABLE IF NOT EXISTS sora_user_agents_stats (
     timestamp timestamptz NOT NULL,
 
     channel_id TEXT NOT NULL,
@@ -39,9 +39,9 @@ CREATE TABLE IF NOT EXISTS user_agents_stats (
 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-SELECT create_hypertable('user_agents_stats', 'timestamp');
-ALTER TABLE user_agents_stats SET (
+SELECT create_hypertable('sora_user_agents_stats', 'timestamp');
+ALTER TABLE sora_user_agents_stats SET (
     timescaledb.compress,
     timescaledb.compress_segmentby = 'channel_id, connection_id'
 );
-SELECT add_compression_policy('user_agents_stats', INTERVAL '7 days');
+SELECT add_compression_policy('sora_user_agents_stats', INTERVAL '14 days');
