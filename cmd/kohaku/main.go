@@ -28,6 +28,8 @@ func main() {
 		log.Fatal("cannot parse config file, err=", err)
 	}
 
+	kohaku.ShowConfig(config)
+
 	pool, err := kohaku.NewPool(config.PostgresURI)
 	if err != nil {
 		// TODO: エラーメッセージを修正する

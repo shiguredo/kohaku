@@ -32,12 +32,33 @@ func InitLogger(config *Config) error {
 	} else {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
-	// log_stdout: true の時はコンソールにもだす
-	if config.LogStdout {
+
+	// debug = true かつ log_stdout = true の場合は stdout には pretty logging 形式で出力する
+	if config.Debug && config.LogStdout {
 		writer := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05.000000Z"}
-		format(&writer)
+		writer.FormatLevel = func(i interface{}) string {
+			return strings.ToUpper(fmt.Sprintf("[%s]", i))
+		}
+		// TODO: Caller をファイル名と行番号だけの表示で出力する
+		// 以下のようなフォーマット
+		// 2023-04-17 12:50:09.334758Z [INFO] [config.go:102] CONF | debug=true
+		writer.FormatMessage = func(i interface{}) string {
+			return fmt.Sprintf("%s |", i)
+		}
+		writer.FormatFieldName = func(i interface{}) string {
+			return fmt.Sprintf("%s=", i)
+		}
+		// TODO: カンマ区切りを同実現するかわからなかった
+		writer.FormatFieldValue = func(i interface{}) string {
+			return fmt.Sprintf("%s", i)
+		}
+		log.Logger = zerolog.New(writer).With().Caller().Timestamp().Logger()
+	} else if config.LogStdout {
+		// log_stdout = true の時はコンソールにも JSON 形式で出力する
+		writer := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05.000000Z"}
 		log.Logger = zerolog.New(writer).With().Caller().Timestamp().Logger()
 	} else {
+		// それ以外はファイルにだけ JSON 形式で出力する
 		writer := &lumberjack.Logger{
 			Filename:   logPath,
 			MaxSize:    config.LogRotateMaxSize,
@@ -52,13 +73,4 @@ func InitLogger(config *Config) error {
 }
 
 func format(w *zerolog.ConsoleWriter) {
-	w.FormatLevel = func(i interface{}) string {
-		return strings.ToUpper(fmt.Sprintf("[%s]", i))
-	}
-	w.FormatFieldName = func(i interface{}) string {
-		return fmt.Sprintf("%s=", i)
-	}
-	w.FormatFieldValue = func(i interface{}) string {
-		return fmt.Sprintf("%s", i)
-	}
 }

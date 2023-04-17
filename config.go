@@ -95,19 +95,24 @@ func setDefaultsConfig(config *Config) {
 	if config.ExporterListenPort == 0 {
 		config.ExporterListenPort = DEFAULT_EXPORTER_LISTEN_PORT
 	}
+}
 
-	zlog.Info().Bool("debug", config.Debug).Msg("KohakuConf")
+func ShowConfig(config *Config) {
 
-	zlog.Info().Str("log_dir", config.LogDir).Msg("KohakuConf")
-	zlog.Info().Str("log_name", config.LogName).Msg("KohakuConf")
+	zlog.Info().Bool("debug", config.Debug).Msg("CONF")
 
-	zlog.Info().Int("log_rotate_max_size", config.LogRotateMaxSize).Msg("KohakuConf")
-	zlog.Info().Int("log_rotate_max_backups", config.LogRotateMaxBackups).Msg("KohakuConf")
-	zlog.Info().Int("log_rotate_max_age", config.LogRotateMaxAge).Msg("KohakuConf")
+	zlog.Info().Str("log_dir", config.LogDir).Msg("CONF")
+	zlog.Info().Str("log_name", config.LogName).Msg("CONF")
+	zlog.Info().Bool("log_stdout", config.LogStdout).Msg("CONF")
 
-	zlog.Info().Str("listen_addr", config.ListenAddr).Msg("KohakuConf")
-	zlog.Info().Int("listen_port", config.ListenPort).Msg("KohakuConf")
+	zlog.Info().Int("log_rotate_max_size", config.LogRotateMaxSize).Msg("CONF")
+	zlog.Info().Int("log_rotate_max_backups", config.LogRotateMaxBackups).Msg("CONF")
+	zlog.Info().Int("log_rotate_max_age", config.LogRotateMaxAge).Msg("CONF")
 
-	zlog.Info().Str("exporter_listen_addr", config.ExporterListenAddr).Msg("KohakuConf")
-	zlog.Info().Int("exporter_listen_port", config.ExporterListenPort).Msg("KohakuConf")
+	zlog.Info().Str("listen_addr", config.ListenAddr).Msg("CONF")
+	zlog.Info().Int("listen_port", config.ListenPort).Msg("CONF")
+
+	zlog.Info().Str("exporter_listen_addr", config.ExporterListenAddr).Msg("CONF")
+	zlog.Info().Int("exporter_listen_port", config.ExporterListenPort).Msg("CONF")
+
 }
