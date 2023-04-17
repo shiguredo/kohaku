@@ -54,6 +54,7 @@
 - [ADD] ライブリロード用に Air を追加
     - @voluntas
 - [ADD] TimescaleDB と Grafana 検証用の compose.yaml を追加
+    - grafana は 3333 ポート待ち受け
     - @voluntas
 - [UPDATE] go.mod, Github Actions で使用する Go のバージョンを 1.20 にあげる
     - @Hexa
