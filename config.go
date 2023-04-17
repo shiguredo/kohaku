@@ -6,17 +6,17 @@ import (
 )
 
 const (
-	DEFAULT_LOG_DIR  = "."
-	DEFAULT_LOG_NAME = "kohaku.jsonl"
+	DefaultLogDir  = "."
+	DefaultLogName = "kohaku.jsonl"
 
 	// megabytes
-	DEFAULT_LOG_ROTATE_MAX_SIZE    = 200
-	DEFAULT_LOG_ROTATE_MAX_BACKUPS = 7
+	DefaultLogRotateMaxSize    = 200
+	DefaultLogRotateMaxBackups = 7
 	// days
-	DEFAULT_LOG_ROTATE_MAX_AGE = 30
+	DefaultLogRotateMaxAge = 30
 
-	DEFAULT_EXPORTER_LISTEN_ADDR = "0.0.0.0"
-	DEFAULT_EXPORTER_LISTEN_PORT = 5891
+	DefaultExporterListenAddr = "0.0.0.0"
+	DefaultExporterListenPort = 5891
 )
 
 type Config struct {
@@ -37,7 +37,6 @@ type Config struct {
 
 	// exporter で https を使うかどうか
 	// tailscale などを使う場合は不要
-	// https を使う場合は HTTP2 要の証明書を読み込む
 	ExporterHTTPS      bool   `ini:"exporter_https"`
 	ExporterListenAddr string `ini:"exporter_listen_addr"`
 	ExporterListenPort int    `ini:"exporter_listen_port"`
@@ -45,10 +44,9 @@ type Config struct {
 	PostgresURI        string `ini:"postgres_uri"`
 	PostgresCACertFile string `ini:"postgres_ca_cert_file"`
 
-	// ここの HTTP2 は TLS の方がいい？
-	HTTP2FullchainFile    string `ini:"http2_fullchain_file"`
-	HTTP2PrivkeyFile      string `ini:"http2_privkey_file"`
-	HTTP2VerifyCacertPath string `ini:"http2_verify_cacert_path"`
+	TLSFullchainFile    string `ini:"tls_fullchain_file"`
+	TLSPrivkeyFile      string `ini:"tls_privkey_file"`
+	TLSVerifyCacertPath string `ini:"tls_verify_cacert_path"`
 
 	HTTP2MaxConcurrentStreams uint32 `ini:"http2_max_concurrent_streams"`
 	HTTP2MaxReadFrameSize     uint32 `ini:"http2_max_read_frame_size"`
@@ -74,31 +72,31 @@ func NewConfig(configFilePath string) (*Config, error) {
 
 func setDefaultsConfig(config *Config) {
 	if config.LogDir == "" {
-		config.LogDir = DEFAULT_LOG_DIR
+		config.LogDir = DefaultLogDir
 	}
 
 	if config.LogName == "" {
-		config.LogDir = DEFAULT_LOG_NAME
+		config.LogDir = DefaultLogName
 	}
 
 	if config.LogRotateMaxSize == 0 {
-		config.LogRotateMaxSize = DEFAULT_LOG_ROTATE_MAX_SIZE
+		config.LogRotateMaxSize = DefaultLogRotateMaxSize
 	}
 
 	if config.LogRotateMaxBackups == 0 {
-		config.LogRotateMaxBackups = DEFAULT_LOG_ROTATE_MAX_BACKUPS
+		config.LogRotateMaxBackups = DefaultLogRotateMaxBackups
 	}
 
 	if config.LogRotateMaxAge == 0 {
-		config.LogRotateMaxAge = DEFAULT_LOG_ROTATE_MAX_AGE
+		config.LogRotateMaxAge = DefaultLogRotateMaxAge
 	}
 
 	if config.ExporterListenAddr == "" {
-		config.ExporterListenAddr = DEFAULT_EXPORTER_LISTEN_ADDR
+		config.ExporterListenAddr = DefaultExporterListenAddr
 	}
 
 	if config.ExporterListenPort == 0 {
-		config.ExporterListenPort = DEFAULT_EXPORTER_LISTEN_PORT
+		config.ExporterListenPort = DefaultExporterListenPort
 	}
 }
 

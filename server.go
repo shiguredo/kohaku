@@ -63,7 +63,18 @@ func NewServer(c *Config, pool *pgxpool.Pool) (*Server, error) {
 	}
 
 	s.setupEchoServer()
+
+	zlog.Info().
+		Str("addr", s.config.ListenAddr).
+		Int("port", s.config.ListenPort).
+		Msg("SERVER-STARTED")
+
 	s.setupEchoExporter()
+
+	zlog.Info().
+		Str("addr", s.config.ExporterListenAddr).
+		Int("port", s.config.ExporterListenPort).
+		Msg("EXPORTER-STARTED")
 
 	return s, nil
 }
@@ -88,8 +99,8 @@ func (s *Server) setupEchoServer() error {
 	}
 
 	// クライアント認証をするかどうかのチェック
-	if s.config.HTTP2VerifyCacertPath != "" {
-		clientCAPath := s.config.HTTP2VerifyCacertPath
+	if s.config.TLSVerifyCacertPath != "" {
+		clientCAPath := s.config.TLSVerifyCacertPath
 		certPool, err := appendCerts(clientCAPath)
 		if err != nil {
 			zlog.Error().Err(err).Send()
@@ -153,15 +164,15 @@ func (s *Server) setupEchoExporter() {
 }
 
 func (s *Server) Start(ctx context.Context, c *Config) error {
-	http2FullchainFile := s.config.HTTP2FullchainFile
-	http2PrivkeyFile := s.config.HTTP2PrivkeyFile
+	tlsFullchainFile := s.config.TLSFullchainFile
+	tlsPrivkeyFile := s.config.TLSPrivkeyFile
 
-	if _, err := os.Stat(http2FullchainFile); err != nil {
-		return fmt.Errorf("http2FullchainFile error: %s", err)
+	if _, err := os.Stat(tlsFullchainFile); err != nil {
+		return fmt.Errorf("tlsFullchainFile error: %s", err)
 	}
 
-	if _, err := os.Stat(http2PrivkeyFile); err != nil {
-		return fmt.Errorf("http2PrivkeyFile error: %s", err)
+	if _, err := os.Stat(tlsPrivkeyFile); err != nil {
+		return fmt.Errorf("tlsPrivkeyFile error: %s", err)
 	}
 
 	ch := make(chan error)
@@ -169,7 +180,7 @@ func (s *Server) Start(ctx context.Context, c *Config) error {
 		defer close(ch)
 		if err := s.echo.StartTLS(
 			net.JoinHostPort(s.config.ListenAddr, strconv.Itoa(s.config.ListenPort)),
-			http2FullchainFile, http2PrivkeyFile,
+			tlsFullchainFile, tlsPrivkeyFile,
 		); err != http.ErrServerClosed {
 			ch <- err
 		}
@@ -180,11 +191,6 @@ func (s *Server) Start(ctx context.Context, c *Config) error {
 			zlog.Error().Err(err).Send()
 		}
 	}()
-
-	zlog.Info().
-		Str("addr", s.config.ListenAddr).
-		Int("port", s.config.ListenPort).
-		Msg("SERVER-STARTED")
 
 	select {
 	case <-ctx.Done():
@@ -197,14 +203,23 @@ func (s *Server) Start(ctx context.Context, c *Config) error {
 func (s *Server) StartExporter(ctx context.Context, config *Config) error {
 	ch := make(chan error)
 	go func() {
-		// TODO: StartTLS 可能にする?
-		err := s.echoExporter.Start(
-			net.JoinHostPort(config.ExporterListenAddr, strconv.Itoa(config.ExporterListenPort)),
-		)
+		var err error
+		// exporter も HTTPS にしたい場合はこちら
+		if config.ExporterHTTPS {
+			err = s.echoExporter.StartTLS(
+				net.JoinHostPort(config.ExporterListenAddr, strconv.Itoa(config.ExporterListenPort)),
+				config.TLSFullchainFile, config.TLSPrivkeyFile,
+			)
+		} else {
+			// TODO: StartTLS 可能にする?
+			err = s.echoExporter.Start(
+				net.JoinHostPort(config.ExporterListenAddr, strconv.Itoa(config.ExporterListenPort)),
+			)
+		}
+
 		if err != nil {
 			ch <- err
 		}
-		zlog.Info().Msg("EXPORTER-STARTED")
 	}()
 
 	defer func() {
@@ -213,10 +228,6 @@ func (s *Server) StartExporter(ctx context.Context, config *Config) error {
 		}
 	}()
 
-	zlog.Info().
-		Str("addr", s.config.ExporterListenAddr).
-		Int("port", s.config.ExporterListenPort).
-		Msg("EXPORTER-STARTED")
 
 	select {
 	case <-ctx.Done():

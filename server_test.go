@@ -32,10 +32,10 @@ var (
 	url = fmt.Sprintf("https://localhost:%d/.ok", port)
 
 	config = &Config{
-		HTTP2FullchainFile:    "cert/server/server.pem",
-		HTTP2PrivkeyFile:      "cert/server/server.key",
-		HTTP2VerifyCacertPath: "cert/client/ca.pem",
-		ListenPort:            port,
+		TLSFullchainFile:    "cert/server/server.pem",
+		TLSPrivkeyFile:      "cert/server/server.key",
+		TLSVerifyCacertPath: "cert/client/ca.pem",
+		ListenPort:          port,
 	}
 
 	certPair = &CertPair{
