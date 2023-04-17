@@ -11,11 +11,49 @@
 
 ## develop
 
-- [CHANGE] 設定ファイル形式を YAML から TOML に変更する
+- [CHANGE] sqlc の emit_pointers_for_null_types を true にする
+    - @voluntas
+- [CHANGE] RTCStats のデータはすでにレコードがある場合 timestamp 以外が変更されていない限りは追加する
+    - @voluntas
+- [CHANGE] TimescaleDB の設定項目を変更する
+    - timescale_rootcert_file は postgres_ca_cert_file へ
+    - timescale_url は postgres_uri へ
+    - timescale_sslmode は廃止し postgres_uri で指定可能に
+        - `kohaku?sslmode=require` のように指定
+    - @voluntas
+- [CHANGE] schema の全面書き換えし JSONB 形式で保存するように変更
+    - @voluntas
+- [CHANGE] 設定 http2_fullchain_file を tls_fullchain_file に変更
+    - @voluntas
+- [CHANGE] 設定 http2_privkey_file を tls_privkey_file に変更
+    - @voluntas
+- [CHANGE] 設定 http2_verify_cacert_path を tls_verify_cacert_path に変更
+    - @voluntas
+- [CHANGE] デフォルト設定ファイル名を kohaku.ini に変更する
+    - @voluntas
+- [CHANGE] OpenMetrics 用の Exporter を追加する
+    - exporter_https
+        - 証明書は tls_* を利用します
+    - exporter_listen_addr
+    - exporter_listen_port
+    - @voluntas
+- [CHANGE] 設定ファイル形式を YAML から INI に変更する
+    - @voluntas
+- [CHANGE] デバッグが有効な場合は stdout に出すログは可読性の高いフォーマットにする
     - @voluntas
 - [CHANGE] ログ出力を JSON 形式に変更する
     - @voluntas
 - [CHANGE] 設定例のログ出力ファイル名の拡張子を `jsonl` にする
+    - @voluntas
+- [ADD] ログローテーション用の設定を追加
+    - log_rotate_max_size
+        - メガバイト
+    - log_rotate_max_backups
+    - log_rotate_max_age
+        - 日
+- [ADD] ライブリロード用に Air を追加
+    - @voluntas
+- [ADD] TimescaleDB と Grafana 検証用の compose.yaml を追加
     - @voluntas
 - [UPDATE] go.mod, Github Actions で使用する Go のバージョンを 1.20 にあげる
     - @Hexa

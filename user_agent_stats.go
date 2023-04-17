@@ -44,6 +44,7 @@ func (s *Server) collectorUserAgentStats(c echo.Context, stats soraConnectionSta
 		if err := json.Unmarshal(v, &rtcStats); err != nil {
 			return err
 		}
+		// TODO: ここで timestamp と id と type が空の場合はエラーにする
 
 		/*
 			保存する、ただし channel_id と connection_id と rtc_stats_id と rtc_stats_type が同一の場合、
