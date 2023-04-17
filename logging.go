@@ -44,6 +44,7 @@ func InitLogger(config *Config) error {
 		log.Logger = zerolog.New(writer).With().Caller().Timestamp().Logger()
 	} else {
 		// それ以外はファイルにだけ JSON 形式で出力する
+		// ファイル出力はログローテーションなどを行う
 		writer := &lumberjack.Logger{
 			Filename:   logPath,
 			MaxSize:    config.LogRotateMaxSize,
@@ -64,8 +65,9 @@ func prettyFormat(w *zerolog.ConsoleWriter) {
 		return strings.ToUpper(fmt.Sprintf("[%s]", i))
 	}
 	// TODO: Caller をファイル名と行番号だけの表示で出力する
-	// 以下のようなフォーマット
-	// 2023-04-17 12:50:09.334758Z [INFO] [config.go:102] CONF | debug=true
+	//       以下のようなフォーマットにしたい
+	//       2023-04-17 12:50:09.334758Z [INFO] [config.go:102] CONF | debug=true
+	// TODO: name=value が無い場合に | を消す方法がわからなかった
 	w.FormatMessage = func(i interface{}) string {
 		return fmt.Sprintf("%s |", i)
 	}
