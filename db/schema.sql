@@ -4,7 +4,7 @@ DROP TABLE IF EXISTS sora_connection;
 CREATE TABLE IF NOT EXISTS sora_connection (
     pk bigserial NOT NULL PRIMARY KEY,
 
-    -- クライアント側から送られてきたタイムスタンプ
+    -- Sora 側から送られてきたタイムスタンプ
     timestamp timestamptz NOT NULL,
 
     version TEXT NOT NULL,
@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS sora_connection (
 
 DROP TABLE IF EXISTS sora_user_agents_stats;
 CREATE TABLE IF NOT EXISTS sora_user_agents_stats (
+    -- Sora 側から送られてきたタイムスタンプ
     timestamp timestamptz NOT NULL,
 
     channel_id TEXT NOT NULL,

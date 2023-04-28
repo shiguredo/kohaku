@@ -9,7 +9,7 @@ $ make
 
 ### 設定
 
-kohaku.example.init をコピーして、接続先の DB の URL（postgres_uri） や各証明書等を設定します。
+kohaku.example.ini をコピーして、接続先の DB の URL（postgres_uri） や各証明書等を設定します。
 
 ```
 $ cp kohaku.example.ini kohaku.ini
