@@ -121,10 +121,35 @@ func (s *Server) setupEchoServer() error {
 
 	e.Pre(middleware.RemoveTrailingSlash())
 
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		Skipper: func(c echo.Context) bool {
 			// /.ok の時はログを吐き出さない
 			return strings.HasPrefix(c.Request().URL.Path, "/.ok")
+		},
+		LogRemoteIP:      true,
+		LogHost:          true,
+		LogMethod:        true,
+		LogURI:           true,
+		LogStatus:        true,
+		LogError:         true,
+		LogLatency:       true,
+		LogUserAgent:     true,
+		LogContentLength: true,
+		LogResponseSize:  true,
+		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+			zlog.Info().
+				Str("remote_ip", v.RemoteIP).
+				Str("host", v.Host).
+				Str("user_agent", v.UserAgent).
+				Str("uri", v.URI).
+				Int("status", v.Status).
+				Err(v.Error).
+				Str("latency", v.Latency.String()).
+				Str("bytes_in", v.ContentLength).
+				Int64("bytes_out", v.ResponseSize).
+				Msg(v.Method)
+
+			return nil
 		},
 	}))
 
