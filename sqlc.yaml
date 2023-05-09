@@ -14,5 +14,6 @@ packages:
     emit_interface: false
     emit_prepared_queries: false
     emit_pointers_for_null_types: true
+    query_parameter_limit: 0
     # emit_result_struct_pointers: true
     # emit_params_struct_pointers: true

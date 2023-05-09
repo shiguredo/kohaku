@@ -23,7 +23,7 @@ func (s *Server) collectorUserAgentStats(c echo.Context, stats soraConnectionSta
 		Multistream:  *stats.Multistream,
 		Simulcast:    *stats.Simulcast,
 		Spotlight:    *stats.Spotlight,
-		Role:         stats.Role,
+		Role:         db.SoraConnectionRole(stats.Role),
 		ChannelID:    stats.ChannelID,
 		SessionID:    stats.SessionID,
 		ClientID:     stats.ClientID,

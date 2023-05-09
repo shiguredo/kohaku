@@ -52,18 +52,18 @@ WHERE NOT EXISTS (
 `
 
 type InsertSoraConnectionParams struct {
-	Timestamp    time.Time `json:"timestamp"`
-	Label        string    `json:"label"`
-	Version      string    `json:"version"`
-	NodeName     string    `json:"node_name"`
-	Multistream  bool      `json:"multistream"`
-	Simulcast    bool      `json:"simulcast"`
-	Spotlight    bool      `json:"spotlight"`
-	Role         string    `json:"role"`
-	ChannelID    string    `json:"channel_id"`
-	SessionID    string    `json:"session_id"`
-	ClientID     string    `json:"client_id"`
-	ConnectionID string    `json:"connection_id"`
+	Timestamp    time.Time          `json:"timestamp"`
+	Label        string             `json:"label"`
+	Version      string             `json:"version"`
+	NodeName     string             `json:"node_name"`
+	Multistream  bool               `json:"multistream"`
+	Simulcast    bool               `json:"simulcast"`
+	Spotlight    bool               `json:"spotlight"`
+	Role         SoraConnectionRole `json:"role"`
+	ChannelID    string             `json:"channel_id"`
+	SessionID    string             `json:"session_id"`
+	ClientID     string             `json:"client_id"`
+	ConnectionID string             `json:"connection_id"`
 }
 
 func (q *Queries) InsertSoraConnection(ctx context.Context, arg InsertSoraConnectionParams) error {
@@ -87,11 +87,11 @@ func (q *Queries) InsertSoraConnection(ctx context.Context, arg InsertSoraConnec
 const InsertSoraUserAgentStats = `-- name: InsertSoraUserAgentStats :exec
 WITH existing_record AS (
   SELECT timestamp, channel_id, connection_id, rtc_stats_timestamp, rtc_stats_type, rtc_stats_id, rtc_stats_data, created_at
-  FROM sora_user_agents_stats
-  WHERE sora_user_agents_stats.channel_id = $2
-    AND sora_user_agents_stats.connection_id = $3
-    AND sora_user_agents_stats.rtc_stats_type = $5
-    AND sora_user_agents_stats.rtc_stats_id = $6
+  FROM sora_user_agent_stats
+  WHERE sora_user_agent_stats.channel_id = $2
+    AND sora_user_agent_stats.connection_id = $3
+    AND sora_user_agent_stats.rtc_stats_type = $5
+    AND sora_user_agent_stats.rtc_stats_id = $6
 ),
 data_without_timestamp AS (
   SELECT jsonb_strip_nulls(
@@ -106,7 +106,7 @@ data_without_timestamp AS (
     ) as new_data
   FROM existing_record
 )
-INSERT INTO sora_user_agents_stats (
+INSERT INTO sora_user_agent_stats (
     timestamp,
     channel_id,
     connection_id,
@@ -152,8 +152,17 @@ func (q *Queries) InsertSoraUserAgentStats(ctx context.Context, arg InsertSoraUs
 	return err
 }
 
+const TestDropSoraConnection = `-- name: TestDropSoraConnection :exec
+DELETE FROM sora_connection
+`
+
+func (q *Queries) TestDropSoraConnection(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, TestDropSoraConnection)
+	return err
+}
+
 const TestDropSoraUserAgentStats = `-- name: TestDropSoraUserAgentStats :exec
-DELETE FROM sora_user_agents_stats
+DELETE FROM sora_user_agent_stats
 `
 
 func (q *Queries) TestDropSoraUserAgentStats(ctx context.Context) error {
@@ -164,7 +173,7 @@ func (q *Queries) TestDropSoraUserAgentStats(ctx context.Context) error {
 const TestGetRtcStatsType = `-- name: TestGetRtcStatsType :one
 
 SELECT rtc_stats_type
-FROM sora_user_agents_stats
+FROM sora_user_agent_stats
 WHERE channel_id = $1
   AND connection_id = $2
 LIMIT 1
@@ -186,7 +195,7 @@ func (q *Queries) TestGetRtcStatsType(ctx context.Context, arg TestGetRtcStatsTy
 
 const TestRtcStatsCounts = `-- name: TestRtcStatsCounts :one
 SELECT count(*)
-FROM sora_user_agents_stats
+FROM sora_user_agent_stats
 WHERE rtc_stats_type = $1
   AND channel_id = $2
   AND connection_id = $3

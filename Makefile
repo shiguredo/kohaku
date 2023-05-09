@@ -10,3 +10,4 @@ clean:
 
 test:
 	go test -race -v
+	go test -race ./db/test -v

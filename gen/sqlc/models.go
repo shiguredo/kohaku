@@ -5,29 +5,74 @@
 package db
 
 import (
+	"database/sql/driver"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgtype"
 )
 
-type SoraConnection struct {
-	Pk           int64     `json:"pk"`
-	Timestamp    time.Time `json:"timestamp"`
-	Version      string    `json:"version"`
-	Label        string    `json:"label"`
-	NodeName     string    `json:"node_name"`
-	Multistream  bool      `json:"multistream"`
-	Simulcast    bool      `json:"simulcast"`
-	Spotlight    bool      `json:"spotlight"`
-	Role         string    `json:"role"`
-	ChannelID    string    `json:"channel_id"`
-	SessionID    string    `json:"session_id"`
-	ClientID     string    `json:"client_id"`
-	ConnectionID string    `json:"connection_id"`
-	CreatedAt    time.Time `json:"created_at"`
+type SoraConnectionRole string
+
+const (
+	SoraConnectionRoleSendrecv SoraConnectionRole = "sendrecv"
+	SoraConnectionRoleSendonly SoraConnectionRole = "sendonly"
+	SoraConnectionRoleRecvonly SoraConnectionRole = "recvonly"
+)
+
+func (e *SoraConnectionRole) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = SoraConnectionRole(s)
+	case string:
+		*e = SoraConnectionRole(s)
+	default:
+		return fmt.Errorf("unsupported scan type for SoraConnectionRole: %T", src)
+	}
+	return nil
 }
 
-type SoraUserAgentsStats struct {
+type NullSoraConnectionRole struct {
+	SoraConnectionRole SoraConnectionRole
+	Valid              bool // Valid is true if SoraConnectionRole is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullSoraConnectionRole) Scan(value interface{}) error {
+	if value == nil {
+		ns.SoraConnectionRole, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.SoraConnectionRole.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullSoraConnectionRole) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.SoraConnectionRole), nil
+}
+
+type SoraConnection struct {
+	Pk           int64              `json:"pk"`
+	Timestamp    time.Time          `json:"timestamp"`
+	Version      string             `json:"version"`
+	Label        string             `json:"label"`
+	NodeName     string             `json:"node_name"`
+	Multistream  bool               `json:"multistream"`
+	Simulcast    bool               `json:"simulcast"`
+	Spotlight    bool               `json:"spotlight"`
+	Role         SoraConnectionRole `json:"role"`
+	ChannelID    string             `json:"channel_id"`
+	SessionID    string             `json:"session_id"`
+	ClientID     string             `json:"client_id"`
+	ConnectionID string             `json:"connection_id"`
+	CreatedAt    time.Time          `json:"created_at"`
+}
+
+type SoraUserAgentStats struct {
 	Timestamp         time.Time    `json:"timestamp"`
 	ChannelID         string       `json:"channel_id"`
 	ConnectionID      string       `json:"connection_id"`

@@ -40,11 +40,11 @@ WHERE NOT EXISTS (
 -- name: InsertSoraUserAgentStats :exec
 WITH existing_record AS (
   SELECT *
-  FROM sora_user_agents_stats
-  WHERE sora_user_agents_stats.channel_id = @channel_id
-    AND sora_user_agents_stats.connection_id = @connection_id
-    AND sora_user_agents_stats.rtc_stats_type = @rtc_stats_type
-    AND sora_user_agents_stats.rtc_stats_id = @rtc_stats_id
+  FROM sora_user_agent_stats
+  WHERE sora_user_agent_stats.channel_id = @channel_id
+    AND sora_user_agent_stats.connection_id = @connection_id
+    AND sora_user_agent_stats.rtc_stats_type = @rtc_stats_type
+    AND sora_user_agent_stats.rtc_stats_id = @rtc_stats_id
 ),
 data_without_timestamp AS (
   SELECT jsonb_strip_nulls(
@@ -59,7 +59,7 @@ data_without_timestamp AS (
     ) as new_data
   FROM existing_record
 )
-INSERT INTO sora_user_agents_stats (
+INSERT INTO sora_user_agent_stats (
     timestamp,
     channel_id,
     connection_id,
@@ -86,7 +86,7 @@ WHERE NOT EXISTS (
 
 -- name: TestGetRtcStatsType :one
 SELECT rtc_stats_type
-FROM sora_user_agents_stats
+FROM sora_user_agent_stats
 WHERE channel_id = @channel_id
   AND connection_id = @connection_id
 -- TODO: 最新を取るように order がほしい？
@@ -95,10 +95,13 @@ LIMIT 1;
 -- 指定した type のレコードがいくつあるかどうか
 -- name: TestRtcStatsCounts :one
 SELECT count(*)
-FROM sora_user_agents_stats
+FROM sora_user_agent_stats
 WHERE rtc_stats_type = @rtc_type_stats
   AND channel_id = @channel_id
   AND connection_id = @connection_id;
 
+-- name: TestDropSoraConnection :exec
+DELETE FROM sora_connection;
+
 -- name: TestDropSoraUserAgentStats :exec
-DELETE FROM sora_user_agents_stats;
+DELETE FROM sora_user_agent_stats;
