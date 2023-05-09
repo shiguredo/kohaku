@@ -16,7 +16,7 @@ $ cp kohaku_example.ini kohaku.ini
 
 ### 起動
 
-上記で用意した config.toml を指定して kohaku サーバを立ち上げます。
+上記で用意した kohaku.ini を指定して kohaku サーバを立ち上げます。
 
 ```
 $ ./bin/kohaku -c kohaku.ini
