@@ -3,5 +3,5 @@ bin/*
 .grafana/*
 tmp/*
 
-kohaku.ini
+config.ini
 kohaku.jsonl

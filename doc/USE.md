@@ -8,18 +8,18 @@ $ make
 
 ### 設定
 
-kohaku_example.ini をコピーして、接続先の DB の URL（postgres_uri） や各証明書等を設定します。
+config_example.ini をコピーして、接続先の DB の URL（postgres_uri） や各証明書等を設定します。
 
 ```
-$ cp kohaku_example.ini kohaku.ini
+$ cp config_example.ini config.ini
 ```
 
 ### 起動
 
-上記で用意した kohaku.ini を指定して kohaku サーバを立ち上げます。
+上記で用意した config.ini を指定して kohaku サーバを立ち上げます。
 
 ```
-$ ./bin/kohaku -c kohaku.ini
+$ ./bin/kohaku -c config.ini
 ```
 
 ## TimescaleDB のスキーマ
