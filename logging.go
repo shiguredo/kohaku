@@ -35,12 +35,32 @@ func InitLogger(config *Config) error {
 
 	// debug = true かつ log_stdout = true の場合は stdout には pretty logging 形式で出力する
 	if config.Debug && config.LogStdout {
-		writer := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02T15:04:05.000000Z"}
+		writer := zerolog.ConsoleWriter{
+			Out: os.Stdout,
+			FormatTimestamp: func(i interface{}) string {
+				_, err := time.ParseInLocation("2006-01-02T15:04:05.000000Z07:00:00", i.(string), time.UTC)
+				if err != nil {
+					return fmt.Sprintf("\x1b[%dm%s\x1b[0m", 90, i)
+				}
+				return i.(string)
+			},
+			NoColor: false,
+		}
 		prettyFormat(&writer)
 		log.Logger = zerolog.New(writer).With().Caller().Timestamp().Logger()
 	} else if config.LogStdout {
 		// log_stdout = true の時はコンソールにも JSON 形式で出力する
-		writer := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02T15:04:05.000000Z"}
+		writer := zerolog.ConsoleWriter{
+			Out: os.Stdout,
+			FormatTimestamp: func(i interface{}) string {
+				_, err := time.ParseInLocation("2006-01-02T15:04:05.000000Z07:00:00", i.(string), time.UTC)
+				if err != nil {
+					return fmt.Sprintf("\x1b[%dm%s\x1b[0m", 90, i)
+				}
+				return i.(string)
+			},
+			NoColor: false,
+		}
 		log.Logger = zerolog.New(writer).With().Caller().Timestamp().Logger()
 	} else {
 		// それ以外はファイルにだけ JSON 形式で出力する
