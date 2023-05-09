@@ -110,13 +110,11 @@ func TestMain(m *testing.M) {
 	if err := pool.Retry(func() error {
 		config, err := pgxpool.ParseConfig(databaseURL)
 		if err != nil {
-			// zlog.Debug().Err(err).Send()
 			return err
 		}
 
 		p, err := pgxpool.ConnectConfig(context.Background(), config)
 		if err != nil {
-			// zlog.Debug().Err(err).Send()
 			return err
 		}
 
