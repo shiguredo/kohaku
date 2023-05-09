@@ -219,7 +219,7 @@ func TestTypeOutboundRTPCollector(t *testing.T) {
 	if assert.NoError(t, server.collector(c)) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-		statsType, err := server.query.TestGetRtcStatsType(context.Background(), db.TestGetRtcStatsTypeParams{
+		statsType, err := server.query.TestGetUserAgentStatsType(context.Background(), db.TestGetUserAgentStatsTypeParams{
 			ChannelID:    channelID,
 			ConnectionID: connectionID,
 		})
@@ -266,7 +266,7 @@ func TestTypeCodecCollector(t *testing.T) {
 	if assert.NoError(t, server.collector(c)) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-		statsType, err := server.query.TestGetRtcStatsType(context.Background(), db.TestGetRtcStatsTypeParams{
+		statsType, err := server.query.TestGetUserAgentStatsType(context.Background(), db.TestGetUserAgentStatsTypeParams{
 			ChannelID:    channelID,
 			ConnectionID: connectionID,
 		})
@@ -324,7 +324,7 @@ func TestTypeMediaSourceCollector(t *testing.T) {
 	if assert.NoError(t, server.collector(c)) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-		statsType, err := server.query.TestGetRtcStatsType(context.Background(), db.TestGetRtcStatsTypeParams{
+		statsType, err := server.query.TestGetUserAgentStatsType(context.Background(), db.TestGetUserAgentStatsTypeParams{
 			ChannelID:    channelID,
 			ConnectionID: connectionID,
 		})
@@ -412,7 +412,7 @@ func TestTypeDataChannelCollector(t *testing.T) {
 	if assert.NoError(t, server.collector(c)) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-		statsType, err := server.query.TestGetRtcStatsType(context.Background(), db.TestGetRtcStatsTypeParams{
+		statsType, err := server.query.TestGetUserAgentStatsType(context.Background(), db.TestGetUserAgentStatsTypeParams{
 			ChannelID:    channelID,
 			ConnectionID: connectionID,
 		})
@@ -474,7 +474,7 @@ func TestTypeCandidatePairCollector(t *testing.T) {
 	if assert.NoError(t, server.collector(c)) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-		statsType, err := server.query.TestGetRtcStatsType(context.Background(), db.TestGetRtcStatsTypeParams{
+		statsType, err := server.query.TestGetUserAgentStatsType(context.Background(), db.TestGetUserAgentStatsTypeParams{
 			ChannelID:    channelID,
 			ConnectionID: connectionID,
 		})
@@ -542,7 +542,7 @@ func TestTypeRemoteInboundRTPCollector(t *testing.T) {
 	if assert.NoError(t, server.collector(c)) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-		statsType, err := server.query.TestGetRtcStatsType(context.Background(), db.TestGetRtcStatsTypeParams{
+		statsType, err := server.query.TestGetUserAgentStatsType(context.Background(), db.TestGetUserAgentStatsTypeParams{
 			ChannelID:    channelID,
 			ConnectionID: connectionID,
 		})
@@ -595,7 +595,7 @@ func TestTypeTransportCollector(t *testing.T) {
 	if assert.NoError(t, server.collector(c)) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-		statsType, err := server.query.TestGetRtcStatsType(context.Background(), db.TestGetRtcStatsTypeParams{
+		statsType, err := server.query.TestGetUserAgentStatsType(context.Background(), db.TestGetUserAgentStatsTypeParams{
 			ChannelID:    channelID,
 			ConnectionID: connectionID,
 		})
@@ -876,7 +876,7 @@ func TestDuplicate(t *testing.T) {
 	if assert.NoError(t, server.collector(c)) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-		statsType, err := server.query.TestGetRtcStatsType(context.Background(), db.TestGetRtcStatsTypeParams{
+		statsType, err := server.query.TestGetUserAgentStatsType(context.Background(), db.TestGetUserAgentStatsTypeParams{
 			ChannelID:    channelID,
 			ConnectionID: connectionID,
 		})
@@ -897,7 +897,7 @@ func TestDuplicate(t *testing.T) {
 	if assert.NoError(t, server.collector(c)) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-		count, err := server.query.TestRtcStatsCounts(context.Background(), db.TestRtcStatsCountsParams{
+		count, err := server.query.TestGetUserAgentStatsCount(context.Background(), db.TestGetUserAgentStatsCountParams{
 			RtcTypeStats: "codec",
 			ChannelID:    channelID,
 			ConnectionID: connectionID,

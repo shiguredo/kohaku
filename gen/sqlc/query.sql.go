@@ -170,30 +170,44 @@ func (q *Queries) TestDropSoraUserAgentStats(ctx context.Context) error {
 	return err
 }
 
-const TestGetRtcStatsType = `-- name: TestGetRtcStatsType :one
+const TestGetSoraConnection = `-- name: TestGetSoraConnection :one
 
-SELECT rtc_stats_type
-FROM sora_user_agent_stats
+SELECT pk, timestamp, version, label, node_name, multistream, simulcast, spotlight, role, channel_id, session_id, client_id, connection_id, created_at
+FROM sora_connection
 WHERE channel_id = $1
   AND connection_id = $2
 LIMIT 1
 `
 
-type TestGetRtcStatsTypeParams struct {
+type TestGetSoraConnectionParams struct {
 	ChannelID    string `json:"channel_id"`
 	ConnectionID string `json:"connection_id"`
 }
 
 // test query
-// TODO: 最新を取るように order がほしい？
-func (q *Queries) TestGetRtcStatsType(ctx context.Context, arg TestGetRtcStatsTypeParams) (string, error) {
-	row := q.db.QueryRow(ctx, TestGetRtcStatsType, arg.ChannelID, arg.ConnectionID)
-	var rtc_stats_type string
-	err := row.Scan(&rtc_stats_type)
-	return rtc_stats_type, err
+func (q *Queries) TestGetSoraConnection(ctx context.Context, arg TestGetSoraConnectionParams) (SoraConnection, error) {
+	row := q.db.QueryRow(ctx, TestGetSoraConnection, arg.ChannelID, arg.ConnectionID)
+	var i SoraConnection
+	err := row.Scan(
+		&i.Pk,
+		&i.Timestamp,
+		&i.Version,
+		&i.Label,
+		&i.NodeName,
+		&i.Multistream,
+		&i.Simulcast,
+		&i.Spotlight,
+		&i.Role,
+		&i.ChannelID,
+		&i.SessionID,
+		&i.ClientID,
+		&i.ConnectionID,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
-const TestRtcStatsCounts = `-- name: TestRtcStatsCounts :one
+const TestGetUserAgentStatsCount = `-- name: TestGetUserAgentStatsCount :one
 SELECT count(*)
 FROM sora_user_agent_stats
 WHERE rtc_stats_type = $1
@@ -201,16 +215,37 @@ WHERE rtc_stats_type = $1
   AND connection_id = $3
 `
 
-type TestRtcStatsCountsParams struct {
+type TestGetUserAgentStatsCountParams struct {
 	RtcTypeStats string `json:"rtc_type_stats"`
 	ChannelID    string `json:"channel_id"`
 	ConnectionID string `json:"connection_id"`
 }
 
 // 指定した type のレコードがいくつあるかどうか
-func (q *Queries) TestRtcStatsCounts(ctx context.Context, arg TestRtcStatsCountsParams) (int64, error) {
-	row := q.db.QueryRow(ctx, TestRtcStatsCounts, arg.RtcTypeStats, arg.ChannelID, arg.ConnectionID)
+func (q *Queries) TestGetUserAgentStatsCount(ctx context.Context, arg TestGetUserAgentStatsCountParams) (int64, error) {
+	row := q.db.QueryRow(ctx, TestGetUserAgentStatsCount, arg.RtcTypeStats, arg.ChannelID, arg.ConnectionID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const TestGetUserAgentStatsType = `-- name: TestGetUserAgentStatsType :one
+SELECT rtc_stats_type
+FROM sora_user_agent_stats
+WHERE channel_id = $1
+  AND connection_id = $2
+ORDER BY timestamp DESC
+LIMIT 1
+`
+
+type TestGetUserAgentStatsTypeParams struct {
+	ChannelID    string `json:"channel_id"`
+	ConnectionID string `json:"connection_id"`
+}
+
+func (q *Queries) TestGetUserAgentStatsType(ctx context.Context, arg TestGetUserAgentStatsTypeParams) (string, error) {
+	row := q.db.QueryRow(ctx, TestGetUserAgentStatsType, arg.ChannelID, arg.ConnectionID)
+	var rtc_stats_type string
+	err := row.Scan(&rtc_stats_type)
+	return rtc_stats_type, err
 }

@@ -84,16 +84,23 @@ WHERE NOT EXISTS (
 
 -- test query
 
--- name: TestGetRtcStatsType :one
+-- name: TestGetSoraConnection :one
+SELECT *
+FROM sora_connection
+WHERE channel_id = @channel_id
+  AND connection_id = @connection_id
+LIMIT 1;
+
+-- name: TestGetUserAgentStatsType :one
 SELECT rtc_stats_type
 FROM sora_user_agent_stats
 WHERE channel_id = @channel_id
   AND connection_id = @connection_id
--- TODO: 最新を取るように order がほしい？
+ORDER BY timestamp DESC
 LIMIT 1;
 
 -- 指定した type のレコードがいくつあるかどうか
--- name: TestRtcStatsCounts :one
+-- name: TestGetUserAgentStatsCount :one
 SELECT count(*)
 FROM sora_user_agent_stats
 WHERE rtc_stats_type = @rtc_type_stats
