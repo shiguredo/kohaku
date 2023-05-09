@@ -6,15 +6,13 @@
 $ make
 ```
 
-
 ### 設定
 
-kohaku.example.ini をコピーして、接続先の DB の URL（postgres_uri） や各証明書等を設定します。
+kohaku_example.ini をコピーして、接続先の DB の URL（postgres_uri） や各証明書等を設定します。
 
 ```
-$ cp kohaku.example.ini kohaku.ini
+$ cp kohaku_example.ini kohaku.ini
 ```
-
 
 ### 起動
 
@@ -56,7 +54,6 @@ $ openssl req -new \
               -out ca.pem
 ```
 
-
 ### ディレクトリ及びファイルの作成
 
 クライアント証明書発行時に使用するディレクトリとファイルを作成します。
@@ -76,7 +73,6 @@ $ echo 00 > demoCA/serial
 ```
 $ openssl ecparam -out client.key -name prime256v1 -genkey
 ```
-
 
 #### CSR 及び証明書の作成
 
@@ -119,14 +115,13 @@ $ openssl ca -config openssl.cnf \
              -out client.pem
 ```
 
-
 ### kohaku 側への設定
 
 kohaku の設定ファイルで、 mTLS で使用するクライアント認証用の CA 証明書ファイルを指定します。
 
 - http2_verify_cacert_path
 
-    - 上記で作成したクライアント証明書を発行する際に使用した CA 証明書（ca.pem）へのパスを指定します
+  - 上記で作成したクライアント証明書を発行する際に使用した CA 証明書（ca.pem）へのパスを指定します
 
 ### kohaku クライアントへの設定
 
