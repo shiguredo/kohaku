@@ -27,11 +27,6 @@ var q *db.Queries
 // transaction テスト用
 var pp *pgxpool.Pool
 
-func uuidv4() uuid.UUID {
-	uuidv4, _ := uuid.NewRandom()
-	return uuidv4
-}
-
 func base32edUUIDv4() string {
 	id := uuid.New()
 	binaryUUID, _ := id.MarshalBinary()

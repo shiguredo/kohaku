@@ -6,11 +6,14 @@ import (
 	"time"
 
 	db "github.com/shiguredo/kohaku/gen/sqlc"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSoraConnection(t *testing.T) {
 	c := context.Background()
-	q.InsertSoraConnection(c, db.InsertSoraConnectionParams{
+	var err error
+
+	err = q.InsertSoraConnection(c, db.InsertSoraConnectionParams{
 		Timestamp:    time.Now().UTC(),
 		Label:        "label",
 		Version:      "version",
@@ -18,11 +21,14 @@ func TestSoraConnection(t *testing.T) {
 		Multistream:  true,
 		Simulcast:    true,
 		Spotlight:    true,
-		Role:         "sendrecv",
+		Role:         db.SoraConnectionRoleSendrecv,
 		ChannelID:    "channel_id",
 		SessionID:    base32edUUIDv4(),
-		ClientID:     base32edUUIDv4(),
+		ClientID:     "client_id",
 		ConnectionID: base32edUUIDv4(),
 	})
+	assert.NoError(t, err)
 
+	err = q.TestDropSoraConnection(c)
+	assert.NoError(t, err)
 }
