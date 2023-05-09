@@ -207,23 +207,13 @@ func (q *Queries) TestGetSoraConnection(ctx context.Context, arg TestGetSoraConn
 	return i, err
 }
 
-const TestGetUserAgentStatsCount = `-- name: TestGetUserAgentStatsCount :one
+const TestGetSoraConnectionCount = `-- name: TestGetSoraConnectionCount :one
 SELECT count(*)
-FROM sora_user_agent_stats
-WHERE rtc_stats_type = $1
-  AND channel_id = $2
-  AND connection_id = $3
+FROM sora_connection
 `
 
-type TestGetUserAgentStatsCountParams struct {
-	RtcTypeStats string `json:"rtc_type_stats"`
-	ChannelID    string `json:"channel_id"`
-	ConnectionID string `json:"connection_id"`
-}
-
-// 指定した type のレコードがいくつあるかどうか
-func (q *Queries) TestGetUserAgentStatsCount(ctx context.Context, arg TestGetUserAgentStatsCountParams) (int64, error) {
-	row := q.db.QueryRow(ctx, TestGetUserAgentStatsCount, arg.RtcTypeStats, arg.ChannelID, arg.ConnectionID)
+func (q *Queries) TestGetSoraConnectionCount(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, TestGetSoraConnectionCount)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -248,4 +238,26 @@ func (q *Queries) TestGetUserAgentStatsType(ctx context.Context, arg TestGetUser
 	var rtc_stats_type string
 	err := row.Scan(&rtc_stats_type)
 	return rtc_stats_type, err
+}
+
+const TestGetUserAgentStatsTypeCount = `-- name: TestGetUserAgentStatsTypeCount :one
+SELECT count(*)
+FROM sora_user_agent_stats
+WHERE rtc_stats_type = $1
+  AND channel_id = $2
+  AND connection_id = $3
+`
+
+type TestGetUserAgentStatsTypeCountParams struct {
+	RtcTypeStats string `json:"rtc_type_stats"`
+	ChannelID    string `json:"channel_id"`
+	ConnectionID string `json:"connection_id"`
+}
+
+// 指定した channel_id と connection_id と rtc_stats_type のレコードがいくつあるかどうか
+func (q *Queries) TestGetUserAgentStatsTypeCount(ctx context.Context, arg TestGetUserAgentStatsTypeCountParams) (int64, error) {
+	row := q.db.QueryRow(ctx, TestGetUserAgentStatsTypeCount, arg.RtcTypeStats, arg.ChannelID, arg.ConnectionID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }

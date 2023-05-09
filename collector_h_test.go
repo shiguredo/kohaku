@@ -876,10 +876,11 @@ func TestDuplicate(t *testing.T) {
 	if assert.NoError(t, server.collector(c)) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-		statsType, err := server.query.TestGetUserAgentStatsType(context.Background(), db.TestGetUserAgentStatsTypeParams{
-			ChannelID:    channelID,
-			ConnectionID: connectionID,
-		})
+		statsType, err := server.query.TestGetUserAgentStatsType(context.Background(),
+			db.TestGetUserAgentStatsTypeParams{
+				ChannelID:    channelID,
+				ConnectionID: connectionID,
+			})
 		assert.Nil(t, err)
 		assert.Equal(t, "codec", statsType)
 	}
@@ -897,11 +898,12 @@ func TestDuplicate(t *testing.T) {
 	if assert.NoError(t, server.collector(c)) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-		count, err := server.query.TestGetUserAgentStatsCount(context.Background(), db.TestGetUserAgentStatsCountParams{
-			RtcTypeStats: "codec",
-			ChannelID:    channelID,
-			ConnectionID: connectionID,
-		})
+		count, err := server.query.TestGetUserAgentStatsTypeCount(context.Background(),
+			db.TestGetUserAgentStatsTypeCountParams{
+				RtcTypeStats: "codec",
+				ChannelID:    channelID,
+				ConnectionID: connectionID,
+			})
 		assert.Nil(t, err)
 		assert.Equal(t, int64(1), count)
 	}

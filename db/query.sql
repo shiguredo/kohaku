@@ -91,6 +91,10 @@ WHERE channel_id = @channel_id
   AND connection_id = @connection_id
 LIMIT 1;
 
+-- name: TestGetSoraConnectionCount :one
+SELECT count(*)
+FROM sora_connection;
+
 -- name: TestGetUserAgentStatsType :one
 SELECT rtc_stats_type
 FROM sora_user_agent_stats
@@ -99,8 +103,8 @@ WHERE channel_id = @channel_id
 ORDER BY timestamp DESC
 LIMIT 1;
 
--- 指定した type のレコードがいくつあるかどうか
--- name: TestGetUserAgentStatsCount :one
+-- 指定した channel_id と connection_id と rtc_stats_type のレコードがいくつあるかどうか
+-- name: TestGetUserAgentStatsTypeCount :one
 SELECT count(*)
 FROM sora_user_agent_stats
 WHERE rtc_stats_type = @rtc_type_stats
