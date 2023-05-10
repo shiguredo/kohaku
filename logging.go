@@ -70,10 +70,11 @@ func InitLogger(config *Config) error {
 // 現時点での prettyFormat
 // 2023-04-17 12:51:56.333485Z [INFO] config.go:102 > CONF | debug=true
 func prettyFormat(w *zerolog.ConsoleWriter) {
-	w.FormatLevel = func(i interface{}) string {
-		reset := "\x1b[0m"
+	const Reset = "\x1b[0m"
 
+	w.FormatLevel = func(i interface{}) string {
 		var color, level string
+		// TODO: 各色を定数に置き換える
 		// TODO: 他の logLevel が必要な場合は追加する
 		switch i.(string) {
 		case "info":
@@ -89,7 +90,7 @@ func prettyFormat(w *zerolog.ConsoleWriter) {
 		}
 
 		level = strings.ToUpper(i.(string))
-		return fmt.Sprintf("%s[%s]%s", color, level, reset)
+		return fmt.Sprintf("%s[%s]%s", color, level, Reset)
 	}
 	w.FormatCaller = func(i interface{}) string {
 		return fmt.Sprintf("[%s]", filepath.Base(i.(string)))
@@ -106,9 +107,8 @@ func prettyFormat(w *zerolog.ConsoleWriter) {
 		}
 	}
 	w.FormatFieldName = func(i interface{}) string {
-		cyan := "\x1b[36m"
-		reset := "\x1b[0m"
-		return fmt.Sprintf("%s%s=%s", cyan, i, reset)
+		const Cyan = "\x1b[36m"
+		return fmt.Sprintf("%s%s=%s", Cyan, i, Reset)
 	}
 	// TODO: カンマ区切りを同実現するかわからなかった
 	w.FormatFieldValue = func(i interface{}) string {
