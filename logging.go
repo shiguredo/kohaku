@@ -38,11 +38,7 @@ func InitLogger(config *Config) error {
 		writer := zerolog.ConsoleWriter{
 			Out: os.Stdout,
 			FormatTimestamp: func(i interface{}) string {
-				_, err := time.ParseInLocation("2006-01-02T15:04:05.000000Z07:00:00", i.(string), time.UTC)
-				if err != nil {
-					return fmt.Sprintf("\x1b[%dm%s\x1b[0m", 90, i)
-				}
-				return i.(string)
+				return fmt.Sprintf("\x1b[%dm%s\x1b[0m", 90, i)
 			},
 			NoColor: false,
 		}
@@ -53,11 +49,7 @@ func InitLogger(config *Config) error {
 		writer := zerolog.ConsoleWriter{
 			Out: os.Stdout,
 			FormatTimestamp: func(i interface{}) string {
-				_, err := time.ParseInLocation("2006-01-02T15:04:05.000000Z07:00:00", i.(string), time.UTC)
-				if err != nil {
-					return fmt.Sprintf("\x1b[%dm%s\x1b[0m", 90, i)
-				}
-				return i.(string)
+				return fmt.Sprintf("\x1b[%dm%s\x1b[0m", 90, i)
 			},
 			NoColor: false,
 		}
