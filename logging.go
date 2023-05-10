@@ -80,7 +80,7 @@ func prettyFormat(w *zerolog.ConsoleWriter) {
 			color = "\x1b[32m"
 		case "error":
 			color = "\x1b[31m"
-		case "warning":
+		case "warn":
 			color = "\x1b[33m"
 		case "debug":
 			color = "\x1b[34m"
