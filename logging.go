@@ -38,7 +38,9 @@ func InitLogger(config *Config) error {
 		writer := zerolog.ConsoleWriter{
 			Out: os.Stdout,
 			FormatTimestamp: func(i interface{}) string {
-				return fmt.Sprintf("\x1b[%dm%s\x1b[0m", 90, i)
+				darkGray := "\x1b[90m"
+				reset := "\x1b[0m"
+				return strings.Join([]string{darkGray, i.(string), reset}, "")
 			},
 			NoColor: false,
 		}
