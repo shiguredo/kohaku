@@ -46,13 +46,7 @@ func InitLogger(config *Config) error {
 		log.Logger = zerolog.New(writer).With().Caller().Timestamp().Logger()
 	} else if config.LogStdout {
 		// log_stdout = true の時はコンソールにも JSON 形式で出力する
-		writer := zerolog.ConsoleWriter{
-			Out: os.Stdout,
-			FormatTimestamp: func(i interface{}) string {
-				return fmt.Sprintf("\x1b[%dm%s\x1b[0m", 90, i)
-			},
-			NoColor: false,
-		}
+		writer := os.Stdout
 		log.Logger = zerolog.New(writer).With().Caller().Timestamp().Logger()
 	} else {
 		// それ以外はファイルにだけ JSON 形式で出力する
