@@ -63,7 +63,9 @@ func NewServer(c *Config, pool *pgxpool.Pool) (*Server, error) {
 		query:  db.New(pool),
 	}
 
-	s.setupEchoServer()
+	if err := s.setupEchoServer(); err != nil {
+		return nil, err
+	}
 
 	zlog.Info().
 		Str("addr", s.config.ListenAddr).
