@@ -47,13 +47,8 @@ WITH existing_record AS (
     AND sora_user_agent_stats.rtc_stats_id = @rtc_stats_id
 ),
 data_without_timestamp AS (
-  SELECT jsonb_strip_nulls(
-      jsonb_set(
-        existing_record.rtc_stats_data,
-        '{timestamp}',
-        'null'
-      )
-    ) as old_data,
+  SELECT existing_record.rtc_stats_data - 'timestamp' as old_data,
+    -- @rtc_stats_data - 'timestamp' as new_data は sqlc generate でエラーになるため jsonb_strip_nulls を残す
     jsonb_strip_nulls(
       jsonb_set(@rtc_stats_data, '{timestamp}', 'null')
     ) as new_data
