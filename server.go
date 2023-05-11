@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -93,9 +94,14 @@ func (s *Server) setupEchoServer() error {
 	// stdout にポート番号出力しない
 	e.HidePort = true
 
+	// アドレスとして正しいことを確認する
+	_, err := netip.ParseAddr(s.config.ListenAddr)
+	if err != nil {
+		return err
+	}
+
 	s.Server = http.Server{
-		// TODO: ListenAddr は ListenPort と同じように設定ファイルから読み込む
-		Addr:    net.JoinHostPort("", strconv.Itoa(s.config.ListenPort)),
+		Addr:    net.JoinHostPort(s.config.ListenAddr, strconv.Itoa(s.config.ListenPort)),
 		Handler: e,
 	}
 
