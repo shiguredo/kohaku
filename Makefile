@@ -2,7 +2,7 @@ all:
 	go build -o bin/kohaku cmd/kohaku/main.go
 
 run: clean all
-	./bin/kohaku -c config.toml
+	./bin/kohaku -c config.ini
 
 clean:
 	rm -f bin/kohaku
@@ -10,3 +10,4 @@ clean:
 
 test:
 	go test -race -v
+	go test -race ./db/test -v

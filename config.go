@@ -1,65 +1,121 @@
 package kohaku
 
 import (
-	"flag"
-	"fmt"
-	"os"
-
-	"github.com/BurntSushi/toml"
-	"github.com/rs/zerolog/log"
+	zlog "github.com/rs/zerolog/log"
+	"gopkg.in/ini.v1"
 )
 
-var (
-	ConfigFilePath = flag.String("c", "./config.toml", "kohaku 設定ファイルへのパス(toml)")
-	Config         *KohakuConfig
+const (
+	DefaultLogDir  = "."
+	DefaultLogName = "kohaku.jsonl"
+
+	// megabytes
+	DefaultLogRotateMaxSize    = 200
+	DefaultLogRotateMaxBackups = 7
+	// days
+	DefaultLogRotateMaxAge = 30
+
+	DefaultExporterListenAddr = "0.0.0.0"
+	DefaultExporterListenPort = 5891
 )
 
-type KohakuConfig struct {
-	LogDebug  bool   `toml:"log_debug"`
-	LogDir    string `toml:"log_dir"`
-	LogName   string `toml:"log_name"`
-	LogStdout bool   `toml:"log_stdout"`
+type Config struct {
+	Debug bool `ini:"debug"`
 
-	CollectorPort int `toml:"collector_port"`
+	LogDir    string `ini:"log_dir"`
+	LogName   string `ini:"log_name"`
+	LogStdout bool   `ini:"log_stdout"`
 
-	TimescaleURL          string `toml:"timescale_url"`
-	TimescaleSSLMode      string `toml:"timescale_sslmode"`
-	TimescaleRootcertFile string `toml:"timescale_rootcert_file"`
+	// MB
+	LogRotateMaxSize    int `ini:"log_rotate_max_size"`
+	LogRotateMaxBackups int `ini:"log_rotate_max_backups"`
+	// Days
+	LogRotateMaxAge int `ini:"log_rotate_max_age"`
 
-	// TODO(v): 名前検討
-	HTTP2FullchainFile string `toml:"http2_fullchain_file"`
-	// TODO(v): 名前検討
-	HTTP2PrivkeyFile string `toml:"http2_privkey_file"`
-	// TODO: 名前検討
-	HTTP2VerifyCacertPath string `toml:"http2_verify_cacert_path"`
+	ListenAddr string `ini:"listen_addr"`
+	ListenPort int    `ini:"listen_port"`
 
-	HTTP2H2c                  bool   `toml:"http2_h2c"`
-	HTTP2MaxConcurrentStreams uint32 `toml:"http2_max_concurrent_streams"`
-	HTTP2MaxReadFrameSize     uint32 `toml:"http2_max_read_frame_size"`
-	HTTP2IdleTimeout          uint32 `toml:"http2_idle_timeout"`
+	// exporter で https を使うかどうか
+	// tailscale などを使う場合は不要
+	ExporterHTTPS      bool   `ini:"exporter_https"`
+	ExporterListenAddr string `ini:"exporter_listen_addr"`
+	ExporterListenPort int    `ini:"exporter_listen_port"`
+
+	PostgresURI        string `ini:"postgres_uri"`
+	PostgresCACertFile string `ini:"postgres_ca_cert_file"`
+
+	TLSFullchainFile    string `ini:"tls_fullchain_file"`
+	TLSPrivkeyFile      string `ini:"tls_privkey_file"`
+	TLSVerifyCacertPath string `ini:"tls_verify_cacert_path"`
+
+	HTTP2MaxConcurrentStreams uint32 `ini:"http2_max_concurrent_streams"`
+	HTTP2MaxReadFrameSize     uint32 `ini:"http2_max_read_frame_size"`
+	HTTP2IdleTimeout          uint32 `ini:"http2_idle_timeout"`
 }
 
-// LoadConfigFromFlags 起動パラメータから設定ファイルを読み込みます
-func LoadConfigFromFlags(configPath *string) error {
-	tmpConfig, err := LoadConfig(*configPath)
-	log.Printf("config file path: %s", *configPath)
-	if err != nil {
-		return err
-	}
-	Config = tmpConfig
+func NewConfig(configFilePath string) (*Config, error) {
+	config := new(Config)
 
-	return nil
-}
-
-// LoadConfig 設定ファイルのパスからファイルを読み込み、設定値をバインドした KohakuConfig を返します
-func LoadConfig(configPath string) (*KohakuConfig, error) {
-	buf, err := os.ReadFile(configPath)
+	iniConfig, err := ini.InsensitiveLoad(configFilePath)
 	if err != nil {
 		return nil, err
 	}
-	var config KohakuConfig
-	if err := toml.Unmarshal(buf, &config); err != nil {
-		return nil, fmt.Errorf("KohakuConfig bind error: %s", err)
+
+	if err := iniConfig.StrictMapTo(config); err != nil {
+		return nil, err
 	}
-	return &config, nil
+
+	setDefaultsConfig(config)
+
+	return config, nil
+}
+
+func setDefaultsConfig(config *Config) {
+	if config.LogDir == "" {
+		config.LogDir = DefaultLogDir
+	}
+
+	if config.LogName == "" {
+		config.LogDir = DefaultLogName
+	}
+
+	if config.LogRotateMaxSize == 0 {
+		config.LogRotateMaxSize = DefaultLogRotateMaxSize
+	}
+
+	if config.LogRotateMaxBackups == 0 {
+		config.LogRotateMaxBackups = DefaultLogRotateMaxBackups
+	}
+
+	if config.LogRotateMaxAge == 0 {
+		config.LogRotateMaxAge = DefaultLogRotateMaxAge
+	}
+
+	if config.ExporterListenAddr == "" {
+		config.ExporterListenAddr = DefaultExporterListenAddr
+	}
+
+	if config.ExporterListenPort == 0 {
+		config.ExporterListenPort = DefaultExporterListenPort
+	}
+}
+
+func ShowConfig(config *Config) {
+
+	zlog.Info().Bool("debug", config.Debug).Msg("CONF")
+
+	zlog.Info().Str("log_dir", config.LogDir).Msg("CONF")
+	zlog.Info().Str("log_name", config.LogName).Msg("CONF")
+	zlog.Info().Bool("log_stdout", config.LogStdout).Msg("CONF")
+
+	zlog.Info().Int("log_rotate_max_size", config.LogRotateMaxSize).Msg("CONF")
+	zlog.Info().Int("log_rotate_max_backups", config.LogRotateMaxBackups).Msg("CONF")
+	zlog.Info().Int("log_rotate_max_age", config.LogRotateMaxAge).Msg("CONF")
+
+	zlog.Info().Str("listen_addr", config.ListenAddr).Msg("CONF")
+	zlog.Info().Int("listen_port", config.ListenPort).Msg("CONF")
+
+	zlog.Info().Str("exporter_listen_addr", config.ExporterListenAddr).Msg("CONF")
+	zlog.Info().Int("exporter_listen_port", config.ExporterListenPort).Msg("CONF")
+
 }

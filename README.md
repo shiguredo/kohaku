@@ -15,15 +15,16 @@ Please read https://github.com/shiguredo/oss/blob/master/README.en.md before use
 
 ## WebRTC Stats Collector Kohaku について
 
-Kohaku はクライアントと Sora の統計情報を Sora から HTTP/2 経由で受け取り、整理してタイムシリーズデータベースに格納するゲートウェイです。現時点ではタイムシリーズデータベースは TimescaleDB のみに対応しています。
+Kohaku はクライアントと Sora の統計情報を Sora から HTTP/2 経由で受け取り、整理してタイムシリーズデータベースに格納するゲートウェイです。
+現時点ではタイムシリーズデータベースは TimescaleDB のみに対応しています。
 
 ## 特徴
 
-- Sora から HTTP/2 経由でクライアントや Sora の統計情報を受け取り TimescaleDB (TSDB) に格納します
+- Sora から HTTP/2 経由でクライアントの統計情報を受け取り TimescaleDB (TSDB) に格納します
 - [WebRTC 統計 API](https://www.w3.org/TR/webrtc-stats/) に対応しています
-    - ブラウザは最新 Chrome / Firefox / Safari / Edge へ対応
-    - Sora SDK は iOS / Android / Unity すべてに対応
-    - WebRTC Native Client Momo に対応
+  - ブラウザは最新 Chrome / Firefox / Safari / Edge へ対応
+  - Sora SDK は iOS / Android / Unity / Flutter / Python に対応
+  - WebRTC Native Client Momo に対応
 - クライアントは Sora に統計情報を送るだけでよくなるため、どこかのサーバに対して接続などが不要になります
 - すべての統計情報を Sora の Channel ID と Connection ID と関連付けて保存するため問題の追跡がしやすくなります
 
@@ -40,8 +41,8 @@ Kohaku を使ってみたい人は [USE.md](https://github.com/shiguredo/kohaku/
 Apache License 2.0
 
 ```
-Copyright 2021, Hiroshi Yoshida （Original Author)
-Copyright 2021, Shiguredo Inc.
+Copyright 2021-2023, Hiroshi Yoshida (Original Author)
+Copyright 2021-2023, Shiguredo Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -68,5 +69,5 @@ limitations under the License.
 
 ## 記事
 
-- [\[備忘録\] WebRTC Stats Collector Kohakuを触ってみた](https://zenn.dev/adaniya/articles/1a06e22a23927b)
-    - 導入からグラフ化までを一通り試した良記事
+- [\[備忘録\] WebRTC Stats Collector Kohaku を触ってみた](https://zenn.dev/adaniya/articles/1a06e22a23927b)
+  - 導入からグラフ化までを一通り試した良記事

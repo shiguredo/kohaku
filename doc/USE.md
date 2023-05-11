@@ -6,22 +6,20 @@
 $ make
 ```
 
-
 ### 設定
 
-config.example.toml をコピーして、接続先の DB の URL（timescale_url） や各証明書等を設定します。
+config_example.ini をコピーして、接続先の DB の URL（postgres_uri） や各証明書等を設定します。
 
 ```
-$ cp config.example.toml config.toml
+$ cp config_example.ini config.ini
 ```
-
 
 ### 起動
 
-上記で用意した config.toml を指定して kohaku サーバを立ち上げます。
+上記で用意した config.ini を指定して kohaku サーバを立ち上げます。
 
 ```
-$ ./bin/kohaku -c config.toml
+$ ./bin/kohaku -c config.ini
 ```
 
 ## TimescaleDB のスキーマ
@@ -56,7 +54,6 @@ $ openssl req -new \
               -out ca.pem
 ```
 
-
 ### ディレクトリ及びファイルの作成
 
 クライアント証明書発行時に使用するディレクトリとファイルを作成します。
@@ -76,7 +73,6 @@ $ echo 00 > demoCA/serial
 ```
 $ openssl ecparam -out client.key -name prime256v1 -genkey
 ```
-
 
 #### CSR 及び証明書の作成
 
@@ -119,18 +115,13 @@ $ openssl ca -config openssl.cnf \
              -out client.pem
 ```
 
-
 ### kohaku 側への設定
 
-kohaku の設定ファイルで、 h2 を有効化と、mTLS で使用するクライアント認証用の CA 証明書ファイルを指定します。
-
-- http2_h2c
-
-    - false に設定して h2 を有効にします
+kohaku の設定ファイルで、 mTLS で使用するクライアント認証用の CA 証明書ファイルを指定します。
 
 - http2_verify_cacert_path
 
-    - 上記で作成したクライアント証明書を発行する際に使用した CA 証明書（ca.pem）へのパスを指定します
+  - 上記で作成したクライアント証明書を発行する際に使用した CA 証明書（ca.pem）へのパスを指定します
 
 ### kohaku クライアントへの設定
 

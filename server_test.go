@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -21,22 +20,12 @@ type CertPair struct {
 }
 
 const (
-	port = 15890
-
 	// millisecond
 	waitingTime = 100
 )
 
 var (
-	url = fmt.Sprintf("https://localhost:%d/health", port)
-
-	config = &KohakuConfig{
-		HTTP2H2c:              false,
-		HTTP2FullchainFile:    "cert/server/server.pem",
-		HTTP2PrivkeyFile:      "cert/server/server.key",
-		HTTP2VerifyCacertPath: "cert/client/ca.pem",
-		CollectorPort:         port,
-	}
+	url = fmt.Sprintf("https://localhost:%d/.ok", port)
 
 	certPair = &CertPair{
 		"cert/client/user.pem",
@@ -44,18 +33,8 @@ var (
 	}
 )
 
-func NewClient(nextProto string, c *CertPair) (*http.Client, error) {
+func newTestClient(nextProto string, c *CertPair) (*http.Client, error) {
 	var client http.Client
-
-	if nextProto == "h2c" {
-		client.Transport = &http2.Transport{
-			AllowHTTP: true,
-			DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
-				return net.Dial(network, addr)
-			},
-		}
-		return &client, nil
-	}
 
 	cert, err := tls.LoadX509KeyPair(c.CertificateFile, c.KeyFile)
 	if err != nil {
@@ -85,15 +64,15 @@ func NewClient(nextProto string, c *CertPair) (*http.Client, error) {
 }
 
 func TestMutualTLS(t *testing.T) {
-	s := NewServer(config, pgPool)
+	s := newTestServer(config, pgPool)
 	go (func() {
-		s.Start(config)
+		s.Start(context.Background(), config)
 	})()
 
 	time.Sleep(waitingTime * time.Millisecond)
 
 	// Setup
-	client, err := NewClient("http/1.1", certPair)
+	client, err := newTestClient("http/1.1", certPair)
 	if err != nil {
 		panic(err)
 	}
@@ -111,9 +90,9 @@ func TestMutualTLS(t *testing.T) {
 }
 
 func TestInvalidClientCertificate(t *testing.T) {
-	s := NewServer(config, pgPool)
+	s := newTestServer(config, pgPool)
 	go (func() {
-		s.Start(config)
+		s.Start(context.Background(), config)
 	})()
 
 	time.Sleep(waitingTime * time.Millisecond)
@@ -123,7 +102,7 @@ func TestInvalidClientCertificate(t *testing.T) {
 		"cert/client/invalid.pem",
 		"cert/client/invalid.key",
 	}
-	client, err := NewClient("http/1.1", invalidCertPair)
+	client, err := newTestClient("http/1.1", invalidCertPair)
 	if err != nil {
 		panic(err)
 	}
@@ -135,50 +114,18 @@ func TestInvalidClientCertificate(t *testing.T) {
 }
 
 func TestH2(t *testing.T) {
-	s := NewServer(config, pgPool)
+	s := newTestServer(config, pgPool)
 	go (func() {
-		s.Start(config)
+		s.Start(context.Background(), config)
 	})()
 
 	time.Sleep(waitingTime * time.Millisecond)
 
 	// Setup
-	client, err := NewClient("h2", certPair)
+	client, err := newTestClient("h2", certPair)
 	if err != nil {
 		panic(err)
 	}
-
-	ctx := context.Background()
-	req, _ := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(""))
-	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-
-	assert.Equal(t, "HTTP/2.0", resp.Proto)
-	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
-}
-
-func TestH2C(t *testing.T) {
-	h2cConfig := &KohakuConfig{
-		HTTP2H2c:      true,
-		CollectorPort: 25890,
-	}
-	s := NewServer(h2cConfig, pgPool)
-	go (func() {
-		s.Start(h2cConfig)
-	})()
-
-	time.Sleep(waitingTime * time.Millisecond)
-
-	// Setup
-	client, err := NewClient("h2c", nil)
-	if err != nil {
-		panic(err)
-	}
-
-	url := fmt.Sprintf("http://localhost:%d/health", 25890)
 
 	ctx := context.Background()
 	req, _ := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(""))
