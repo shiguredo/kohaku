@@ -12,8 +12,7 @@ import (
 // TODO: HTTP/1.1 のテストを追加する
 func TestOK(t *testing.T) {
 	// Setup
-	s := newTestServer(config, pgPool)
-	e := s.echo
+	e := server.echo
 	req := httptest.NewRequest(http.MethodPost, "/.ok", strings.NewReader(""))
 	req.Proto = "HTTP/2.0"
 	rec := httptest.NewRecorder()

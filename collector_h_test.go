@@ -88,11 +88,21 @@ const (
 	channelID    = "sora"
 	connectionID = "QJ253E85SH1C170WQSPYJGFHCR"
 	clientID     = "QJ253E85SH1C170WQSPYJGFHCR"
+
+	port = 15890
 )
 
 var (
 	pgPool *pgxpool.Pool
 	server *Server
+
+	config = &Config{
+		TLSFullchainFile:    "cert/server/server.pem",
+		TLSPrivkeyFile:      "cert/server/server.key",
+		TLSVerifyCacertPath: "cert/client/ca.pem",
+		ListenAddr:          "0.0.0.0",
+		ListenPort:          port,
+	}
 )
 
 func TestMain(m *testing.M) {
@@ -125,6 +135,7 @@ func TestMain(m *testing.M) {
 
 	hostAndPort := resource.GetHostPort("5432/tcp")
 	dbURI := fmt.Sprintf(connStr, postgresUser, postgresPassword, hostAndPort, postgresDB)
+	config.PostgresURI = dbURI
 
 	resource.Expire(60)
 	pool.MaxWait = 60 * time.Second
@@ -143,7 +154,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	server = newTestServer(&Config{}, pgPool)
+	server = newTestServer(config, pgPool)
 
 	code := m.Run()
 
@@ -156,8 +167,7 @@ func TestMain(m *testing.M) {
 
 func TestTypeOutboundRTPCollector(t *testing.T) {
 	// Setup
-	s := newTestServer(config, pgPool)
-	e := s.echo
+	e := server.echo
 
 	stats := make([]json.RawMessage, 0, 1)
 	stats = append(stats, json.RawMessage(`{
@@ -234,8 +244,7 @@ func TestTypeOutboundRTPCollector(t *testing.T) {
 
 func TestTypeCodecCollector(t *testing.T) {
 	// Setup
-	s := newTestServer(config, pgPool)
-	e := s.echo
+	e := server.echo
 
 	stats := make([]json.RawMessage, 0, 1)
 	stats = append(stats, json.RawMessage(`{
@@ -282,8 +291,7 @@ func TestTypeCodecCollector(t *testing.T) {
 
 func TestTypeMediaSourceCollector(t *testing.T) {
 	// Setup
-	s := newTestServer(config, pgPool)
-	e := s.echo
+	e := server.echo
 
 	stats := make([]json.RawMessage, 0, 2)
 	stats = append(stats, json.RawMessage(`{
@@ -341,8 +349,7 @@ func TestTypeMediaSourceCollector(t *testing.T) {
 
 func TestTypeDataChannelCollector(t *testing.T) {
 	// Setup
-	s := newTestServer(config, pgPool)
-	e := s.echo
+	e := server.echo
 
 	stats := make([]json.RawMessage, 0, 4)
 	stats = append(stats, json.RawMessage(`{
@@ -430,8 +437,7 @@ func TestTypeDataChannelCollector(t *testing.T) {
 
 func TestTypeCandidatePairCollector(t *testing.T) {
 	// Setup
-	s := newTestServer(config, pgPool)
-	e := s.echo
+	e := server.echo
 
 	stats := make([]json.RawMessage, 0, 1)
 	stats = append(stats, json.RawMessage(`{
@@ -493,8 +499,7 @@ func TestTypeCandidatePairCollector(t *testing.T) {
 
 func TestTypeRemoteInboundRTPCollector(t *testing.T) {
 	// Setup
-	s := newTestServer(config, pgPool)
-	e := s.echo
+	e := server.echo
 
 	stats := make([]json.RawMessage, 0, 2)
 	stats = append(stats, json.RawMessage(`{
@@ -562,8 +567,7 @@ func TestTypeRemoteInboundRTPCollector(t *testing.T) {
 
 func TestTypeTransportCollector(t *testing.T) {
 	// Setup
-	s := newTestServer(config, pgPool)
-	e := s.echo
+	e := server.echo
 
 	stats := make([]json.RawMessage, 0, 1)
 	stats = append(stats, json.RawMessage(`{
@@ -617,8 +621,7 @@ func TestTypeTransportCollector(t *testing.T) {
 
 func TestInvalidConnectionIDLength(t *testing.T) {
 	// Setup
-	s := newTestServer(config, pgPool)
-	e := s.echo
+	e := server.echo
 
 	stats := make([]json.RawMessage, 0, 1)
 	stats = append(stats, json.RawMessage(`{
@@ -661,8 +664,7 @@ func TestInvalidConnectionIDLength(t *testing.T) {
 
 func TestUnexpectedType(t *testing.T) {
 	// Setup
-	s := newTestServer(config, pgPool)
-	e := s.echo
+	e := server.echo
 
 	stats := make([]json.RawMessage, 0, 1)
 	stats = append(stats, json.RawMessage(`{
@@ -707,8 +709,7 @@ func TestUnexpectedType(t *testing.T) {
 
 func TestMissingTimestamp(t *testing.T) {
 	// Setup
-	s := newTestServer(config, pgPool)
-	e := s.echo
+	e := server.echo
 
 	req := httptest.NewRequest(http.MethodPost, "/collector", strings.NewReader(missingTimestampJSON))
 	req.Header.Set("content-type", "application/json")
@@ -730,8 +731,7 @@ func TestMissingTimestamp(t *testing.T) {
 
 func TestInvalidChannelIDLength(t *testing.T) {
 	// Setup
-	s := newTestServer(config, pgPool)
-	e := s.echo
+	e := server.echo
 
 	stats := make([]json.RawMessage, 0, 1)
 	stats = append(stats, json.RawMessage(`{
@@ -772,8 +772,7 @@ func TestInvalidChannelIDLength(t *testing.T) {
 
 func TestMissingMultistream(t *testing.T) {
 	// Setup
-	s := newTestServer(config, pgPool)
-	e := s.echo
+	e := server.echo
 
 	stats := make([]json.RawMessage, 0, 1)
 	stats = append(stats, json.RawMessage(`{
@@ -855,8 +854,7 @@ func TestMissingMultistream(t *testing.T) {
 
 func TestDuplicate(t *testing.T) {
 	// Setup
-	s := newTestServer(config, pgPool)
-	e := s.echo
+	e := server.echo
 
 	stats := make([]json.RawMessage, 0, 1)
 	stats = append(stats, json.RawMessage(`{

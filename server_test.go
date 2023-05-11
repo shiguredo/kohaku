@@ -22,22 +22,12 @@ type CertPair struct {
 }
 
 const (
-	port = 15890
-
 	// millisecond
 	waitingTime = 100
 )
 
 var (
 	url = fmt.Sprintf("https://localhost:%d/.ok", port)
-
-	config = &Config{
-		TLSFullchainFile:    "cert/server/server.pem",
-		TLSPrivkeyFile:      "cert/server/server.key",
-		TLSVerifyCacertPath: "cert/client/ca.pem",
-		ListenAddr:          "0.0.0.0",
-		ListenPort:          port,
-	}
 
 	certPair = &CertPair{
 		"cert/client/user.pem",
