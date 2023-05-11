@@ -11,8 +11,6 @@ import (
 
 	"golang.org/x/net/http2"
 
-	"github.com/jackc/pgx/v4/pgxpool"
-	db "github.com/shiguredo/kohaku/gen/sqlc"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,18 +32,6 @@ var (
 		"cert/client/user.key",
 	}
 )
-
-func newTestServer(c *Config, pool *pgxpool.Pool) *Server {
-	s := &Server{
-		config: c,
-		pool:   pool,
-		query:  db.New(pool),
-	}
-
-	s.setupEchoServer()
-
-	return s
-}
 
 func newTestClient(nextProto string, c *CertPair) (*http.Client, error) {
 	var client http.Client

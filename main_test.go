@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
+	db "github.com/shiguredo/kohaku/gen/sqlc"
 )
 
 const (
@@ -92,4 +93,16 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(code)
+}
+
+func newTestServer(c *Config, pool *pgxpool.Pool) *Server {
+	s := &Server{
+		config: c,
+		pool:   pool,
+		query:  db.New(pool),
+	}
+
+	s.setupEchoServer()
+
+	return s
 }
