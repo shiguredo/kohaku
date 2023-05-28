@@ -3,7 +3,7 @@ module github.com/shiguredo/kohaku
 go 1.20
 
 require (
-	github.com/go-playground/validator/v10 v10.13.0
+	github.com/go-playground/validator/v10 v10.14.0
 	github.com/jackc/pgconn v1.14.0
 	github.com/jackc/pgtype v1.14.0
 	github.com/jackc/pgx/v4 v4.18.1
@@ -11,11 +11,13 @@ require (
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/rs/zerolog v1.29.1
 	github.com/shiguredo/lumberjack/v3 v3.0.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	golang.org/x/net v0.10.0
 	golang.org/x/sync v0.2.0
 	gopkg.in/ini.v1 v1.67.0
 )
+
+require github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
@@ -44,7 +46,7 @@ require (
 	github.com/jackc/pgproto3/v2 v2.3.2 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/puddle v1.3.0 // indirect
-	github.com/labstack/echo-contrib v0.14.1
+	github.com/labstack/echo-contrib v0.15.0
 	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
