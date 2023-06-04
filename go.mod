@@ -3,7 +3,7 @@ module github.com/shiguredo/kohaku
 go 1.20
 
 require (
-	github.com/go-playground/validator/v10 v10.14.0
+	github.com/go-playground/validator/v10 v10.14.1
 	github.com/jackc/pgconn v1.14.0
 	github.com/jackc/pgtype v1.14.0
 	github.com/jackc/pgx/v4 v4.18.1
@@ -11,7 +11,7 @@ require (
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/rs/zerolog v1.29.1
 	github.com/shiguredo/lumberjack/v3 v3.0.0
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	golang.org/x/net v0.10.0
 	golang.org/x/sync v0.2.0
 	gopkg.in/ini.v1 v1.67.0
