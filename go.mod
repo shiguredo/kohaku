@@ -10,11 +10,11 @@ require (
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/rs/zerolog v1.29.1
-	github.com/shiguredo/lumberjack/v3 v3.0.0
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/net v0.10.0
 	golang.org/x/sync v0.2.0
 	gopkg.in/ini.v1 v1.67.0
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
 require github.com/gabriel-vasile/mimetype v1.4.2 // indirect

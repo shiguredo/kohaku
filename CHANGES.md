@@ -11,6 +11,8 @@
 
 ## develop
 
+- [UPDATE] lumberjack を公式に戻す
+  - @voluntas
 - [CHANGE] sqlc の emit_pointers_for_null_types を true にする
   - @voluntas
 - [CHANGE] RTCStats のデータはすでにレコードがある場合 timestamp 以外が変更されていない限りは追加する
