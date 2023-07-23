@@ -5,13 +5,13 @@ go 1.20
 require (
 	github.com/go-playground/validator/v10 v10.14.1
 	github.com/google/uuid v1.3.0
-	github.com/jackc/pgconn v1.14.0
+	github.com/jackc/pgconn v1.14.1
 	github.com/jackc/pgtype v1.14.0
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/labstack/echo-contrib v0.15.0
-	github.com/labstack/echo/v4 v4.11.0
+	github.com/labstack/echo/v4 v4.11.1
 	github.com/rs/zerolog v1.29.1
-	github.com/shogo82148/go-clockwork-base32 v1.0.0
+	github.com/shogo82148/go-clockwork-base32 v1.1.0
 	golang.org/x/net v0.12.0
 	golang.org/x/sync v0.3.0
 	gopkg.in/ini.v1 v1.67.0
