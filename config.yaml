@@ -1,0 +1,21 @@
+collector_port: 5890
+
+timescale_url: postgres://postgres:password@127.0.0.1:5432/kohaku
+
+timescale_sslmode: "disable"
+timescale_rootcert_file: ""
+
+# pem なのは前提とする
+http2_fullchain_file: ""
+http2_privkey_file: ""
+http2_verify_cacert_path: "dir"
+# TOOD(v): デフォルトは h2c: false にする
+http2_h2c: true
+http2_max_concurrent_streams: 250
+http2_max_read_frame_size: 1048576
+http2_idle_timeout: 60
+
+log_dir: .
+log_name: kohaku.log
+log_debug: true
+log_stdout: true
