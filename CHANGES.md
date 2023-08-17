@@ -11,6 +11,7 @@
 
 ## develop
 
+- [UPDATE] go.mod の go のバージョンを 1.21 にする
 - [UPDATE] sqlc 1.19.1 にする
 - [UPDATE] lumberjack を公式に戻す
   - @voluntas
@@ -59,7 +60,7 @@
 - [ADD] TimescaleDB と Grafana 検証用の compose.yaml を追加
   - grafana は 3333 ポート待ち受け
   - @voluntas
-- [UPDATE] go.mod, Github Actions で使用する Go のバージョンを 1.20 にあげる
+- [UPDATE] go.mod, Github Actions で使用する Go のバージョンを go.mod を見るようにする
   - @Hexa
 - [UPDATE] Github Actions で使用する staticcheck のバージョンを 2023.1.2 にあげる
   - @Hexa
