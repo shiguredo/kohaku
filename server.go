@@ -198,22 +198,18 @@ func (s *Server) setupEchoExporter() {
 }
 
 func (s *Server) Start(ctx context.Context, c *Config) error {
-	tlsFullchainFile := s.config.TLSFullchainFile
-	tlsPrivkeyFile := s.config.TLSPrivkeyFile
-
-	if _, err := os.Stat(tlsFullchainFile); err != nil {
-		return fmt.Errorf("tlsFullchainFile error: %s", err)
-	}
-
-	if _, err := os.Stat(tlsPrivkeyFile); err != nil {
-		return fmt.Errorf("tlsPrivkeyFile error: %s", err)
-	}
-
 	ch := make(chan error)
 	go func() {
 		defer close(ch)
-		if err := s.ListenAndServeTLS(tlsFullchainFile, tlsPrivkeyFile); err != http.ErrServerClosed {
-			ch <- err
+		if s.config.HTTPS {
+			if err := s.ListenAndServeTLS(s.config.TLSFullchainFile, s.config.TLSPrivkeyFile); err != http.ErrServerClosed {
+				ch <- err
+			}
+		} else {
+			// HTTP/2 over TCP
+			if err := s.ListenAndServe(); err != http.ErrServerClosed {
+				ch <- err
+			}
 		}
 	}()
 

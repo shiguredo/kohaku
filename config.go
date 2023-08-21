@@ -1,6 +1,8 @@
 package kohaku
 
 import (
+	"fmt"
+
 	zlog "github.com/rs/zerolog/log"
 	"gopkg.in/ini.v1"
 )
@@ -32,6 +34,7 @@ type Config struct {
 	// Days
 	LogRotateMaxAge int `ini:"log_rotate_max_age"`
 
+	HTTPS      bool   `ini:"https"`
 	ListenAddr string `ini:"listen_addr"`
 	ListenPort int    `ini:"listen_port"`
 
@@ -67,6 +70,10 @@ func NewConfig(configFilePath string) (*Config, error) {
 
 	setDefaultsConfig(config)
 
+	if err := validateConfig(config); err != nil {
+		return nil, err
+	}
+
 	return config, nil
 }
 
@@ -91,6 +98,11 @@ func setDefaultsConfig(config *Config) {
 		config.LogRotateMaxAge = DefaultLogRotateMaxAge
 	}
 
+	// デフォルトで HTTPS 必須にする
+	if !config.HTTPS {
+		config.HTTPS = true
+	}
+
 	if config.ExporterListenAddr == "" {
 		config.ExporterListenAddr = DefaultExporterListenAddr
 	}
@@ -98,6 +110,20 @@ func setDefaultsConfig(config *Config) {
 	if config.ExporterListenPort == 0 {
 		config.ExporterListenPort = DefaultExporterListenPort
 	}
+}
+
+func validateConfig(config *Config) error {
+	if config.HTTPS || config.ExporterHTTPS {
+		if config.TLSFullchainFile == "" {
+			return fmt.Errorf("tls_fullchain_file is required")
+		}
+
+		if config.TLSPrivkeyFile == "" {
+			return fmt.Errorf("tls_privkey_file is required")
+		}
+	}
+
+	return nil
 }
 
 func ShowConfig(config *Config) {
