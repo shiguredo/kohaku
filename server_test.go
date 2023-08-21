@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -35,6 +36,17 @@ var (
 
 func newTestClient(nextProto string, c *CertPair) (*http.Client, error) {
 	var client http.Client
+
+	// H2C クライアント
+	if nextProto == "h2c" {
+		client.Transport = &http2.Transport{
+			AllowHTTP: true,
+			DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+				return net.Dial(network, addr)
+			},
+		}
+		return &client, nil
+	}
 
 	cert, err := tls.LoadX509KeyPair(c.CertificateFile, c.KeyFile)
 	if err != nil {
@@ -123,6 +135,35 @@ func TestH2(t *testing.T) {
 
 	// Setup
 	client, err := newTestClient("h2", certPair)
+	if err != nil {
+		panic(err)
+	}
+
+	ctx := context.Background()
+	req, _ := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(""))
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	assert.Equal(t, "HTTP/2.0", resp.Proto)
+	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func TestH2C(t *testing.T) {
+	config := &Config{
+		HTTPS:      false,
+		ListenPort: 25890,
+	}
+	server = newTestServer(config, pgPool)
+	go (func() {
+		server.Start(context.Background(), config)
+	})()
+
+	time.Sleep(waitingTime * time.Millisecond)
+
+	client, err := newTestClient("h2c", nil)
 	if err != nil {
 		panic(err)
 	}
