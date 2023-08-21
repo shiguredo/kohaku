@@ -12,7 +12,7 @@
 ## develop
 
 - [UPDATE] go.mod の go のバージョンを 1.21 にする
-- [UPDATE] sqlc 1.19.1 にする
+- [UPDATE] sqlc 1.20.0 にする
 - [UPDATE] lumberjack を公式に戻す
   - @voluntas
 - [CHANGE] sqlc の emit_pointers_for_null_types を true にする
