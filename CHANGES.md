@@ -11,8 +11,16 @@
 
 ## develop
 
+- [CHANGE] デフォルト設定ファイル名を `config.ini` にする
+  - @voluntas
+- [CHANGE] /.ok を POST から GET に変更する
+  - @voluntas
+- [CHANGE] h2c を利用可能にする
+  - @voluntas
 - [UPDATE] go.mod の go のバージョンを 1.21 にする
+  - @voluntas
 - [UPDATE] sqlc 1.20.0 にする
+  - @voluntas
 - [UPDATE] lumberjack を公式に戻す
   - @voluntas
 - [CHANGE] sqlc の emit_pointers_for_null_types を true にする
