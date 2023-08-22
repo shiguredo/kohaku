@@ -15,7 +15,7 @@
   - @voluntas
 - [CHANGE] /.ok を POST から GET に変更する
   - @voluntas
-- [CHANGE] h2c を利用可能にする
+- [CHANGE] h2c を利用可能にする設定 `https` を追加する
   - @voluntas
 - [UPDATE] go.mod の go のバージョンを 1.21 にする
   - @voluntas
