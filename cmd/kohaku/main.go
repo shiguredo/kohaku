@@ -47,11 +47,11 @@ func main() {
 	g, ctx := errgroup.WithContext(context.Background())
 
 	g.Go(func() error {
-		return server.Start(ctx, config)
+		return server.Start(ctx)
 	})
 
 	g.Go(func() error {
-		return server.StartExporter(ctx, config)
+		return server.StartExporter(ctx)
 	})
 
 	if err := g.Wait(); err != nil {

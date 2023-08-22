@@ -35,17 +35,17 @@
   - @voluntas
 - [CHANGE] schema の全面書き換えし JSONB 形式で保存するように変更
   - @voluntas
-- [CHANGE] 設定 http2_fullchain_file を tls_fullchain_file に変更
+- [CHANGE] 設定 `http2_fullchain_file` を `tls_fullchain_file` に変更
   - @voluntas
-- [CHANGE] 設定 http2_privkey_file を tls_privkey_file に変更
+- [CHANGE] 設定 `http2_privkey_file` を `tls_privkey_file` に変更
   - @voluntas
-- [CHANGE] 設定 http2_verify_cacert_path を tls_verify_cacert_path に変更
+- [CHANGE] 設定 `http2_verify_cacert_path` を `tls_verify_cacert_path` に変更
   - @voluntas
 - [CHANGE] デフォルト設定ファイル名を config.ini に変更する
   - @voluntas
 - [CHANGE] OpenMetrics 用の Exporter を追加する
   - exporter_https
-    - 証明書は tls\_\* を利用します
+    - 証明書は `tls\_\*` を利用します
   - exporter_listen_addr
   - exporter_listen_port
   - @voluntas

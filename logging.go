@@ -14,7 +14,6 @@ import (
 
 // InitLogger ロガーを初期化する
 func InitLogger(config *Config) error {
-
 	if f, err := os.Stat(config.LogDir); os.IsNotExist(err) || !f.IsDir() {
 		return err
 	}

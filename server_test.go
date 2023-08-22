@@ -78,7 +78,7 @@ func newTestClient(nextProto string, c *CertPair) (*http.Client, error) {
 func TestMutualTLS(t *testing.T) {
 	s := newTestServer(config, pgPool)
 	go (func() {
-		s.Start(context.Background(), config)
+		s.Start(context.Background())
 	})()
 
 	time.Sleep(waitingTime * time.Millisecond)
@@ -104,7 +104,7 @@ func TestMutualTLS(t *testing.T) {
 func TestInvalidClientCertificate(t *testing.T) {
 	s := newTestServer(config, pgPool)
 	go (func() {
-		s.Start(context.Background(), config)
+		s.Start(context.Background())
 	})()
 
 	time.Sleep(waitingTime * time.Millisecond)
@@ -128,7 +128,7 @@ func TestInvalidClientCertificate(t *testing.T) {
 func TestH2(t *testing.T) {
 	s := newTestServer(config, pgPool)
 	go (func() {
-		s.Start(context.Background(), config)
+		s.Start(context.Background())
 	})()
 
 	time.Sleep(waitingTime * time.Millisecond)
@@ -160,7 +160,7 @@ func TestH2C(t *testing.T) {
 	}
 	server = newTestServer(config, pgPool)
 	go (func() {
-		server.Start(context.Background(), config)
+		server.Start(context.Background())
 	})()
 
 	time.Sleep(waitingTime * time.Millisecond)

@@ -192,7 +192,7 @@ func (s *Server) setupEchoExporter() {
 	s.echoExporter = e
 }
 
-func (s *Server) Start(ctx context.Context, c *Config) error {
+func (s *Server) Start(ctx context.Context) error {
 	ch := make(chan error)
 	go func() {
 		defer close(ch)
@@ -222,20 +222,20 @@ func (s *Server) Start(ctx context.Context, c *Config) error {
 	}
 }
 
-func (s *Server) StartExporter(ctx context.Context, config *Config) error {
+func (s *Server) StartExporter(ctx context.Context) error {
 	ch := make(chan error)
 	go func() {
 		var err error
 		// exporter も HTTPS にしたい場合はこちら
-		if config.ExporterHTTPS {
+		if s.config.ExporterHTTPS {
 			err = s.echoExporter.StartTLS(
-				net.JoinHostPort(config.ExporterListenAddr, strconv.Itoa(config.ExporterListenPort)),
-				config.TLSFullchainFile, config.TLSPrivkeyFile,
+				net.JoinHostPort(s.config.ExporterListenAddr, strconv.Itoa(s.config.ExporterListenPort)),
+				s.config.TLSFullchainFile, s.config.TLSPrivkeyFile,
 			)
 		} else {
 			// TODO: StartTLS 可能にする?
 			err = s.echoExporter.Start(
-				net.JoinHostPort(config.ExporterListenAddr, strconv.Itoa(config.ExporterListenPort)),
+				net.JoinHostPort(s.config.ExporterListenAddr, strconv.Itoa(s.config.ExporterListenPort)),
 			)
 		}
 
