@@ -25,7 +25,7 @@
   - @voluntas
 - [CHANGE] sqlc の emit_pointers_for_null_types を true にする
   - @voluntas
-- [CHANGE] RTCStats のデータはすでにレコードがある場合 timestamp 以外が変更されていない限りは追加する
+- [CHANGE] RTCStats のデータはすでにレコードがある場合 timestamp 以外が変更されていない限り追加しない
   - @voluntas
 - [CHANGE] TimescaleDB の設定項目を変更する
   - timescale_rootcert_file は postgres_ca_cert_file へ
