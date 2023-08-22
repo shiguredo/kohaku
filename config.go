@@ -109,8 +109,15 @@ func setDefaultsConfig(config *Config) {
 }
 
 func validateConfig(config *Config) error {
+	var err error
 	// アドレスとして正しいことを確認する
-	_, err := netip.ParseAddr(config.ListenAddr)
+	_, err = netip.ParseAddr(config.ListenAddr)
+	if err != nil {
+		return err
+	}
+
+	// アドレスとして正しいことを確認する
+	_, err = netip.ParseAddr(config.ExporterListenAddr)
 	if err != nil {
 		return err
 	}
