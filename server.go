@@ -122,6 +122,10 @@ func (s *Server) setupEchoServer() error {
 		e.Server.TLSConfig = tlsConfig
 	}
 
+	if err := http2.ConfigureServer(e.Server, h2s); err != nil {
+		return err
+	}
+
 	e.Pre(middleware.RemoveTrailingSlash())
 
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{

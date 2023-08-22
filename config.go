@@ -2,6 +2,7 @@ package kohaku
 
 import (
 	"fmt"
+	"net/netip"
 
 	zlog "github.com/rs/zerolog/log"
 	"gopkg.in/ini.v1"
@@ -108,6 +109,12 @@ func setDefaultsConfig(config *Config) {
 }
 
 func validateConfig(config *Config) error {
+	// アドレスとして正しいことを確認する
+	_, err := netip.ParseAddr(config.ListenAddr)
+	if err != nil {
+		return err
+	}
+
 	if config.HTTPS || config.ExporterHTTPS {
 		if config.TLSFullchainFile == "" {
 			return fmt.Errorf("tls_fullchain_file is required")
