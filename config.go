@@ -1,6 +1,9 @@
 package kohaku
 
 import (
+	"fmt"
+	"net/netip"
+
 	zlog "github.com/rs/zerolog/log"
 	"gopkg.in/ini.v1"
 )
@@ -32,6 +35,7 @@ type Config struct {
 	// Days
 	LogRotateMaxAge int `ini:"log_rotate_max_age"`
 
+	HTTPS      bool   `ini:"https"`
 	ListenAddr string `ini:"listen_addr"`
 	ListenPort int    `ini:"listen_port"`
 
@@ -67,6 +71,10 @@ func NewConfig(configFilePath string) (*Config, error) {
 
 	setDefaultsConfig(config)
 
+	if err := validateConfig(config); err != nil {
+		return nil, err
+	}
+
 	return config, nil
 }
 
@@ -100,6 +108,33 @@ func setDefaultsConfig(config *Config) {
 	}
 }
 
+func validateConfig(config *Config) error {
+	var err error
+	// アドレスとして正しいことを確認する
+	_, err = netip.ParseAddr(config.ListenAddr)
+	if err != nil {
+		return err
+	}
+
+	// アドレスとして正しいことを確認する
+	_, err = netip.ParseAddr(config.ExporterListenAddr)
+	if err != nil {
+		return err
+	}
+
+	if config.HTTPS || config.ExporterHTTPS {
+		if config.TLSFullchainFile == "" {
+			return fmt.Errorf("tls_fullchain_file is required")
+		}
+
+		if config.TLSPrivkeyFile == "" {
+			return fmt.Errorf("tls_privkey_file is required")
+		}
+	}
+
+	return nil
+}
+
 func ShowConfig(config *Config) {
 
 	zlog.Info().Bool("debug", config.Debug).Msg("CONF")
@@ -112,9 +147,11 @@ func ShowConfig(config *Config) {
 	zlog.Info().Int("log_rotate_max_backups", config.LogRotateMaxBackups).Msg("CONF")
 	zlog.Info().Int("log_rotate_max_age", config.LogRotateMaxAge).Msg("CONF")
 
+	zlog.Info().Bool("https", config.HTTPS).Msg("CONF")
 	zlog.Info().Str("listen_addr", config.ListenAddr).Msg("CONF")
 	zlog.Info().Int("listen_port", config.ListenPort).Msg("CONF")
 
+	zlog.Info().Bool("exporter_https", config.ExporterHTTPS).Msg("CONF")
 	zlog.Info().Str("exporter_listen_addr", config.ExporterListenAddr).Msg("CONF")
 	zlog.Info().Int("exporter_listen_port", config.ExporterListenPort).Msg("CONF")
 

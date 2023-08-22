@@ -9,12 +9,11 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/shiguredo/lumberjack/v3"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 // InitLogger ロガーを初期化する
 func InitLogger(config *Config) error {
-
 	if f, err := os.Stat(config.LogDir); os.IsNotExist(err) || !f.IsDir() {
 		return err
 	}
@@ -26,7 +25,7 @@ func InitLogger(config *Config) error {
 		return time.Now().UTC()
 	}
 
-	zerolog.TimeFieldFormat = time.RFC3339Nano
+	zerolog.TimeFieldFormat = "2006-01-02T15:04:05.000000Z"
 
 	if config.Debug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)

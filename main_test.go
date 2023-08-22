@@ -30,6 +30,7 @@ var (
 		TLSFullchainFile:    "cert/server/server.pem",
 		TLSPrivkeyFile:      "cert/server/server.key",
 		TLSVerifyCacertPath: "cert/client/ca.pem",
+		HTTPS:               true,
 		ListenAddr:          "0.0.0.0",
 		ListenPort:          port,
 	}

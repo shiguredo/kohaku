@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -36,6 +37,17 @@ var (
 func newTestClient(nextProto string, c *CertPair) (*http.Client, error) {
 	var client http.Client
 
+	// H2C クライアント
+	if nextProto == "h2c" {
+		client.Transport = &http2.Transport{
+			AllowHTTP: true,
+			DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+				return net.Dial(network, addr)
+			},
+		}
+		return &client, nil
+	}
+
 	cert, err := tls.LoadX509KeyPair(c.CertificateFile, c.KeyFile)
 	if err != nil {
 		return nil, err
@@ -66,7 +78,7 @@ func newTestClient(nextProto string, c *CertPair) (*http.Client, error) {
 func TestMutualTLS(t *testing.T) {
 	s := newTestServer(config, pgPool)
 	go (func() {
-		s.Start(context.Background(), config)
+		s.Start(context.Background())
 	})()
 
 	time.Sleep(waitingTime * time.Millisecond)
@@ -78,7 +90,7 @@ func TestMutualTLS(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	req, _ := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(""))
+	req, _ := http.NewRequestWithContext(ctx, "GET", url, strings.NewReader(""))
 	resp, err := client.Do(req)
 	if err != nil {
 		panic(err)
@@ -92,7 +104,7 @@ func TestMutualTLS(t *testing.T) {
 func TestInvalidClientCertificate(t *testing.T) {
 	s := newTestServer(config, pgPool)
 	go (func() {
-		s.Start(context.Background(), config)
+		s.Start(context.Background())
 	})()
 
 	time.Sleep(waitingTime * time.Millisecond)
@@ -108,7 +120,7 @@ func TestInvalidClientCertificate(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	req, _ := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(""))
+	req, _ := http.NewRequestWithContext(ctx, "GET", url, strings.NewReader(""))
 	_, err = client.Do(req)
 	assert.NotNil(t, err)
 }
@@ -116,7 +128,7 @@ func TestInvalidClientCertificate(t *testing.T) {
 func TestH2(t *testing.T) {
 	s := newTestServer(config, pgPool)
 	go (func() {
-		s.Start(context.Background(), config)
+		s.Start(context.Background())
 	})()
 
 	time.Sleep(waitingTime * time.Millisecond)
@@ -128,7 +140,41 @@ func TestH2(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	req, _ := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(""))
+	req, _ := http.NewRequestWithContext(ctx, "GET", url, strings.NewReader(""))
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	assert.Equal(t, "HTTP/2.0", resp.Proto)
+	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func TestH2C(t *testing.T) {
+	port := 25890
+	config := &Config{
+		HTTPS:      false,
+		ListenAddr: "0.0.0.0",
+		ListenPort: port,
+	}
+	server = newTestServer(config, pgPool)
+	go (func() {
+		server.Start(context.Background())
+	})()
+
+	time.Sleep(waitingTime * time.Millisecond)
+
+	client, err := newTestClient("h2c", nil)
+	if err != nil {
+		fmt.Print("panic")
+		panic(err)
+	}
+
+	url = fmt.Sprintf("http://localhost:%d/.ok", port)
+
+	ctx := context.Background()
+	req, _ := http.NewRequestWithContext(ctx, "GET", url, strings.NewReader(""))
 	resp, err := client.Do(req)
 	if err != nil {
 		panic(err)

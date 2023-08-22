@@ -11,9 +11,21 @@
 
 ## develop
 
+- [CHANGE] デフォルト設定ファイル名を `config.ini` にする
+  - @voluntas
+- [CHANGE] /.ok を POST から GET に変更する
+  - @voluntas
+- [CHANGE] h2c を利用可能にする設定 `https` を追加する
+  - @voluntas
+- [UPDATE] go.mod の go のバージョンを 1.21 にする
+  - @voluntas
+- [UPDATE] sqlc 1.20.0 にする
+  - @voluntas
+- [UPDATE] lumberjack を公式に戻す
+  - @voluntas
 - [CHANGE] sqlc の emit_pointers_for_null_types を true にする
   - @voluntas
-- [CHANGE] RTCStats のデータはすでにレコードがある場合 timestamp 以外が変更されていない限りは追加する
+- [CHANGE] RTCStats のデータはすでにレコードがある場合 timestamp 以外が変更されていない限り追加しない
   - @voluntas
 - [CHANGE] TimescaleDB の設定項目を変更する
   - timescale_rootcert_file は postgres_ca_cert_file へ
@@ -23,17 +35,17 @@
   - @voluntas
 - [CHANGE] schema の全面書き換えし JSONB 形式で保存するように変更
   - @voluntas
-- [CHANGE] 設定 http2_fullchain_file を tls_fullchain_file に変更
+- [CHANGE] 設定 `http2_fullchain_file` を `tls_fullchain_file` に変更
   - @voluntas
-- [CHANGE] 設定 http2_privkey_file を tls_privkey_file に変更
+- [CHANGE] 設定 `http2_privkey_file` を `tls_privkey_file` に変更
   - @voluntas
-- [CHANGE] 設定 http2_verify_cacert_path を tls_verify_cacert_path に変更
+- [CHANGE] 設定 `http2_verify_cacert_path` を `tls_verify_cacert_path` に変更
   - @voluntas
 - [CHANGE] デフォルト設定ファイル名を config.ini に変更する
   - @voluntas
 - [CHANGE] OpenMetrics 用の Exporter を追加する
   - exporter_https
-    - 証明書は tls\_\* を利用します
+    - 証明書は `tls\_\*` を利用します
   - exporter_listen_addr
   - exporter_listen_port
   - @voluntas
@@ -56,7 +68,7 @@
 - [ADD] TimescaleDB と Grafana 検証用の compose.yaml を追加
   - grafana は 3333 ポート待ち受け
   - @voluntas
-- [UPDATE] go.mod, Github Actions で使用する Go のバージョンを 1.20 にあげる
+- [UPDATE] go.mod, Github Actions で使用する Go のバージョンを go.mod を見るようにする
   - @Hexa
 - [UPDATE] Github Actions で使用する staticcheck のバージョンを 2023.1.2 にあげる
   - @Hexa
