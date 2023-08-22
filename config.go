@@ -98,11 +98,6 @@ func setDefaultsConfig(config *Config) {
 		config.LogRotateMaxAge = DefaultLogRotateMaxAge
 	}
 
-	// デフォルトで HTTPS 必須にする
-	if !config.HTTPS {
-		config.HTTPS = true
-	}
-
 	if config.ExporterListenAddr == "" {
 		config.ExporterListenAddr = DefaultExporterListenAddr
 	}
@@ -138,9 +133,11 @@ func ShowConfig(config *Config) {
 	zlog.Info().Int("log_rotate_max_backups", config.LogRotateMaxBackups).Msg("CONF")
 	zlog.Info().Int("log_rotate_max_age", config.LogRotateMaxAge).Msg("CONF")
 
+	zlog.Info().Bool("https", config.HTTPS).Msg("CONF")
 	zlog.Info().Str("listen_addr", config.ListenAddr).Msg("CONF")
 	zlog.Info().Int("listen_port", config.ListenPort).Msg("CONF")
 
+	zlog.Info().Bool("exporter_https", config.ExporterHTTPS).Msg("CONF")
 	zlog.Info().Str("exporter_listen_addr", config.ExporterListenAddr).Msg("CONF")
 	zlog.Info().Int("exporter_listen_port", config.ExporterListenPort).Msg("CONF")
 

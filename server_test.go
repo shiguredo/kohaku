@@ -90,7 +90,7 @@ func TestMutualTLS(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	req, _ := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(""))
+	req, _ := http.NewRequestWithContext(ctx, "GET", url, strings.NewReader(""))
 	resp, err := client.Do(req)
 	if err != nil {
 		panic(err)
@@ -120,7 +120,7 @@ func TestInvalidClientCertificate(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	req, _ := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(""))
+	req, _ := http.NewRequestWithContext(ctx, "GET", url, strings.NewReader(""))
 	_, err = client.Do(req)
 	assert.NotNil(t, err)
 }
@@ -140,7 +140,7 @@ func TestH2(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	req, _ := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(""))
+	req, _ := http.NewRequestWithContext(ctx, "GET", url, strings.NewReader(""))
 	resp, err := client.Do(req)
 	if err != nil {
 		panic(err)
@@ -152,9 +152,11 @@ func TestH2(t *testing.T) {
 }
 
 func TestH2C(t *testing.T) {
+	port := 25890
 	config := &Config{
 		HTTPS:      false,
-		ListenPort: 25890,
+		ListenAddr: "0.0.0.0",
+		ListenPort: port,
 	}
 	server = newTestServer(config, pgPool)
 	go (func() {
@@ -165,11 +167,14 @@ func TestH2C(t *testing.T) {
 
 	client, err := newTestClient("h2c", nil)
 	if err != nil {
+		fmt.Print("panic")
 		panic(err)
 	}
 
+	url = fmt.Sprintf("http://localhost:%d/.ok", port)
+
 	ctx := context.Background()
-	req, _ := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(""))
+	req, _ := http.NewRequestWithContext(ctx, "GET", url, strings.NewReader(""))
 	resp, err := client.Do(req)
 	if err != nil {
 		panic(err)

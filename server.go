@@ -22,6 +22,7 @@ import (
 	db "github.com/shiguredo/kohaku/gen/sqlc"
 
 	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -32,9 +33,7 @@ type Server struct {
 	pool  *pgxpool.Pool
 	query *db.Queries
 
-	echo *echo.Echo
-	http.Server
-
+	echo         *echo.Echo
 	echoExporter *echo.Echo
 }
 
@@ -102,9 +101,9 @@ func (s *Server) setupEchoServer() error {
 		return err
 	}
 
-	s.Server = http.Server{
+	e.Server = &http.Server{
 		Addr:    net.JoinHostPort(s.config.ListenAddr, strconv.Itoa(s.config.ListenPort)),
-		Handler: e,
+		Handler: h2c.NewHandler(e, h2s),
 	}
 
 	// クライアント認証をするかどうかのチェック
@@ -120,11 +119,7 @@ func (s *Server) setupEchoServer() error {
 			ClientAuth: tls.RequireAndVerifyClientCert,
 			ClientCAs:  certPool,
 		}
-		s.Server.TLSConfig = tlsConfig
-	}
-
-	if err := http2.ConfigureServer(&s.Server, h2s); err != nil {
-		return err
+		e.Server.TLSConfig = tlsConfig
 	}
 
 	e.Pre(middleware.RemoveTrailingSlash())
@@ -174,7 +169,7 @@ func (s *Server) setupEchoServer() error {
 	e.Validator = &Validator{validator: validator}
 
 	// ヘルスチェック
-	e.POST("/.ok", s.ok)
+	e.GET("/.ok", s.ok)
 
 	// 統計情報を突っ込むところ
 	e.POST("/collector", s.collector)
@@ -202,19 +197,19 @@ func (s *Server) Start(ctx context.Context, c *Config) error {
 	go func() {
 		defer close(ch)
 		if s.config.HTTPS {
-			if err := s.ListenAndServeTLS(s.config.TLSFullchainFile, s.config.TLSPrivkeyFile); err != http.ErrServerClosed {
+			if err := s.echo.Server.ListenAndServeTLS(s.config.TLSFullchainFile, s.config.TLSPrivkeyFile); err != http.ErrServerClosed {
 				ch <- err
 			}
 		} else {
 			// HTTP/2 over TCP
-			if err := s.ListenAndServe(); err != http.ErrServerClosed {
+			if err := s.echo.Server.ListenAndServe(); err != http.ErrServerClosed {
 				ch <- err
 			}
 		}
 	}()
 
 	defer func() {
-		if err := s.Shutdown(ctx); err != nil {
+		if err := s.echo.Shutdown(ctx); err != nil {
 			zlog.Error().Err(err).Send()
 		}
 	}()
