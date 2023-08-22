@@ -26,7 +26,7 @@ func InitLogger(config *Config) error {
 		return time.Now().UTC()
 	}
 
-	zerolog.TimeFieldFormat = time.RFC3339Nano
+	zerolog.TimeFieldFormat = "2006-01-02T15:04:05.000000Z"
 
 	if config.Debug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
