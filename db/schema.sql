@@ -52,6 +52,6 @@ ALTER TABLE sora_user_agent_stats SET (
     timescaledb.compress_segmentby = 'channel_id, connection_id'
 );
 -- 圧縮の INTERNVAL の値は自由に変えること
-SELECT add_compression_policy('sora_user_agent_stats', INTERVAL '3 days');
+SELECT add_compression_policy('sora_user_agent_stats', INTERVAL '7 days');
 -- 保持の INTERNVAL の値は自由に変えること
-SELECT add_retention_policy('sora_user_agent_stats', INTERVAL '14 days');
+SELECT add_retention_policy('sora_user_agent_stats', INTERVAL '60 days');
