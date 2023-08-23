@@ -67,6 +67,7 @@ limitations under the License.
 **詳細は Discord やメールなどでお気軽にお問い合わせください**
 
 - AWS Timestream 対応
+- SQLite 対応
 
 ## 記事
 

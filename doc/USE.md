@@ -119,7 +119,7 @@ $ openssl ca -config openssl.cnf \
 
 kohaku の設定ファイルで、 mTLS で使用するクライアント認証用の CA 証明書ファイルを指定します。
 
-- http2_verify_cacert_path
+- tls_verify_cacert_path
 
   - 上記で作成したクライアント証明書を発行する際に使用した CA 証明書（ca.pem）へのパスを指定します
 
