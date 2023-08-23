@@ -57,10 +57,6 @@ sequenceDiagram
   K->>T: INSERT TO ...
 ```
 
-## 開発ログ
-
-[時雨堂 WebRTC Stats Collector Kohaku 開発ログ](https://gist.github.com/voluntas/f162f7f513ef83051e46dc405cad6a04)
-
 ## ライセンス
 
 Apache License 2.0
