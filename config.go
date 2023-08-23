@@ -154,5 +154,4 @@ func ShowConfig(config *Config) {
 	zlog.Info().Bool("exporter_https", config.ExporterHTTPS).Msg("CONF")
 	zlog.Info().Str("exporter_listen_addr", config.ExporterListenAddr).Msg("CONF")
 	zlog.Info().Int("exporter_listen_port", config.ExporterListenPort).Msg("CONF")
-
 }
