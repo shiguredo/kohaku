@@ -46,15 +46,15 @@ sequenceDiagram
   note over S,K: HTTP/2 確立済み
   note over C,S: WebRTC 確立済み
   S->>+C: type: stats-req
-  C->>-S: type: stats
-  S-)K: User-Agent Stats over HTTP/2
-  K->>T: User-Agent 書き込み
-  G->>T: SELECT * FROM SoraConnection...
+  C->>-S: type: stats<br>WebRTC 統計情報
+  S-)K: WebRTC 統計情報 over HTTP/2
+  K->>T: INSERT TO ...
+  G->>T: SELECT ...
   T->>G: 結果
   S->>+C: type: stats-req
-  C->>-S: type: stats
-  S-)K: User-Agent Stats over HTTP/2
-  K->>T: User-Agent 書き込み
+  C->>-S: type: stats<br>WebRTC 統計情報
+  S-)K: WebRTC 統計情報 over HTTP/2
+  K->>T: INSERT TO ...
 ```
 
 ## 開発ログ
