@@ -3,8 +3,9 @@ Description=WebRTC Stats Collector Kohaku
 After=network.target
 
 [Service]
-Restart=always
+Restart=on-failure
 RestartSec=60s
+RestartPreventExitStatus=1
 KillMode=control-group
 User=shiguredo
 Group=shiguredo
