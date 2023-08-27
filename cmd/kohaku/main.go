@@ -11,18 +11,18 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// curl -v --http2-prior-knowledge http://localhost:8080
-
 func main() {
 
-	configFilePath := flag.String("c", "./config.ini", "kohaku の設定ファイルへのパス(ini)")
+	configFilePath := flag.String("C", "./config.ini", "kohaku の設定ファイルへのパス(ini)")
 	flag.Parse()
 
 	config, err := kohaku.NewConfig(*configFilePath)
 	if err != nil {
-		log.Fatal(err)
+		// パースに失敗した場合 Fatal で終了
+		log.Fatal("cannot parse config file, err=", err)
 	}
 
+	// ロガー初期化
 	if err := kohaku.InitLogger(config); err != nil {
 		// ロガー初期化に失敗したら Fatal で終了
 		log.Fatal("cannot parse config file, err=", err)

@@ -11,6 +11,8 @@
 
 ## develop
 
+- [CHANGE] 設定ファイル読み込みの引数を -C に変更する
+  - @voluntas
 - [CHANGE] デフォルト設定ファイル名を `config.ini` にする
   - @voluntas
 - [CHANGE] /.ok を POST から GET に変更する
