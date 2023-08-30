@@ -10,7 +10,7 @@ KillMode=control-group
 User=sora
 Group=sora
 WorkingDirectory=/home/sora/kohaku
-ExecStart=/bin/bash -c '/home/sora/kohaku/bin/kohaku -c /home/sora/kohaku/config.ini 2>/var/log/kohaku/stderr.log 1>/var/log/kohaku/stdout.log'
+ExecStart=/bin/bash -c '/home/sora/kohaku/bin/kohaku -C /home/sora/kohaku/config.ini 2>/var/log/kohaku/stderr.log 1>/var/log/kohaku/stdout.log'
 Type=simple
 LogsDirectory=kohaku
 
