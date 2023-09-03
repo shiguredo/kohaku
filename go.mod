@@ -3,7 +3,7 @@ module github.com/shiguredo/kohaku
 go 1.21
 
 require (
-	github.com/go-playground/validator/v10 v10.15.1
+	github.com/go-playground/validator/v10 v10.15.3
 	github.com/google/uuid v1.3.1
 	github.com/jackc/pgconn v1.14.1
 	github.com/jackc/pgtype v1.14.0
