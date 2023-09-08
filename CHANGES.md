@@ -11,6 +11,8 @@
 
 ## develop
 
+- [ADD] Grafana ダッシュボードの追加
+  - @tnamao
 - [ADD] バージョンを -V と --version で表示できるようにする
   - バージョンファイル VERSION を利用するようにする
   - @voluntas
