@@ -102,7 +102,7 @@
                   {
                     "targetBlank": true,
                     "title": "Connection's RTC Stats",
-                    "url": "d/bf887222-a2f7-4370-b688-b6c6b4ed47c0/rtc-stats?var-connection_id=${__value.raw}﻿﻿&from=﻿﻿${__data.fields.from_time}﻿﻿&to=﻿﻿${__data.fields.to_time}﻿﻿&var-channel_id=﻿${__data.fields.channel_id}﻿&var-session_id=${__data.fields.session_id}&var-DS_POSTGRESQL=﻿﻿${DS_POSTGRESQL}"
+                    "url": "d/bf887222-a2f7-4370-b688-b6c6b4ed47c0/rtc-stats?var-connection_id=${__value.raw}﻿﻿&from=﻿﻿${__data.fields.from_time}﻿﻿&to=﻿﻿${__data.fields.to_time}﻿﻿&var-channel_id=﻿${__data.fields.channel_id}﻿&var-session_id=${__data.fields.session_id}&var-DS_POSTGRESQL=﻿﻿PCC52D03280B7034C"
                   }
                 ]
               }
@@ -140,7 +140,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH term AS (\n  SELECT\n    connection_id,\n    MAX(timestamp) AS last_time\n  FROM sora_user_agent_stats\n  WHERE $__timeFilter(timestamp)\n  GROUP BY connection_id\n)\n-- この接続一覧は Sora のコネクションを張ったタイミングでより新しいもの\nSELECT\n  timestamp AS created_timestamp,\n  channel_id,\n  session_id,\n  connection_id,\n  role,\n  -- Data links に設定する from パラメータ用にミリ秒のタイムスタンプを生成\n  (EXTRACT(EPOCH FROM timestamp) :: bigint * 1000) :: bigint AS from_time,\n  -- Data links に設定する to パラメータ用にミリ秒のタイムスタンプを生成\n  (EXTRACT(EPOCH FROM term.last_time) :: bigint * 1000) :: bigint AS to_time\nFROM sora_connection\nLEFT OUTER JOIN term USING (connection_id)\nWHERE $__timeFilter(timestamp) \nORDER BY timestamp DESC\nOFFSET ${offset}\nLIMIT ${limit};",
+          "rawSql": "WITH term AS (\n  SELECT\n    connection_id,\n    MAX(timestamp) AS last_time\n  FROM sora_user_agent_stats\n  WHERE $__timeFilter(timestamp)\n  GROUP BY connection_id\n)\n-- この接続一覧は Sora のコネクションを張ったタイミングでより新しいもの\nSELECT\n  timestamp AS created_timestamp,\n  channel_id,\n  session_id,\n  client_id,\n  connection_id,\n  role,\n  -- Data links に設定する from パラメータ用にミリ秒のタイムスタンプを生成\n  (EXTRACT(EPOCH FROM timestamp) :: bigint * 1000) :: bigint AS from_time,\n  -- Data links に設定する to パラメータ用にミリ秒のタイムスタンプを生成\n  (EXTRACT(EPOCH FROM term.last_time) :: bigint * 1000) :: bigint AS to_time\nFROM sora_connection\nLEFT OUTER JOIN term USING (connection_id)\nWHERE $__timeFilter(timestamp) \nORDER BY timestamp DESC\nOFFSET ${offset}\nLIMIT ${limit};",
           "refId": "A",
           "sql": {
             "columns": [
@@ -249,13 +249,13 @@
     ]
   },
   "time": {
-    "from": "now-12h",
+    "from": "now-24h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Kohaku",
   "uid": "fcec729e-f8a9-424b-b6e8-37b3697632c4",
-  "version": 6,
+  "version": 2,
   "weekStart": ""
 }
