@@ -26,5 +26,8 @@ services:
       - "3333:3000"
     volumes:
       - ./.grafana:/var/lib/grafana
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/dashboards/kohaku.yml:/etc/grafana/provisioning/dashboards/kohaku.yml
+      - ./grafana/dashboards/kohaku:/var/lib/grafana/dashboards/kohaku
     depends_on:
       - timescaledb
