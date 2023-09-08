@@ -11,6 +11,10 @@
 
 ## develop
 
+## 2023.1.0
+
+- [ADD] Grafana ダッシュボードの追加
+  - @tnamao
 - [ADD] バージョンを -V と --version で表示できるようにする
   - バージョンファイル VERSION を利用するようにする
   - @voluntas
@@ -78,7 +82,7 @@
 - [UPDATE] Github Actions で使用する staticcheck のバージョンを 2023.1.2 にあげる
   - @Hexa
 
-## 2021.2.0
+## 2022.1.0
 
 - [CHANGE] kohaku の設定ファイルのパス指定のデフォルトを ../config.yaml から ./config.yaml に変更する
   - @Hexa
