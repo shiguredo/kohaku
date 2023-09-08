@@ -16,7 +16,7 @@ func main() {
 	showVersion := flag.Bool("V", false, "バージョン")
 
 	// /bin/kohaku -C ./config.ini
-	configFilePath := flag.String("C", "./config.ini", "kohaku の設定ファイルへのパス(ini)")
+	configFilePath := flag.String("C", "./config.ini", "設定ファイルへのパス")
 	flag.Parse()
 
 	if *showVersion {
