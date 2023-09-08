@@ -11,7 +11,10 @@
 
 ## develop
 
-- [CHANGE] 設定ファイル読み込みの引数を -C に変更する
+- [ADD] バージョンを -V と --version で表示できるようにする
+  - バージョンファイル VERSION を利用するようにする
+  - @voluntas
+- [CHANGE] 設定ファイル読み込みの引数を -C と --config に変更する
   - @voluntas
 - [CHANGE] デフォルト設定ファイル名を `config.ini` にする
   - @voluntas
