@@ -1,12 +1,17 @@
 package kohaku
 
 import (
+	_ "embed"
+
 	"fmt"
 	"net/netip"
 
 	zlog "github.com/rs/zerolog/log"
 	"gopkg.in/ini.v1"
 )
+
+//go:embed VERSION
+var Version string
 
 const (
 	DefaultLogDir  = "."

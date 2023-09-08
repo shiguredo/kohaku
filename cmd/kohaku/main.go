@@ -12,9 +12,17 @@ import (
 )
 
 func main() {
-
+	// /bin/kohaku -V
+	showVersion := flag.Bool("V", false, "show version")
+	flag.BoolVar(showVersion, "version", false, "show version")
+	// /bin/kohaku -C ./config.ini
 	configFilePath := flag.String("C", "./config.ini", "kohaku の設定ファイルへのパス(ini)")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Printf("WebRTC Stats Collector Kohaku version %s\n", kohaku.Version)
+		return
+	}
 
 	config, err := kohaku.NewConfig(*configFilePath)
 	if err != nil {
