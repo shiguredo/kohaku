@@ -102,7 +102,7 @@
                   {
                     "targetBlank": true,
                     "title": "Connection's RTC Stats",
-                    "url": "d/bf887222-a2f7-4370-b688-b6c6b4ed47c0/rtc-stats?var-connection_id=${__value.raw}﻿﻿&from=﻿﻿${__data.fields.from_time}﻿﻿&to=﻿﻿${__data.fields.to_time}﻿﻿&var-channel_id=﻿${__data.fields.channel_id}﻿&var-session_id=${__data.fields.session_id}&var-DS_POSTGRESQL=﻿﻿PCC52D03280B7034C"
+                    "url": "d/bf887222-a2f7-4370-b688-b6c6b4ed47c0/rtc-stats?var-connection_id=${__value.raw}﻿﻿&from=﻿﻿${__data.fields.from_time}﻿﻿&to=﻿﻿${__data.fields.to_time}﻿﻿&var-channel_id=﻿${__data.fields.channel_id}﻿&var-session_id=${__data.fields.session_id}&var-DS_POSTGRESQL=﻿﻿${DS_POSTGRESQL}"
                   }
                 ]
               }
