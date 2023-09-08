@@ -13,14 +13,10 @@ import (
 
 func main() {
 	// /bin/kohaku -V
-	showVersion := flag.Bool("V", false, "show version")
-	// /bin/kohaku --version
-	flag.BoolVar(showVersion, "version", false, "show version")
+	showVersion := flag.Bool("V", false, "バージョン")
 
 	// /bin/kohaku -C ./config.ini
 	configFilePath := flag.String("C", "./config.ini", "kohaku の設定ファイルへのパス(ini)")
-	// /bin/kohaku --config ./config.ini
-	flag.StringVar(configFilePath, "config", "./config.ini", "kohaku の設定ファイルへのパス(ini)")
 	flag.Parse()
 
 	if *showVersion {
