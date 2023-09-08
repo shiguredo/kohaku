@@ -23,7 +23,6 @@ jobs:
           cache-dependency-path: ./go.sum
 
       - run: go version
-
       - run: go fmt .
 
       - uses: dominikh/staticcheck-action@v1.3.0
