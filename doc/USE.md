@@ -6,6 +6,12 @@
 $ make
 ```
 
+### バージョン表示
+
+```console
+$ bin/kohaku -V
+```
+
 ## 設定ファイル
 
 config_example.ini をコピーして、接続先の DB の URL（postgres_uri） などを設定してください。
