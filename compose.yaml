@@ -1,0 +1,33 @@
+version: "3.9"
+name: "kohaku-dev"
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=kohaku
+    healthcheck:
+      test: pg_isready -U postgres
+      interval: 5s
+    command: -c 'config_file=/etc/postgresql/postgresql.conf'
+    volumes:
+      - ./db/postgresql.conf:/etc/postgresql/postgresql.conf
+      # https://github.com/timescale/timescaledb-docker/tree/main/docker-entrypoint-initdb.d
+      # timescaledb 側で 001 と 002 があるのでその後に実行するために 100 からスタート
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/100_schema.sql
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3333:3000"
+    volumes:
+      - ./.grafana:/var/lib/grafana
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/dashboards/kohaku.yml:/etc/grafana/provisioning/dashboards/kohaku.yml
+      - ./grafana/dashboards/kohaku:/var/lib/grafana/dashboards/kohaku
+    depends_on:
+      - timescaledb

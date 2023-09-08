@@ -9,7 +9,7 @@ import (
 )
 
 // TODO: ログレベル、ログメッセージを変更する
-func (s *Server) health(c echo.Context) error {
+func (s *Server) ok(c echo.Context) error {
 	if err := s.pool.Ping(context.Background()); err != nil {
 		zlog.Error().Err(err).Send()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())

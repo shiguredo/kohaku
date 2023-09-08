@@ -25,6 +25,11 @@ type soraStats struct {
 type soraConnectionStats struct {
 	soraStats
 
+	/*
+		Validate の場合 bool だとデフォルトが false になってしまい、
+		false が入ってきた時常にエラーになる。
+		そのため *bool にして nil か true か false かの 3 択判定にする
+	*/
 	Multistream *bool `json:"multistream" validate:"required"`
 	Simulcast   *bool `json:"simulcast" validate:"required"`
 	Spotlight   *bool `json:"spotlight" validate:"required"`
@@ -38,6 +43,7 @@ type soraConnectionStats struct {
 	Stats []json.RawMessage `json:"stats" validate:"required"`
 }
 
+// 最大バイトサイズ
 func maximumNumberOfBytesFunc(fl validator.FieldLevel) bool {
 	param := fl.Param()
 

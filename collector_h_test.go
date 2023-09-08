@@ -4,23 +4,22 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/labstack/echo/v4"
+	db "github.com/shiguredo/kohaku/gen/sqlc"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
 )
 
-// TODO(v): mockDB を導入する
+const (
+	channelID    = "sora"
+	connectionID = "QJ253E85SH1C170WQSPYJGFHCR"
+	clientID     = "QJ253E85SH1C170WQSPYJGFHCR"
+)
 
 var (
 	timestamp, _ = time.Parse(time.RFC3339Nano, "2021-12-23T02:25:07.471546Z")
@@ -40,11 +39,11 @@ var (
 			json.RawMessage(`{}`),
 		},
 		ChannelID:    "sora",
+		SessionID:    "JTYG1KGGPH2DKF86Y5B0GMWFSM",
 		ClientID:     "QJ253E85SH1C170WQSPYJGFHCR",
 		ConnectionID: "QJ253E85SH1C170WQSPYJGFHCR",
-		Multistream:  &multistream,
 		Role:         "sendrecv",
-		SessionID:    "JTYG1KGGPH2DKF86Y5B0GMWFSM",
+		Multistream:  &multistream,
 		Simulcast:    &simulcast,
 		Spotlight:    &spotlight,
 	}
@@ -80,93 +79,6 @@ var (
     "version": "2021.2.0"
   }`
 )
-
-const (
-	connStr          = "postgres://%s:%s@%s/%s?sslmode=disable"
-	postgresUser     = "postgres"
-	postgresPassword = "password"
-	postgresDB       = "kohakutest"
-
-	channelID    = "sora"
-	connectionID = "QJ253E85SH1C170WQSPYJGFHCR"
-	clientID     = "QJ253E85SH1C170WQSPYJGFHCR"
-)
-
-var (
-	pgPool *pgxpool.Pool
-	server *Server
-)
-
-func getStatsType(table, connectionID string) (*string, error) {
-	selectSQL := fmt.Sprintf("SELECT stats_type FROM %s WHERE sora_connection_id=$1", table)
-	row := pgPool.QueryRow(context.Background(), selectSQL, connectionID)
-
-	var statsType string
-	if err := row.Scan(&statsType); err != nil {
-		return nil, err
-	}
-
-	return &statsType, nil
-}
-
-func TestMain(m *testing.M) {
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		panic(err)
-	}
-
-	pwd, _ := os.Getwd()
-
-	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "timescale/timescaledb",
-		Tag:        "latest-pg14",
-		Env: []string{
-			"POSTGRES_PASSWORD=" + postgresPassword,
-			"POSTGRES_USER=" + postgresUser,
-			"POSTGRES_DB=" + postgresDB,
-			"listen_addresses = '*'",
-		},
-		Mounts: []string{
-			pwd + "/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql",
-		},
-	}, func(config *docker.HostConfig) {
-		config.AutoRemove = true
-		config.RestartPolicy = docker.RestartPolicy{Name: "no"}
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	hostAndPort := resource.GetHostPort("5432/tcp")
-	kohakuDBURL := fmt.Sprintf(connStr, postgresUser, postgresPassword, hostAndPort, postgresDB)
-
-	resource.Expire(60)
-	pool.MaxWait = 60 * time.Second
-	if err = pool.Retry(func() error {
-		config, err := pgxpool.ParseConfig(kohakuDBURL)
-		if err != nil {
-			return err
-		}
-		pgPool, err = pgxpool.ConnectConfig(context.Background(), config)
-		if err != nil {
-			return err
-		}
-
-		return pgPool.Ping(context.Background())
-	}); err != nil {
-		panic(err)
-	}
-
-	server = NewServer(&KohakuConfig{}, pgPool)
-
-	code := m.Run()
-
-	if err := pool.Purge(resource); err != nil {
-		panic(err)
-	}
-
-	os.Exit(code)
-}
 
 func TestTypeOutboundRTPCollector(t *testing.T) {
 	// Setup
@@ -224,6 +136,8 @@ func TestTypeOutboundRTPCollector(t *testing.T) {
 	req.Header.Set("content-type", "application/json")
 	req.Header.Set("x-sora-stats-exporter-type", "connection.user-agent")
 	req.Proto = "HTTP/2.0"
+	req.ProtoMajor = 2
+	req.ProtoMinor = 0
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
@@ -231,12 +145,16 @@ func TestTypeOutboundRTPCollector(t *testing.T) {
 	if assert.NoError(t, server.collector(c)) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-		statsType, err := getStatsType("rtc_outbound_rtp_stream_stats", connectionID)
+		statsType, err := server.query.TestGetUserAgentStatsType(context.Background(), db.TestGetUserAgentStatsTypeParams{
+			ChannelID:    channelID,
+			ConnectionID: connectionID,
+		})
 		if err != nil {
 			panic(err)
 		}
-		assert.Equal(t, "outbound-rtp", *statsType)
+		assert.Equal(t, "outbound-rtp", statsType)
 	}
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }
 
 func TestTypeCodecCollector(t *testing.T) {
@@ -265,6 +183,8 @@ func TestTypeCodecCollector(t *testing.T) {
 	req.Header.Set("content-type", "application/json")
 	req.Header.Set("x-sora-stats-exporter-type", "connection.user-agent")
 	req.Proto = "HTTP/2.0"
+	req.ProtoMajor = 2
+	req.ProtoMinor = 0
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
@@ -272,12 +192,16 @@ func TestTypeCodecCollector(t *testing.T) {
 	if assert.NoError(t, server.collector(c)) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-		statsType, err := getStatsType("rtc_codec_stats", connectionID)
+		statsType, err := server.query.TestGetUserAgentStatsType(context.Background(), db.TestGetUserAgentStatsTypeParams{
+			ChannelID:    channelID,
+			ConnectionID: connectionID,
+		})
 		if err != nil {
 			panic(err)
 		}
-		assert.Equal(t, "codec", *statsType)
+		assert.Equal(t, "codec", statsType)
 	}
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }
 
 func TestTypeMediaSourceCollector(t *testing.T) {
@@ -316,6 +240,8 @@ func TestTypeMediaSourceCollector(t *testing.T) {
 	req.Header.Set("content-type", "application/json")
 	req.Header.Set("x-sora-stats-exporter-type", "connection.user-agent")
 	req.Proto = "HTTP/2.0"
+	req.ProtoMajor = 2
+	req.ProtoMinor = 0
 	rec := httptest.NewRecorder()
 
 	c := e.NewContext(req, rec)
@@ -324,12 +250,16 @@ func TestTypeMediaSourceCollector(t *testing.T) {
 	if assert.NoError(t, server.collector(c)) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-		statsType, err := getStatsType("rtc_audio_source_stats", connectionID)
+		statsType, err := server.query.TestGetUserAgentStatsType(context.Background(), db.TestGetUserAgentStatsTypeParams{
+			ChannelID:    channelID,
+			ConnectionID: connectionID,
+		})
 		if err != nil {
 			panic(err)
 		}
-		assert.Equal(t, "media-source", *statsType)
+		assert.Equal(t, "media-source", statsType)
 	}
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }
 
 func TestTypeDataChannelCollector(t *testing.T) {
@@ -399,6 +329,8 @@ func TestTypeDataChannelCollector(t *testing.T) {
 	req.Header.Set("content-type", "application/json")
 	req.Header.Set("x-sora-stats-exporter-type", "connection.user-agent")
 	req.Proto = "HTTP/2.0"
+	req.ProtoMajor = 2
+	req.ProtoMinor = 0
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
@@ -406,12 +338,16 @@ func TestTypeDataChannelCollector(t *testing.T) {
 	if assert.NoError(t, server.collector(c)) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-		statsType, err := getStatsType("rtc_data_channel_stats", connectionID)
+		statsType, err := server.query.TestGetUserAgentStatsType(context.Background(), db.TestGetUserAgentStatsTypeParams{
+			ChannelID:    channelID,
+			ConnectionID: connectionID,
+		})
 		if err != nil {
 			panic(err)
 		}
-		assert.Equal(t, "data-channel", *statsType)
+		assert.Equal(t, "data-channel", statsType)
 	}
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }
 
 func TestTypeCandidatePairCollector(t *testing.T) {
@@ -455,6 +391,8 @@ func TestTypeCandidatePairCollector(t *testing.T) {
 	req.Header.Set("content-type", "application/json")
 	req.Header.Set("x-sora-stats-exporter-type", "connection.user-agent")
 	req.Proto = "HTTP/2.0"
+	req.ProtoMajor = 2
+	req.ProtoMinor = 0
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
@@ -462,12 +400,16 @@ func TestTypeCandidatePairCollector(t *testing.T) {
 	if assert.NoError(t, server.collector(c)) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-		statsType, err := getStatsType("rtc_ice_candidate_pair_stats", connectionID)
+		statsType, err := server.query.TestGetUserAgentStatsType(context.Background(), db.TestGetUserAgentStatsTypeParams{
+			ChannelID:    channelID,
+			ConnectionID: connectionID,
+		})
 		if err != nil {
 			panic(err)
 		}
-		assert.Equal(t, "candidate-pair", *statsType)
+		assert.Equal(t, "candidate-pair", statsType)
 	}
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }
 
 func TestTypeRemoteInboundRTPCollector(t *testing.T) {
@@ -517,6 +459,8 @@ func TestTypeRemoteInboundRTPCollector(t *testing.T) {
 	req.Header.Set("content-type", "application/json")
 	req.Header.Set("x-sora-stats-exporter-type", "connection.user-agent")
 	req.Proto = "HTTP/2.0"
+	req.ProtoMajor = 2
+	req.ProtoMinor = 0
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
@@ -524,12 +468,16 @@ func TestTypeRemoteInboundRTPCollector(t *testing.T) {
 	if assert.NoError(t, server.collector(c)) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-		statsType, err := getStatsType("rtc_remote_inbound_rtp_stream_stats", connectionID)
+		statsType, err := server.query.TestGetUserAgentStatsType(context.Background(), db.TestGetUserAgentStatsTypeParams{
+			ChannelID:    channelID,
+			ConnectionID: connectionID,
+		})
 		if err != nil {
 			panic(err)
 		}
-		assert.Equal(t, "remote-inbound-rtp", *statsType)
+		assert.Equal(t, "remote-inbound-rtp", statsType)
 	}
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }
 
 func TestTypeTransportCollector(t *testing.T) {
@@ -564,6 +512,8 @@ func TestTypeTransportCollector(t *testing.T) {
 	req.Header.Set("content-type", "application/json")
 	req.Header.Set("x-sora-stats-exporter-type", "connection.user-agent")
 	req.Proto = "HTTP/2.0"
+	req.ProtoMajor = 2
+	req.ProtoMinor = 0
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
@@ -571,12 +521,17 @@ func TestTypeTransportCollector(t *testing.T) {
 	if assert.NoError(t, server.collector(c)) {
 		assert.Equal(t, http.StatusNoContent, rec.Code)
 
-		statsType, err := getStatsType("rtc_transport_stats", connectionID)
+		statsType, err := server.query.TestGetUserAgentStatsType(context.Background(), db.TestGetUserAgentStatsTypeParams{
+			ChannelID:    channelID,
+			ConnectionID: connectionID,
+		})
 		if err != nil {
 			panic(err)
 		}
-		assert.Equal(t, "transport", *statsType)
+		assert.Equal(t, "transport", statsType)
 	}
+
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }
 
 func TestInvalidConnectionIDLength(t *testing.T) {
@@ -606,6 +561,8 @@ func TestInvalidConnectionIDLength(t *testing.T) {
 	req.Header.Set("content-type", "application/json")
 	req.Header.Set("x-sora-stats-exporter-type", "connection.user-agent")
 	req.Proto = "HTTP/2.0"
+	req.ProtoMajor = 2
+	req.ProtoMinor = 0
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
@@ -616,6 +573,8 @@ func TestInvalidConnectionIDLength(t *testing.T) {
 		assert.NotEmpty(t, httpErr.(*echo.HTTPError).Message)
 		assert.Equal(t, `code=400, message=Key: 'soraConnectionStats.ConnectionID' Error:Field validation for 'ConnectionID' failed on the 'len' tag`, httpErr.(*echo.HTTPError).Message)
 	}
+
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }
 
 func TestUnexpectedType(t *testing.T) {
@@ -645,6 +604,8 @@ func TestUnexpectedType(t *testing.T) {
 	req.Header.Set("content-type", "application/json")
 	req.Header.Set("x-sora-stats-exporter-type", "connection.unexpected_type")
 	req.Proto = "HTTP/2.0"
+	req.ProtoMajor = 2
+	req.ProtoMinor = 0
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
@@ -657,6 +618,8 @@ func TestUnexpectedType(t *testing.T) {
 		// TODO: エラーメッセージの内容の確認
 		assert.Equal(t, `Bad Request`, httpErr.(*echo.HTTPError).Message)
 	}
+
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }
 
 func TestMissingTimestamp(t *testing.T) {
@@ -667,6 +630,8 @@ func TestMissingTimestamp(t *testing.T) {
 	req.Header.Set("content-type", "application/json")
 	req.Header.Set("x-sora-stats-exporter-type", "connection.user-agent")
 	req.Proto = "HTTP/2.0"
+	req.ProtoMajor = 2
+	req.ProtoMinor = 0
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
@@ -706,6 +671,8 @@ func TestInvalidChannelIDLength(t *testing.T) {
 	req.Header.Set("content-type", "application/json")
 	req.Header.Set("x-sora-stats-exporter-type", "connection.user-agent")
 	req.Proto = "HTTP/2.0"
+	req.ProtoMajor = 2
+	req.ProtoMinor = 0
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
@@ -745,6 +712,8 @@ func TestMissingMultistream(t *testing.T) {
 	req.Header.Set("content-type", "application/json")
 	req.Header.Set("x-sora-stats-exporter-type", "connection.user-agent")
 	req.Proto = "HTTP/2.0"
+	req.ProtoMajor = 2
+	req.ProtoMinor = 0
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
@@ -757,7 +726,48 @@ func TestMissingMultistream(t *testing.T) {
 	}
 }
 
-func TestUnexpectedStatsType(t *testing.T) {
+// TODO: type のチェックを kohaku ではしていない
+// func TestUnexpectedStatsType(t *testing.T) {
+// 	// Setup
+// 	e := server.echo
+//
+// 	stats := make([]json.RawMessage, 0, 1)
+// 	stats = append(stats, json.RawMessage(`{
+//         "channels": 2,
+//         "id": "RTCCodec_audio_NB1bb0_Inbound_109",
+//         "timestamp": 1640225763760.085,
+//         "type": "unexpected_type",
+//         "clockRate": 48000,
+//         "mimeType": "audio/opus",
+//         "payloadType": 109,
+//         "sdpFmtpLine": "minptime=10;useinbandfec=1",
+//         "transportId": "RTCTransport_data_1"
+//       }`))
+// 	soraConnectionStatsJSON := collectorSoraConnectionStatsJSON
+// 	soraConnectionStatsJSON.Stats = stats
+// 	body, err := json.Marshal(soraConnectionStatsJSON)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	req := httptest.NewRequest(http.MethodPost, "/collector", bytes.NewReader(body))
+// 	req.Header.Set("content-type", "application/json")
+// 	req.Header.Set("x-sora-stats-exporter-type", "connection.user-agent")
+// 	req.Proto = "HTTP/2.0"
+// 	req.ProtoMajor = 2
+// 	req.ProtoMinor = 0
+// 	rec := httptest.NewRecorder()
+// 	c := e.NewContext(req, rec)
+//
+// 	// Assertions
+// 	httpErr := server.collector(c)
+// 	if assert.Error(t, httpErr) {
+// 		assert.Equal(t, http.StatusBadRequest, httpErr.(*echo.HTTPError).Code)
+// 		assert.NotEmpty(t, httpErr.(*echo.HTTPError).Message)
+// 		assert.Equal(t, `unexpected rtcStats.Type: unexpected_type`, httpErr.(*echo.HTTPError).Message)
+// 	}
+// }
+
+func TestDuplicate(t *testing.T) {
 	// Setup
 	e := server.echo
 
@@ -765,8 +775,8 @@ func TestUnexpectedStatsType(t *testing.T) {
 	stats = append(stats, json.RawMessage(`{
         "channels": 2,
         "id": "RTCCodec_audio_NB1bb0_Inbound_109",
-        "timestamp": 1640225763760.085,
-        "type": "unexpected_type",
+        "timestamp": 1640225763761.085,
+        "type": "codec",
         "clockRate": 48000,
         "mimeType": "audio/opus",
         "payloadType": 109,
@@ -783,14 +793,46 @@ func TestUnexpectedStatsType(t *testing.T) {
 	req.Header.Set("content-type", "application/json")
 	req.Header.Set("x-sora-stats-exporter-type", "connection.user-agent")
 	req.Proto = "HTTP/2.0"
+	req.ProtoMajor = 2
+	req.ProtoMinor = 0
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
 	// Assertions
-	httpErr := server.collector(c)
-	if assert.Error(t, httpErr) {
-		assert.Equal(t, http.StatusBadRequest, httpErr.(*echo.HTTPError).Code)
-		assert.NotEmpty(t, httpErr.(*echo.HTTPError).Message)
-		assert.Equal(t, `unexpected rtcStats.Type: unexpected_type`, httpErr.(*echo.HTTPError).Message)
+	if assert.NoError(t, server.collector(c)) {
+		assert.Equal(t, http.StatusNoContent, rec.Code)
+
+		statsType, err := server.query.TestGetUserAgentStatsType(context.Background(),
+			db.TestGetUserAgentStatsTypeParams{
+				ChannelID:    channelID,
+				ConnectionID: connectionID,
+			})
+		assert.Nil(t, err)
+		assert.Equal(t, "codec", statsType)
 	}
+
+	req = httptest.NewRequest(http.MethodPost, "/collector", bytes.NewReader(body))
+	req.Header.Set("content-type", "application/json")
+	req.Header.Set("x-sora-stats-exporter-type", "connection.user-agent")
+	req.Proto = "HTTP/2.0"
+	req.ProtoMajor = 2
+	req.ProtoMinor = 0
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+
+	// Assertions
+	if assert.NoError(t, server.collector(c)) {
+		assert.Equal(t, http.StatusNoContent, rec.Code)
+
+		count, err := server.query.TestGetUserAgentStatsTypeCount(context.Background(),
+			db.TestGetUserAgentStatsTypeCountParams{
+				RtcTypeStats: "codec",
+				ChannelID:    channelID,
+				ConnectionID: connectionID,
+			})
+		assert.Nil(t, err)
+		assert.Equal(t, int64(1), count)
+	}
+
+	server.query.TestDropSoraUserAgentStats(context.Background())
 }

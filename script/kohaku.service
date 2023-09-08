@@ -3,14 +3,14 @@ Description=WebRTC Stats Collector Kohaku
 After=network.target
 
 [Service]
-Restart=always
+Restart=on-failure
 RestartSec=60s
+RestartPreventExitStatus=1
 KillMode=control-group
-User=shiguredo
-Group=shiguredo
-WorkingDirectory=/home/shiguredo/kohaku
-Environment="GIN_MODE=release"
-ExecStart=/bin/bash -c '/home/shiguredo/kohaku/bin/kohaku -c /home/shiguredo/kohaku/config.yaml 2>/var/log/kohaku/stderr.log 1>/var/log/kohaku/stdout.log'
+User=sora
+Group=sora
+WorkingDirectory=/home/sora/kohaku
+ExecStart=/bin/bash -c '/home/sora/kohaku/bin/kohaku -C /home/sora/kohaku/config.ini 2>/var/log/kohaku/stderr.log 1>/var/log/kohaku/stdout.log'
 Type=simple
 LogsDirectory=kohaku
 
