@@ -11,6 +11,12 @@
 
 ## develop
 
+## 2023.1.1
+
+- [FIX] HTTP/2 Rapid Reset 対策として Go 1.21.3 以上でリリースバイナリを作成するよう修正する
+  - https://groups.google.com/g/golang-announce/c/iNNxDTCjZvo
+  - @voluntas
+
 ## 2023.1.0
 
 - [ADD] Grafana ダッシュボードの追加
