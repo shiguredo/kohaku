@@ -17,6 +17,9 @@ jobs:
           go-version-file: ./go.mod
           cache: false
 
+      - run: go version
+      - run: go fmt .
+
       - run: go install github.com/tcnksm/ghr@latest
 
       - name: Build
