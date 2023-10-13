@@ -11,6 +11,12 @@
 
 ## develop
 
+- [ADD] rtc-stats ダッシュボードに data-channel のグラフを追加する
+  - @tnamao
+- [FIX] `kohaku` ダッシュボードの from - to のタイムスタンプのミリ秒の扱いを変更する
+  - ミリ秒以下を from は切り捨て、to は切り上げする
+  - @tnamao
+
 ## 2023.1.1
 
 - [FIX] HTTP/2 Rapid Reset 対策として Go 1.21.3 以上でリリースバイナリを作成するよう修正する
