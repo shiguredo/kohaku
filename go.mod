@@ -9,7 +9,7 @@ require (
 	github.com/jackc/pgtype v1.14.0
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/labstack/echo-contrib v0.15.0
-	github.com/labstack/echo/v4 v4.11.1
+	github.com/labstack/echo/v4 v4.11.2
 	github.com/rs/zerolog v1.31.0
 	github.com/shogo82148/go-clockwork-base32 v1.1.0
 	golang.org/x/net v0.17.0
