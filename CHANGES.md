@@ -11,6 +11,10 @@
 
 ## develop
 
+- [CHANGE] go.mod で go 1.21.3 を要求するようにする
+  - @voluntas
+- [CHANGE] ci の go バージョン指定を go.mod に切り戻す
+  - @voluntas
 - [ADD] rtc-stats ダッシュボードに data-channel のグラフを追加する
   - @tnamao
 - [FIX] `kohaku` ダッシュボードの from - to のタイムスタンプのミリ秒の扱いを変更する
