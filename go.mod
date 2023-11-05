@@ -3,7 +3,7 @@ module github.com/shiguredo/kohaku
 go 1.21.3
 
 require (
-	github.com/go-playground/validator/v10 v10.15.5
+	github.com/go-playground/validator/v10 v10.16.0
 	github.com/google/uuid v1.4.0
 	github.com/jackc/pgconn v1.14.1
 	github.com/jackc/pgtype v1.14.0
@@ -13,7 +13,7 @@ require (
 	github.com/rs/zerolog v1.31.0
 	github.com/shogo82148/go-clockwork-base32 v1.1.0
 	golang.org/x/net v0.17.0
-	golang.org/x/sync v0.4.0
+	golang.org/x/sync v0.5.0
 	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
