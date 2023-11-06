@@ -11,6 +11,8 @@
 
 ## develop
 
+- [ADD] linux arm64 ビルドを追加する
+
 ## 2023.1.0
 
 - [ADD] Grafana ダッシュボードの追加

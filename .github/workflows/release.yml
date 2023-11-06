@@ -22,6 +22,7 @@ jobs:
       - name: Build
         run: |
           GOOS=linux GOARCH=amd64 go build -o dist/kohaku_linux_amd64 cmd/kohaku/main.go
+          GOOS=linux GOARCH=arm64 go build -o dist/kohaku_linux_arm64 cmd/kohaku/main.go
           GOOS=darwin GOARCH=amd64 go build -o dist/kohaku_darwin_amd64 cmd/kohaku/main.go
           GOOS=darwin GOARCH=arm64 go build -o dist/kohaku_darwin_arm64 cmd/kohaku/main.go
           gzip dist/*
