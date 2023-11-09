@@ -12,7 +12,7 @@
 ## develop
 
 - [ADD] linux arm64 ビルドを追加する
-- [CHANGE] go.mod で go 1.21.3 を要求するようにする
+- [CHANGE] go.mod で go 1.21.4 を要求するようにする
   - @voluntas
 - [CHANGE] ci の go バージョン指定を go.mod に切り戻す
   - @voluntas
