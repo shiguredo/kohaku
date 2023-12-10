@@ -1,6 +1,6 @@
 module github.com/shiguredo/kohaku
 
-go 1.21.4
+go 1.21.5
 
 require (
 	github.com/go-playground/validator/v10 v10.16.0
