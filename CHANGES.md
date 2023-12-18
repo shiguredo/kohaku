@@ -11,6 +11,8 @@
 
 ## develop
 
+- [UPDATE] sqlc 1.24.0 にする
+  - @voluntas
 - [ADD] linux arm64 ビルドを追加する
 - [CHANGE] go.mod で go 1.21.4 を要求するようにする
   - @voluntas
