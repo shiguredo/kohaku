@@ -13,7 +13,7 @@ require (
 	github.com/rs/zerolog v1.31.0
 	github.com/shogo82148/go-clockwork-base32 v1.1.0
 	golang.org/x/net v0.19.0
-	golang.org/x/sync v0.5.0
+	golang.org/x/sync v0.6.0
 	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
