@@ -4,7 +4,7 @@ go 1.21.6
 
 require (
 	github.com/go-playground/validator/v10 v10.17.0
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/jackc/pgconn v1.14.1
 	github.com/jackc/pgtype v1.14.1
 	github.com/jackc/pgx/v4 v4.18.1
