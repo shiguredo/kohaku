@@ -3,7 +3,7 @@ module github.com/shiguredo/kohaku
 go 1.22.0
 
 require (
-	github.com/go-playground/validator/v10 v10.18.0
+	github.com/go-playground/validator/v10 v10.19.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgconn v1.14.1
 	github.com/jackc/pgtype v1.14.2
@@ -20,7 +20,7 @@ require (
 
 require (
 	github.com/ory/dockertest/v3 v3.10.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 )
 
 require (
