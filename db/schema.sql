@@ -1,57 +1,30 @@
-CREATE EXTENSION IF NOT EXISTS timescaledb;
+SET allow_experimental_object_type = 1;
 
-CREATE TYPE sora_connection_role AS ENUM (
-    'sendrecv',
-    'sendonly',
-    'recvonly'
-);
+DROP TABLE IF EXISTS sora_rtc_stats;
+CREATE TABLE IF NOT EXISTS sora_rtc_stats (
+    timestamp DateTime64(3, 'UTC'),
 
-DROP TABLE IF EXISTS sora_connection;
-CREATE TABLE IF NOT EXISTS sora_connection (
-    pk bigserial NOT NULL PRIMARY KEY,
+    version String,
+    label String,
+    node_name String,
 
-    -- Sora 側から送られてきたタイムスタンプ
-    timestamp timestamptz NOT NULL,
+    multistream UInt8,
+    simulcast UInt8,
+    spotlight UInt8,
 
-    version TEXT NOT NULL,
-    label TEXT NOT NULL,
-    node_name TEXT NOT NULL,
+    role Enum8('sendrecv' = 1, 'sendonly' = 2, 'recvonly' = 3),
 
-    multistream BOOLEAN NOT NULL,
-    simulcast BOOLEAN NOT NULL,
-    spotlight BOOLEAN NOT NULL,
+    channel_id String,
+    session_id String,
+    client_id String,
+    connection_id String,
 
-    role sora_connection_role NOT NULL,
-    channel_id TEXT NOT NULL,
-    session_id TEXT NOT NULL,
-    client_id TEXT NOT NULL,
-    connection_id TEXT NOT NULL,
+    rtc_stats_timestamp Float64,
+    rtc_stats_type String,
+    rtc_stats_id String,
 
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
+    rtc_stats_data JSON,
 
-DROP TABLE IF EXISTS sora_user_agent_stats;
-CREATE TABLE IF NOT EXISTS sora_user_agent_stats (
-    -- Sora 側から送られてきたタイムスタンプ
-    timestamp timestamptz NOT NULL,
-
-    channel_id TEXT NOT NULL,
-    connection_id TEXT NOT NULL,
-
-    rtc_stats_timestamp DOUBLE PRECISION NOT NULL,
-    rtc_stats_type TEXT NOT NULL,
-    rtc_stats_id TEXT NOT NULL,
-
-    rtc_stats_data JSONB NOT NULL,
-
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
-SELECT create_hypertable('sora_user_agent_stats', 'timestamp');
-ALTER TABLE sora_user_agent_stats SET (
-    timescaledb.compress,
-    timescaledb.compress_segmentby = 'channel_id, connection_id'
-);
--- 圧縮の INTERNVAL の値は自由に変えること
-SELECT add_compression_policy('sora_user_agent_stats', INTERVAL '7 days');
--- 保持の INTERNVAL の値は自由に変えること
-SELECT add_retention_policy('sora_user_agent_stats', INTERVAL '60 days');
+    created_at DateTime64(3, 'UTC') DEFAULT now()
+) ENGINE = MergeTree()
+PRIMARY KEY (connection_id, timestamp)

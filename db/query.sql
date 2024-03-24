@@ -37,7 +37,7 @@ WHERE NOT EXISTS (
   );
 
 
--- name: InsertSoraUserAgentStats :exec
+-- name: InsertSoraRtcStats :exec
 WITH existing_record AS (
   SELECT *
   FROM sora_user_agent_stats
@@ -54,18 +54,35 @@ data_without_timestamp AS (
     ) as new_data
   FROM existing_record
 )
-INSERT INTO sora_user_agent_stats (
-    timestamp,
+INSERT INTO sora_rtc_stats (
+    label,
+    version,
+    node_name,
+    multistream,
+    simulcast,
+    spotlight,
+    role,
     channel_id,
-    connection_id,
+    session_id,
+    client_id,
+    connection_id
     rtc_stats_timestamp,
     rtc_stats_type,
     rtc_stats_id,
     rtc_stats_data
   )
 SELECT @timestamp,
+  @label,
+  @version,
+  @node_name,
+  @multistream,
+  @simulcast,
+  @spotlight,
+  @role,
   @channel_id,
-  @connection_id,
+  @session_id,
+  @client_id,
+  @connection_id
   @rtc_stats_timestamp,
   @rtc_stats_type,
   @rtc_stats_id,
@@ -90,18 +107,18 @@ LIMIT 1;
 SELECT count(*)
 FROM sora_connection;
 
--- name: TestGetUserAgentStatsType :one
+-- name: TestGetRtcStatsType :one
 SELECT rtc_stats_type
-FROM sora_user_agent_stats
+FROM sora_rtc_stats
 WHERE channel_id = @channel_id
   AND connection_id = @connection_id
 ORDER BY timestamp DESC
 LIMIT 1;
 
 -- 指定した channel_id と connection_id と rtc_stats_type のレコードがいくつあるかどうか
--- name: TestGetUserAgentStatsTypeCount :one
+-- name: TestGetRtcStatsTypeCount :one
 SELECT count(*)
-FROM sora_user_agent_stats
+FROM sora_rtc_stats
 WHERE rtc_stats_type = @rtc_type_stats
   AND channel_id = @channel_id
   AND connection_id = @connection_id;
@@ -109,5 +126,5 @@ WHERE rtc_stats_type = @rtc_type_stats
 -- name: TestDropSoraConnection :exec
 DELETE FROM sora_connection;
 
--- name: TestDropSoraUserAgentStats :exec
-DELETE FROM sora_user_agent_stats;
+-- name: TestDropSoraRtcStats :exec
+DELETE FROM sora_rtc_stats;

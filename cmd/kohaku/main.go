@@ -38,15 +38,15 @@ func main() {
 
 	kohaku.ShowConfig(config)
 
-	pool, err := kohaku.NewPool(config.PostgresURI)
+	conn, err := kohaku.NewConnect(config)
 	if err != nil {
 		// TODO: エラーメッセージを修正する
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
-	defer pool.Close()
+	defer conn.Close()
 
-	server, err := kohaku.NewServer(config, pool)
+	server, err := kohaku.NewServer(config, conn)
 	if err != nil {
 		log.Fatal(err)
 	}

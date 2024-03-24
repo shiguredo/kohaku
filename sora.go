@@ -21,7 +21,7 @@ type soraStats struct {
 	NodeName string `json:"node_name" validate:"required"`
 }
 
-// type: connection.user-agent / type: connection.sora
+// type: connection.rtc / type: connection.sora
 type soraConnectionStats struct {
 	soraStats
 

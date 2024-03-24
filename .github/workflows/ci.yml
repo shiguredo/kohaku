@@ -6,6 +6,7 @@ on:
       - "*.md"
     branches-ignore:
       - "master"
+      - "feature/clickhouse"
     tags-ignore:
       - "*"
 

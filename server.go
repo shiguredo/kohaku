@@ -14,15 +14,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	zlog "github.com/rs/zerolog/log"
-	db "github.com/shiguredo/kohaku/gen/sqlc"
 
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
+	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -30,36 +28,65 @@ import (
 type Server struct {
 	config *Config
 
-	pool  *pgxpool.Pool
-	query *db.Queries
+	conn driver.Conn
 
 	echo         *echo.Echo
 	echoExporter *echo.Echo
 }
 
-func NewPool(connStr string) (*pgxpool.Pool, error) {
-	config, err := pgxpool.ParseConfig(connStr)
+func NewConnect(config *Config) (driver.Conn, error) {
+	conn, err := clickhouse.Open(&clickhouse.Options{
+		Addr: []string{config.ClickHouseAddr},
+		Auth: clickhouse.Auth{
+			Database: config.ClickHouseDatabase,
+			Username: config.ClickHouseUsername,
+			Password: config.ClickHousePassword,
+		},
+		ClientInfo: clickhouse.ClientInfo{
+			Products: []struct {
+				Name    string
+				Version string
+			}{
+				{Name: "kohaku-app", Version: "0.1"},
+			},
+		},
+		Debug: config.ClickHouseDebug,
+		Debugf: func(format string, v ...any) {
+			fmt.Printf(format+"\n", v...)
+		},
+		// この辺りの設定は外に出すか検討
+		Settings: clickhouse.Settings{
+			"max_execution_time": 60,
+		},
+		Compression: &clickhouse.Compression{
+			Method: clickhouse.CompressionLZ4,
+		},
+		DialTimeout:          time.Second * 30,
+		MaxOpenConns:         5,
+		MaxIdleConns:         5,
+		ConnMaxLifetime:      time.Duration(10) * time.Minute,
+		ConnOpenStrategy:     clickhouse.ConnOpenInOrder,
+		BlockBufferSize:      10,
+		MaxCompressionBuffer: 10240,
+		// FIXME: これは開発中のみで実際は false にする
+		TLS: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	pool, err := pgxpool.ConnectConfig(context.Background(), config)
-	if err != nil {
+	if err := conn.Ping(context.Background()); err != nil {
+		// TODO: error log
 		return nil, err
 	}
-
-	if err := pool.Ping(context.Background()); err != nil {
-		return nil, err
-	}
-
-	return pool, nil
+	return conn, nil
 }
 
-func NewServer(c *Config, pool *pgxpool.Pool) (*Server, error) {
+func NewServer(c *Config, conn driver.Conn) (*Server, error) {
 	s := &Server{
 		config: c,
-		pool:   pool,
-		query:  db.New(pool),
+		conn:   conn,
 	}
 
 	if err := s.setupEchoServer(); err != nil {
@@ -83,12 +110,6 @@ func NewServer(c *Config, pool *pgxpool.Pool) (*Server, error) {
 }
 
 func (s *Server) setupEchoServer() error {
-	h2s := &http2.Server{
-		MaxConcurrentStreams: s.config.HTTP2MaxConcurrentStreams,
-		MaxReadFrameSize:     s.config.HTTP2MaxReadFrameSize,
-		IdleTimeout:          time.Duration(s.config.HTTP2IdleTimeout) * time.Second,
-	}
-
 	e := echo.New()
 	// stdout にバナー出さない
 	e.HideBanner = true
@@ -102,8 +123,7 @@ func (s *Server) setupEchoServer() error {
 	}
 
 	e.Server = &http.Server{
-		Addr:    net.JoinHostPort(s.config.ListenAddr, strconv.Itoa(s.config.ListenPort)),
-		Handler: h2c.NewHandler(e, h2s),
+		Addr: net.JoinHostPort(s.config.ListenAddr, strconv.Itoa(s.config.ListenPort)),
 	}
 
 	// クライアント認証をするかどうかのチェック
@@ -120,10 +140,6 @@ func (s *Server) setupEchoServer() error {
 			ClientCAs:  certPool,
 		}
 		e.Server.TLSConfig = tlsConfig
-	}
-
-	if err := http2.ConfigureServer(e.Server, h2s); err != nil {
-		return err
 	}
 
 	e.Pre(middleware.RemoveTrailingSlash())
@@ -175,8 +191,8 @@ func (s *Server) setupEchoServer() error {
 	// ヘルスチェック
 	e.GET("/.ok", s.ok)
 
-	// 統計情報を突っ込むところ
-	e.POST("/collector", s.collector)
+	// 統計ウェブフックを処理する
+	e.POST(s.config.StatsWebhookPath, s.statsWebhook)
 
 	s.echo = e
 

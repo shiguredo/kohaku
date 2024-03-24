@@ -2,28 +2,28 @@ package kohaku
 
 import (
 	"context"
-	"fmt"
+	"crypto/tls"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
-	db "github.com/shiguredo/kohaku/gen/sqlc"
 )
 
 const (
-	connStr          = "postgres://%s:%s@%s/%s?sslmode=disable"
-	postgresUser     = "postgres"
-	postgresPassword = "password"
-	postgresDB       = "kohakutest"
+	connStr            = "%s:%s"
+	clickhouseUser     = "default"
+	clickhousePassword = "default"
+	clickhouseDB       = "default"
 
 	port = 15890
 )
 
 var (
-	pgPool *pgxpool.Pool
+	conn   driver.Conn
 	server *Server
 
 	config = &Config{
@@ -45,12 +45,12 @@ func TestMain(m *testing.M) {
 	pwd, _ := os.Getwd()
 
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "timescale/timescaledb",
-		Tag:        "latest-pg15",
+		Repository: "clickhouse/clickhouse-server",
+		Tag:        "latest",
 		Env: []string{
-			"POSTGRES_PASSWORD=" + postgresPassword,
-			"POSTGRES_USER=" + postgresUser,
-			"POSTGRES_DB=" + postgresDB,
+			"CLICKHOUSE_DB=" + clickhouseDB,
+			"CLICKHOUSE_USER=" + clickhouseDB,
+			"CLICKHOUSE_PASSWORD=" + clickhouseDB,
 			"listen_addresses = '*'",
 		},
 		Mounts: []string{
@@ -64,28 +64,37 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	hostAndPort := resource.GetHostPort("5432/tcp")
-	dbURI := fmt.Sprintf(connStr, postgresUser, postgresPassword, hostAndPort, postgresDB)
-	config.PostgresURI = dbURI
+	config.ClickHouseAddr = resource.GetHostPort("9000/tcp")
 
 	resource.Expire(60)
 	pool.MaxWait = 60 * time.Second
 	if err = pool.Retry(func() error {
-		config, err := pgxpool.ParseConfig(dbURI)
-		if err != nil {
-			return err
-		}
-		pgPool, err = pgxpool.ConnectConfig(context.Background(), config)
-		if err != nil {
-			return err
-		}
-
-		return pgPool.Ping(context.Background())
+		conn, _ = clickhouse.Open(&clickhouse.Options{
+			Addr: []string{config.ClickHouseAddr},
+			Auth: clickhouse.Auth{
+				Database: config.ClickHouseDatabase,
+				Username: config.ClickHouseUsername,
+				Password: config.ClickHousePassword,
+			},
+			ClientInfo: clickhouse.ClientInfo{
+				Products: []struct {
+					Name    string
+					Version string
+				}{
+					{Name: "kohaku-test", Version: "0.1"},
+				},
+			},
+			// FIXME: これは開発中のみで実際は false にする
+			TLS: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		})
+		return conn.Ping(context.Background())
 	}); err != nil {
 		panic(err)
 	}
 
-	server = newTestServer(config, pgPool)
+	server = newTestServer(config, conn)
 
 	code := m.Run()
 
@@ -96,11 +105,10 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func newTestServer(c *Config, pool *pgxpool.Pool) *Server {
+func newTestServer(c *Config, conn driver.Conn) *Server {
 	s := &Server{
 		config: c,
-		pool:   pool,
-		query:  db.New(pool),
+		conn:   conn,
 	}
 
 	s.setupEchoServer()

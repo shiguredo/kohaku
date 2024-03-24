@@ -9,6 +9,11 @@
 - FIX
   - バグ修正
 
+## feature/clickhouse
+
+- [CHANGE] TimescaleDB から ClickHouse へ変更する
+  - @voluntas
+
 ## develop
 
 - [UPDATE] sqlc 1.24.0 にする

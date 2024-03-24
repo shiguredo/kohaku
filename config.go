@@ -40,6 +40,16 @@ type Config struct {
 	// Days
 	LogRotateMaxAge int `ini:"log_rotate_max_age"`
 
+	StatsWebhookPath string `ini:"stats_webhook_path"`
+
+	ClickHouseAddr string `ini:"click_house_addr"`
+
+	ClickHouseDatabase string `ini:"click_house_database"`
+	ClickHouseUsername string `ini:"click_house_username"`
+	ClickHousePassword string `ini:"click_house_password"`
+
+	ClickHouseDebug bool `ini:"click_house_debug"`
+
 	HTTPS      bool   `ini:"https"`
 	ListenAddr string `ini:"listen_addr"`
 	ListenPort int    `ini:"listen_port"`
@@ -50,16 +60,9 @@ type Config struct {
 	ExporterListenAddr string `ini:"exporter_listen_addr"`
 	ExporterListenPort int    `ini:"exporter_listen_port"`
 
-	PostgresURI        string `ini:"postgres_uri"`
-	PostgresCACertFile string `ini:"postgres_ca_cert_file"`
-
 	TLSFullchainFile    string `ini:"tls_fullchain_file"`
 	TLSPrivkeyFile      string `ini:"tls_privkey_file"`
 	TLSVerifyCacertPath string `ini:"tls_verify_cacert_path"`
-
-	HTTP2MaxConcurrentStreams uint32 `ini:"http2_max_concurrent_streams"`
-	HTTP2MaxReadFrameSize     uint32 `ini:"http2_max_read_frame_size"`
-	HTTP2IdleTimeout          uint32 `ini:"http2_idle_timeout"`
 }
 
 func NewConfig(configFilePath string) (*Config, error) {

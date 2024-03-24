@@ -10,7 +10,7 @@ import (
 
 // TODO: ログレベル、ログメッセージを変更する
 func (s *Server) ok(c echo.Context) error {
-	if err := s.pool.Ping(context.Background()); err != nil {
+	if err := s.conn.Ping(context.Background()); err != nil {
 		zlog.Error().Err(err).Send()
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
