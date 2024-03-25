@@ -4,6 +4,10 @@ name: "kohaku-dev"
 services:
   clickhouse:
     image: clickhouse/clickhouse-server:latest
+    environment:
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=default
+      - CLICKHOUSE_DB=default
     ports:
       - "8123:8123"
       - "9000:9000"
