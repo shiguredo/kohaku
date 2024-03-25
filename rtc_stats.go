@@ -2,7 +2,6 @@ package kohaku
 
 import (
 	"encoding/json"
-	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -13,28 +12,28 @@ type RTCStats struct {
 	Type      string  `json:"type"`
 }
 
-type RtcStats struct {
-	Timestamp time.Time `json:"timestamp"`
-
-	Label    string
-	Version  string
-	NodeName string
-
-	Multistream bool
-	Simulcast   bool
-	Spotlight   bool
-
-	Role         string
-	ChannelID    string
-	SessionID    string
-	ClientID     string
-	ConnectionID string
-
-	RtcStatsTimestamp float64
-	RtcStatsType      string
-	RtcStatsID        string
-	RtcStatsData      json.RawMessage
-}
+// type SoraRtcStats struct {
+// 	Timestamp time.Time `json:"timestamp"`
+//
+// 	Label    string
+// 	Version  string
+// 	NodeName string
+//
+// 	Multistream bool
+// 	Simulcast   bool
+// 	Spotlight   bool
+//
+// 	Role         string
+// 	ChannelID    string
+// 	SessionID    string
+// 	ClientID     string
+// 	ConnectionID string
+//
+// 	RtcStatsTimestamp float64
+// 	RtcStatsType      string
+// 	RtcStatsID        string
+// 	RtcStatsData      json.RawMessage
+// }
 
 func (s *Server) rtcStats(c echo.Context, stats soraConnectionStats) error {
 	// TODO: Insert する場合は batch が良さそう
