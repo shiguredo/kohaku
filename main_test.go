@@ -2,15 +2,15 @@ package kohaku
 
 import (
 	"context"
-	"crypto/tls"
+	"fmt"
+	"log"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -18,8 +18,6 @@ const (
 	clickhouseUser     = "default"
 	clickhousePassword = "default"
 	clickhouseDB       = "default"
-
-	port = 15890
 )
 
 var (
@@ -32,77 +30,83 @@ var (
 		TLSVerifyCacertPath: "cert/client/ca.pem",
 		HTTPS:               true,
 		ListenAddr:          "0.0.0.0",
-		ListenPort:          port,
+		ListenPort:          15890,
 	}
 )
 
 func TestMain(m *testing.M) {
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		panic(err)
+	ctx := context.Background()
+
+	// ClickHouseコンテナのリクエストを作成
+	req := testcontainers.ContainerRequest{
+		Image:        "clickhouse/clickhouse-server:latest",
+		ExposedPorts: []string{"9000/tcp"},
+		Env: map[string]string{
+			"CLICKHOUSE_DB":       clickhouseDB,
+			"CLICKHOUSE_USER":     clickhouseUser,
+			"CLICKHOUSE_PASSWORD": clickhousePassword,
+		},
+		WaitingFor: wait.ForListeningPort("9000/tcp"),
 	}
 
-	pwd, _ := os.Getwd()
+	// コンテナを起動
+	clickhouseContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		log.Fatalf("ClickHouseコンテナの起動に失敗しました: %s", err)
+	}
 
-	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "clickhouse/clickhouse-server",
-		Tag:        "latest",
-		Env: []string{
-			"CLICKHOUSE_DB=" + clickhouseDB,
-			"CLICKHOUSE_USER=" + clickhouseDB,
-			"CLICKHOUSE_PASSWORD=" + clickhouseDB,
-			"listen_addresses = '*'",
+	// 終了時にコンテナを停止して削除する
+	defer clickhouseContainer.Terminate(ctx)
+
+	// コンテナの情報を取得（例：IPアドレス）
+	ip, err := clickhouseContainer.Host(ctx)
+	if err != nil {
+		log.Fatalf("コンテナのホスト名の取得に失敗しました: %s", err)
+	}
+
+	port, err := clickhouseContainer.MappedPort(ctx, "9000")
+	if err != nil {
+		log.Fatalf("マッピングされたポートの取得に失敗しました: %s", err)
+	}
+
+	log.Printf("ClickHouseサーバーが起動しました: %s:%s", ip, port.Port())
+
+	// ip + ":" + port.Port() を表示
+	fmt.Print("ClickHouseサーバーのアドレス: ", ip+":"+port.Port(), "\n")
+
+	conn, err = clickhouse.Open(&clickhouse.Options{
+		Addr: []string{ip + ":" + port.Port()},
+		Auth: clickhouse.Auth{
+			Database: "default",
+			Username: "default",
+			Password: "default",
 		},
-		Mounts: []string{
-			pwd + "/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql",
-		},
-	}, func(config *docker.HostConfig) {
-		config.AutoRemove = true
-		config.RestartPolicy = docker.RestartPolicy{Name: "no"}
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	config.ClickHouseAddr = resource.GetHostPort("9000/tcp")
-
-	resource.Expire(60)
-	pool.MaxWait = 60 * time.Second
-	if err = pool.Retry(func() error {
-		conn, _ = clickhouse.Open(&clickhouse.Options{
-			Addr: []string{config.ClickHouseAddr},
-			Auth: clickhouse.Auth{
-				Database: config.ClickHouseDatabase,
-				Username: config.ClickHouseUsername,
-				Password: config.ClickHousePassword,
-			},
-			ClientInfo: clickhouse.ClientInfo{
-				Products: []struct {
-					Name    string
-					Version string
-				}{
-					{Name: "kohaku-test", Version: "0.1"},
-				},
-			},
-			// FIXME: これは開発中のみで実際は false にする
-			TLS: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		})
-		return conn.Ping(context.Background())
-	}); err != nil {
+	err = conn.Ping(ctx)
+	if err != nil {
 		panic(err)
 	}
 
-	server = newTestServer(config, conn)
+	// ここでテストを実行する
 
 	code := m.Run()
 
-	if err := pool.Purge(resource); err != nil {
-		panic(err)
-	}
+	conn.Close()
+
+	// 処理が終わったら、deferによってコンテナが自動的に停止して削除される
 
 	os.Exit(code)
+}
+
+func TestDummy(t *testing.T) {
+	log.Println("ダミーのテストが実行されました。")
 }
 
 func newTestServer(c *Config, conn driver.Conn) *Server {
