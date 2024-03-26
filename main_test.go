@@ -8,20 +8,22 @@ import (
 
 	ch "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 
 	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 )
 
 const (
-	connStr            = "%s:%s"
 	clickhouseUser     = "default"
 	clickhousePassword = "default"
 	clickhouseDB       = "default"
 )
 
 var (
-	conn   driver.Conn
+	conn *driver.Conn
+
+	addr   []string
 	server *Server
 
 	config = &Config{
@@ -69,16 +71,20 @@ func TestMain(m *testing.M) {
 		log.Fatalf("failed to get container port: %s", err)
 	}
 
-	conn := ch.OpenDB(&ch.Options{
-		Addr: []string{host + ":" + port.Port()},
+	addr = []string{host + ":" + port.Port()}
+	conn, err := ch.Open(&ch.Options{
+		Addr: addr,
 		Auth: ch.Auth{
 			Username: clickhouseUser,
 			Password: clickhousePassword,
 			Database: clickhouseDB,
 		},
 	})
+	if err != nil {
+		log.Fatalf("failed to open ClickHouse connection: %s", err)
+	}
 
-	err = conn.Ping()
+	err = conn.Ping(ctx)
 	if err != nil {
 		log.Fatalf("failed to ping ClickHouse: %s", err)
 	}
@@ -92,7 +98,38 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+func open() driver.Conn {
+	conn, err := ch.Open(&ch.Options{
+		Addr: addr,
+		Auth: ch.Auth{
+			Username: clickhouseUser,
+			Password: clickhousePassword,
+			Database: clickhouseDB,
+		},
+	})
+	if err != nil {
+		log.Fatalf("failed to open ClickHouse connection: %s", err)
+	}
+
+	return conn
+}
+
 func TestDummy(t *testing.T) {
+	ctx := context.Background()
+	var err error
+
+	conn := open()
+
+	err = conn.Exec(ctx, "CREATE TABLE IF NOT EXISTS test (id UInt32, name String) ENGINE = Memory")
+	assert.NoError(t, err)
+
+	err = conn.Exec(ctx, "INSERT INTO test (id, name) VALUES (1, 'Alice')")
+	assert.NoError(t, err)
+
+	rows, err := conn.Query(ctx, "SELECT * FROM test")
+	assert.NoError(t, err)
+	assert.Len(t, rows.Columns(), 2)
+
 	log.Println("ダミーのテストが実行されました。")
 }
 
