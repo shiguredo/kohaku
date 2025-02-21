@@ -1,13 +1,15 @@
 # レガシー版の Kohaku
 
 新しい Kohaku はレガシー版の Kohaku と互換性は **ありません** 。
+新しい Hisui のリリースまではレガシー版の Hisui をお使いください。
 
 <https://github.com/shiguredo/kohaku-legacy>
 
-# 新しい Kohaku は現在開発中です
+# 新しい Kohaku を開発中です
 
+- OSS として公開します
 - 2025 年の春に公開を予定しています
-- 2025 年の夏に正式版リリースを予定しています
+- 2025 年の夏にリリースを予定しています
 - ライセンスは [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.html) として公開を予定しています
 
 # WebRTC Stats Analyzer Kohaku
@@ -36,19 +38,20 @@ WebRTC 統計情報を収集、可視化するソリューションです。
 
 - Sora が出力するログを Grafana で可視化することができます
 - Docker Compose で簡単に構築できます
-- Sora のログを S3 または S3 互換オブジェクトストレージ(以降オブジェクトストレージ)に転送することでスケールさせやすい仕組みになっています
-- オブジェクトストレージと DuckDB を利用するだけのため、コストを抑えることができる
+- Sora のログを S3 または S3 互換オブジェクトストレージ(以降オブジェクトストレージ)に Fluent Bit で転送します
+- ログの保存先をオブジェクトストレージにすることでスケールさせやすい構成になっています
+- オブジェクトストレージと DuckDB を利用するだけのため、コストを抑えることができます
 - オンプレミスでもクラウドでも利用できます
 
-### shiguredo/legacy-kohaku との違い
+### 新しい Kohaku とレガシー版の Kohaku との違い
 
-Kohaku は shiguredo/legacy-kohaku とは互換性がありません。
+新しい Kohaku はレガシー版の Kohaku とは互換性がありません。
 
-レガシー版 Kohaku は Sora の統計エクスポーター機能を利用して、
+レガシー版の Kohaku は Sora の統計エクスポーター機能を利用して、
 WebRTC 統計情報を収集し、TimescaleDB に保存するゲートウェイでした。
 
-新しい Kohaku は Sora のログを S3 または S3 互換オブジェクトストレージに転送し、
-それを [Grafana DuckDB Data Source Plugin](https://github.com/motherduckdb/grafana-duckdb-datasource) を利用して可視化するソリューションです。
+新しい Kohaku は Sora のログを Fluent Bit でオブジェクトストレージに転送し、
+それを DuckDB で解析し、Grafana を利用して可視化するソリューションです。
 
 ## 利用オープンソース
 
@@ -72,11 +75,17 @@ WebRTC 統計情報を収集し、TimescaleDB に保存するゲートウェイ�
 - [DigitalOcean | Spaces](https://www.digitalocean.com/products/spaces)
 - [Vultr | Object Storage](https://www.vultr.com/products/object-storage/)
 
+## 対応 Sora
+
+- WebRTC SFU Sora 2024.1 以降
+
 ## 優先実装
 
 優先実装とは Sora のライセンスを契約頂いているお客様限定で Kohaku の実装予定機能を有償にて前倒しで実装することです。
 
 **詳細は Discord やメールなどでお気軽にお問い合わせください**
+
+- 追加の Grafana ダッシュボード
 
 ## ライセンス
 
