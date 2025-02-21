@@ -1,0 +1,14 @@
+apiVersion: 1
+
+datasources:
+- name: 'motherduck-duckdb-datasource'
+  type: 'motherduck-duckdb-datasource'
+  isDefault: true
+  orgId: 1
+  version: 1
+  editable: false
+  jsonData:
+    path: /var/lib/kohaku/duckdb/duck.db.readonly
+    initSql: |
+      INSTALL icu;
+      LOAD icu;

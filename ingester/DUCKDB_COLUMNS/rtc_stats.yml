@@ -1,0 +1,20 @@
+---
+connection_id: VARCHAR
+id: VARCHAR
+label: VARCHAR
+timestamp: TIMESTAMPTZ
+type: VARCHAR
+version: VARCHAR
+node_name: VARCHAR
+session_id: VARCHAR
+role: VARCHAR
+channel_id: VARCHAR
+spotlight: BOOLEAN
+bundle_id: VARCHAR
+client_id: VARCHAR
+simulcast: BOOLEAN
+log_written: BOOLEAN
+rtc_data: JSON
+rtc_id: VARCHAR
+rtc_timestamp: DOUBLE
+rtc_type: VARCHAR

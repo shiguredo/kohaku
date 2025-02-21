@@ -1,0 +1,19 @@
+.DS_Store
+
+data
+plugins
+duckdb
+.duckdb
+
+duck.db
+duck.db.readonly
+.env
+
+# python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.egg
+*.egg-info

@@ -1,0 +1,203 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 3,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "motherduck-duckdb-datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "connection_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 290
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "",
+                    "url": "d/feg4t1lbp3b40b/rtc-stats?var-connection_id=${__value.raw}﻿﻿&from=﻿﻿${__data.fields.from_time}﻿﻿&to=﻿﻿${__data.fields.to_time}﻿﻿&var-channel_id=﻿${__data.fields.channel_id}﻿&var-session_id=${__data.fields.session_id}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 19,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "motherduck-duckdb-datasource"
+          },
+          "editorMode": "code",
+          "format": 1,
+          "rawQuery": true,
+          "rawSql": "WITH term AS (\nSELECT\n  connection_id,\n  MAX(timestamp) AS last_time,\n  MAX((rtc_data->>'$.timestamp') :: double) AS last_rtc_data_time,\n  MIN(timestamp) AS first_time,\n  MIN((rtc_data->>'$.timestamp') :: double) AS first_rtc_data_time\nFROM rtc_stats\nWHERE $__timeFilter(timestamp)\nGROUP BY connection_id\n)\nSELECT\n  DISTINCT s.timestamp AS created_timestamp,\n  s.channel_id,\n  s.session_id,\n  s.client_id,\n  s.connection_id,\n  t.last_rtc_data_time,\n  -- Data links に設定する from パラメータ用にミリ秒のタイムスタンプを生成\n  (EXTRACT(EPOCH FROM t.first_time) :: bigint * 1000) :: bigint AS from_time,\n  -- Data links に設定する to パラメータ用にミリ秒のタイムスタンプを生成\n  (EXTRACT(EPOCH FROM t.last_time) :: bigint * 1000) :: bigint AS to_time\nFROM term t\nINNER JOIN rtc_stats s ON\n      (t.connection_id = s.connection_id)\n  AND (t.last_rtc_data_time = ((s.rtc_data->>'$.timestamp') :: double))\nWHERE $__timeFilter(timestamp)\nORDER BY timestamp DESC\nOFFSET ${offset}\nLIMIT ${limit};",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Latest connections",
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "refresh": "",
+  "schemaVersion": 40,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "50",
+          "value": "50"
+        },
+        "label": "Show item number (limit)",
+        "name": "limit",
+        "options": [
+          {
+            "selected": true,
+            "text": "50",
+            "value": "50"
+          },
+          {
+            "selected": false,
+            "text": "100",
+            "value": "100"
+          },
+          {
+            "selected": false,
+            "text": "300",
+            "value": "300"
+          }
+        ],
+        "query": "50, 100, 300",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "0",
+          "value": "0"
+        },
+        "label": "offset",
+        "name": "offset",
+        "options": [
+          {
+            "selected": true,
+            "text": "0",
+            "value": "0"
+          }
+        ],
+        "query": "0",
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ]
+  },
+  "timezone": "browser",
+  "title": "Kohaku",
+  "uid": "ceg4rfpqzngu8d",
+  "version": 2,
+  "weekStart": ""
+}

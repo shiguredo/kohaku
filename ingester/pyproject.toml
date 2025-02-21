@@ -1,0 +1,25 @@
+[project]
+name = "kohaku-ingester"
+version = "2025.1.0"
+description = "Data ingester for importing WebRTC SFU Sora logs from object storage into DuckDB database"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    # Grafana DuckDB Data Source Plugin の DuckDB のバージョンにあわせる
+    "duckdb==1.3.1",
+    "minio>=7.2.15",
+    "pytz>=2025.1",
+    "pyyaml>=6.0.2",
+    "uuid>=1.30",
+]
+
+[tool.uv]
+default-groups = ["test", "lint"]
+
+[dependency-groups]
+test = ["pytest", "testcontainers[minio]"]
+lint = ["ruff", "ty"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

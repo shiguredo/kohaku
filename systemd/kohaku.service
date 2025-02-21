@@ -1,0 +1,27 @@
+[Unit]
+Description=WebRTC Stats Analyzer Kohaku
+RefuseManualStop=true
+
+[Service]
+Type=oneshot
+User=kohaku
+EnvironmentFile=-/opt/kohaku/.env
+Environment=UV_CACHE_DIR=/opt/kohaku/ingester/.cache
+Environment=HOME=/opt/kohaku
+WorkingDirectory=/opt/kohaku/ingester
+ExecStart=/opt/uv/bin/uv run python src/run.py \
+		--db ${DUCKDB_DB_PATH} \
+		--storage ${STORAGE} \
+		--s3_endpoint ${S3_ENDPOINT} \
+		--s3_access_key_id ${AWS_ACCESS_KEY_ID} \
+		--s3_secret_access_key ${AWS_SECRET_ACCESS_KEY} \
+		--s3_bucket ${S3_BUCKET} \
+		--s3_prefix ${S3_PREFIX} \
+		update
+ExecStartPost=/opt/uv/bin/uv run python src/run.py \
+		--db ${DUCKDB_DB_PATH} \
+		--retention_period ${RETENTION_PERIOD} \
+		delete
+
+[Install]
+WantedBy=multi-user.target

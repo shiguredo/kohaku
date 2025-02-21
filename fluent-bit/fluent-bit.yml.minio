@@ -1,0 +1,30 @@
+service:
+  flush:        1
+  daemon:       Off
+  log_level:    info
+  http_server: Off
+
+pipeline:
+  inputs:
+    - name: tail
+      path: ${SORA_LOG_PATH}/rtc_stats.jsonl
+      parser: json
+      read_from_head: false
+      db: rtc_stats.db
+      tag: rtc_stats
+  outputs:
+    - name: s3
+      match: 'rtc_stats'
+      bucket: ${S3_BUCKET}
+      endpoint: ${S3_ENDPOINT}
+      compression: gzip
+      s3_key_format: /${S3_PREFIX}/$TAG/%Y/%m/%d/$UUID.gz
+      upload_timeout: 5m
+      json_date_key: off
+
+parsers:
+  - name: json
+    format: json
+    time_key: timestamp
+    time_format: '%Y-%m-%dT%H:%M:%S.%L%z'
+    time_keep: on
