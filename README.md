@@ -1,7 +1,7 @@
 # レガシー版の Kohaku
 
 新しい Kohaku はレガシー版の Kohaku と互換性は **ありません** 。
-新しい Hisui のリリースまではレガシー版の Hisui をお使いください。
+新しい Kohaku のリリースまではレガシー版の Kohaku をお使いください。
 
 <https://github.com/shiguredo/kohaku-legacy>
 
