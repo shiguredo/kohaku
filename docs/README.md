@@ -183,6 +183,7 @@ Fluent Bit から Amazon S3 または MinIO へログデータが送られてき
 ログデータの保存状況は mc コマンド等で確認してください
 
 ```bash
+set -a
 source /opt/kohaku/.env
 pushd /opt/kohaku/ingester
 sudo -E -u kohaku /opt/uv/bin/uv --cache-dir /opt/kohaku/ingester/.cache sync
@@ -196,6 +197,7 @@ sudo -E -u kohaku HOME=/opt/kohaku/ingester /opt/uv/bin/uv run python src/run.py
   --s3_prefix $S3_PREFIX \
   init
 popd
+set +a
 ```
 
 ### Grafana, Kohaku の起動
