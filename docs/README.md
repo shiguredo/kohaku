@@ -185,7 +185,7 @@ Fluent Bit から Amazon S3 または MinIO へログデータが送られてき
 ```bash
 source /opt/kohaku/.env
 pushd /opt/kohaku/ingester
-sudo -u kohaku /opt/uv/bin/uv --cache-dir /opt/kohaku/ingester/.cache sync
+sudo -E -u kohaku /opt/uv/bin/uv --cache-dir /opt/kohaku/ingester/.cache sync
 sudo -E -u kohaku HOME=/opt/kohaku/ingester /opt/uv/bin/uv run python src/run.py \
   --db $DUCKDB_DB_PATH \
   --storage $STORAGE \
