@@ -15,6 +15,7 @@ dependencies = [
 
 [tool.uv]
 default-groups = ["test", "lint"]
+python-preference = "only-managed"
 
 [dependency-groups]
 test = ["pytest", "testcontainers[minio]"]
