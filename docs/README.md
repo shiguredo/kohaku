@@ -155,6 +155,7 @@ sudo cp systemd/kohaku.timer /etc/systemd/system/
 構築が終わりましたら、/opt/kohaku に Kohaku の実行環境を設置します
 
 ```bash
+sudo apt -y install g++ libffi-dev
 git clone --no-checkout . /tmp/kohaku
 cp .env /tmp/kohaku/
 pushd /tmp/kohaku
