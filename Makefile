@@ -7,7 +7,7 @@ up:
 	docker compose up -d
 
 down:
-	docker compose down
+	docker compose down --rmi local
 	sudo rm -rf ./ingester/.venv
 
 clean:
