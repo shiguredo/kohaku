@@ -92,7 +92,15 @@ def create_s3_object_table(con):
     con.execute("CREATE TABLE IF NOT EXISTS s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)")
 
 def update_s3_object_table(con, log_type, object):
-    con.execute(f"INSERT INTO s3_objects VALUES ('{log_type}', '{object.object_name}', '{object.last_modified}') ON CONFLICT DO UPDATE SET type = EXCLUDED.type")
+    con.execute("""
+        MERGE INTO s3_objects AS target
+        USING (SELECT ? AS type, ? AS object_name, ? AS last_modified) AS source
+        ON target.type = source.type
+        WHEN MATCHED THEN
+            UPDATE SET object_name = source.object_name, last_modified = source.last_modified
+        WHEN NOT MATCHED THEN
+            INSERT (type, object_name, last_modified) VALUES (source.type, source.object_name, source.last_modified);
+    """, (log_type, object.object_name, object.last_modified))
 
 def list_objects(client, bucket, prefix):
     objects = client.list_objects(bucket, prefix=prefix, recursive=True)
