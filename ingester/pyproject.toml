@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     # Grafana DuckDB Data Source Plugin の DuckDB のバージョンにあわせる
-    "duckdb==1.4.1",
+    "duckdb==1.4.2",
     "minio>=7.2.15",
     "pytz>=2025.1",
     "pyyaml>=6.0.2",
