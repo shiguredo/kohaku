@@ -129,13 +129,13 @@ def s3_setup(con, storage, s3_endpoint, s3_access_key_id, s3_secret_access_key, 
     con.execute("INSTALL httpfs")
     con.execute("LOAD httpfs")
     con.execute("SET s3_url_style='path'")
-    con.execute(f"SET s3_endpoint='{s3_endpoint}'")
-    con.execute(f"SET s3_access_key_id='{s3_access_key_id}'")
-    con.execute(f"SET s3_secret_access_key='{s3_secret_access_key}'")
-    con.execute(f"SET s3_use_ssl={s3_use_ssl}")
+    con.execute("SET s3_endpoint=?", (s3_endpoint,))
+    con.execute("SET s3_access_key_id=?", (s3_access_key_id,))
+    con.execute("SET s3_secret_access_key=?", (s3_secret_access_key,))
+    con.execute("SET s3_use_ssl=?", (s3_use_ssl,))
     if storage == "s3":
         # minio で設定すると minio に接続できなくてエラーになるためタイプごとに設定の有無を決められて方が良さそう
-        con.execute(f"SET s3_region='{s3_region}'")
+        con.execute("SET s3_region=?", (s3_region,))
 
 def create_log_table(con, table_name, target_urls):
     # s3://log/connection/2021/06/01/a.gz, s3://log/connection/2021/06/02/b.gz, ... のようなパスを想定
@@ -146,7 +146,7 @@ def create_log_table(con, table_name, target_urls):
         raise ValueError(f"Unknown table name: {table_name}. Available tables: {list(duckdb_columns.keys())}")
 
     # テーブルが存在する場合はすぐにリターンする
-    rel = con.execute(f"SELECT table_name FROM duckdb_tables WHERE table_name='{table_name}';")
+    rel = con.execute("SELECT table_name FROM duckdb_tables WHERE table_name=?", (table_name,))
     if rel.fetchone() is not None:
         print(f"Table {table_name} already exists.")
         return
@@ -255,11 +255,10 @@ def insert_log(con, table_name, target_urls):
     rel.insert_into(table_name)
 
 def select_s3_object(con, log_type):
-    q = f"SELECT * FROM s3_objects WHERE type = '{log_type}'"
-    return con.execute(q).fetchone()
+    return con.execute("SELECT * FROM s3_objects WHERE type=?", (log_type,)).fetchone()
 
 def delete_log_by_timestamp(con, table_name, timestamp):
-    object = con.execute(f"SELECT count(*) FROM information_schema.tables WHERE table_name = '{table_name}'")
+    object = con.execute("SELECT count(*) FROM information_schema.tables WHERE table_name=?", (table_name,))
     count = object.fetchone()
     if count[0] < 1:
         # テーブルが存在しない場合はスキップする
@@ -268,7 +267,7 @@ def delete_log_by_timestamp(con, table_name, timestamp):
         return 0
 
     print(f"DELETE FROM {table_name} WHERE timestamp < '{timestamp}'")
-    con.execute(f"DELETE FROM {table_name} WHERE timestamp < '{timestamp}'")
+    con.execute(f"DELETE FROM {table_name} WHERE timestamp < ?", (timestamp,))
     result = con.fetchone()
     return result[0]
 
