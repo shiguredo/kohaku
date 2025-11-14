@@ -9,6 +9,9 @@ duck.db
 duck.db.readonly
 .env
 
+fluent-bit.yml
+dist
+
 # python
 __pycache__
 *.pyc
