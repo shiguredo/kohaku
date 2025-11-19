@@ -64,6 +64,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -78,7 +79,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -109,7 +111,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "editorMode": "code",
@@ -201,6 +203,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -215,7 +218,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -230,7 +234,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1532
+            "y": 173
           },
           "id": 41,
           "options": {
@@ -246,7 +250,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -309,6 +313,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -323,7 +328,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -338,7 +344,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1532
+            "y": 173
           },
           "id": 42,
           "options": {
@@ -354,7 +360,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -417,6 +423,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -431,7 +438,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -446,7 +454,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1532
+            "y": 173
           },
           "id": 43,
           "options": {
@@ -462,7 +470,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -525,6 +533,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -539,7 +548,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -554,7 +564,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1540
+            "y": 181
           },
           "id": 44,
           "options": {
@@ -570,7 +580,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -633,6 +643,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -647,7 +658,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -662,7 +674,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1540
+            "y": 181
           },
           "id": 45,
           "options": {
@@ -678,7 +690,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -741,6 +753,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -755,7 +768,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -770,7 +784,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1540
+            "y": 181
           },
           "id": 46,
           "options": {
@@ -786,7 +800,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -849,6 +863,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -863,7 +878,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -878,7 +894,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1548
+            "y": 189
           },
           "id": 47,
           "options": {
@@ -894,7 +910,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -957,6 +973,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -971,7 +988,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -986,7 +1004,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1548
+            "y": 189
           },
           "id": 48,
           "options": {
@@ -1002,7 +1020,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -1065,6 +1083,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -1079,7 +1098,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -1094,7 +1114,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1548
+            "y": 189
           },
           "id": 49,
           "options": {
@@ -1110,7 +1130,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -1173,6 +1193,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -1187,7 +1208,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -1202,7 +1224,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1556
+            "y": 197
           },
           "id": 50,
           "options": {
@@ -1218,7 +1240,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -1281,6 +1303,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -1295,7 +1318,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -1310,7 +1334,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1556
+            "y": 197
           },
           "id": 51,
           "options": {
@@ -1326,7 +1350,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -1389,6 +1413,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -1403,7 +1428,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -1418,7 +1444,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1556
+            "y": 197
           },
           "id": 52,
           "options": {
@@ -1434,7 +1460,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -1497,6 +1523,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -1511,7 +1538,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -1526,7 +1554,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1564
+            "y": 205
           },
           "id": 53,
           "options": {
@@ -1542,7 +1570,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -1605,6 +1633,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -1619,7 +1648,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -1634,7 +1664,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1564
+            "y": 205
           },
           "id": 54,
           "options": {
@@ -1650,7 +1680,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -1713,6 +1743,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -1727,7 +1758,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -1742,7 +1774,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1564
+            "y": 205
           },
           "id": 55,
           "options": {
@@ -1758,7 +1790,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -1821,6 +1853,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -1835,7 +1868,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -1850,7 +1884,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1572
+            "y": 213
           },
           "id": 56,
           "options": {
@@ -1866,7 +1900,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -1929,6 +1963,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -1943,7 +1978,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -1958,7 +1994,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1572
+            "y": 213
           },
           "id": 57,
           "options": {
@@ -1974,7 +2010,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -2037,6 +2073,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -2051,7 +2088,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -2066,7 +2104,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1572
+            "y": 213
           },
           "id": 58,
           "options": {
@@ -2082,7 +2120,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -2145,6 +2183,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -2159,7 +2198,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -2174,7 +2214,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1580
+            "y": 221
           },
           "id": 59,
           "options": {
@@ -2190,7 +2230,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -2253,6 +2293,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -2267,7 +2308,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -2282,7 +2324,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1580
+            "y": 221
           },
           "id": 60,
           "options": {
@@ -2298,7 +2340,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -2361,6 +2403,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -2375,7 +2418,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -2390,7 +2434,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1580
+            "y": 221
           },
           "id": 61,
           "options": {
@@ -2406,7 +2450,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -2469,6 +2513,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -2483,7 +2528,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -2498,7 +2544,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1588
+            "y": 229
           },
           "id": 62,
           "options": {
@@ -2514,7 +2560,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -2577,6 +2623,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -2591,7 +2638,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -2606,7 +2654,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1588
+            "y": 229
           },
           "id": 63,
           "options": {
@@ -2622,7 +2670,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -2685,6 +2733,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -2699,7 +2748,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -2714,7 +2764,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1596
+            "y": 237
           },
           "id": 64,
           "options": {
@@ -2730,7 +2780,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -2793,6 +2843,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -2807,7 +2858,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -2822,7 +2874,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1596
+            "y": 237
           },
           "id": 65,
           "options": {
@@ -2838,7 +2890,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "11.5.2",
+          "pluginVersion": "12.2.1",
           "targets": [
             {
               "datasource": {
@@ -2868,7 +2920,7 @@
           "type": "timeseries"
         }
       ],
-      "title": "audio (${inbound_rtp_audio_rtc_id})",
+      "title": "inbound-rtp audio (${inbound_rtp_audio_rtc_id})",
       "type": "row"
     },
     {
@@ -2878,6 +2930,818 @@
         "w": 24,
         "x": 0,
         "y": 1
+      },
+      "id": 88,
+      "panels": [
+        {
+          "datasource": {
+            "type": "motherduck-duckdb-datasource"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 2
+          },
+          "id": 89,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.2.1",
+          "targets": [
+            {
+              "editorMode": "code",
+              "format": 1,
+              "rawQuery": true,
+              "rawSql": "SELECT\n  time_bucket($__interval, timestamp) AS time,\n  connection_id AS connection_id,\n  rtc_id AS outbound_rtp_audio_rtc_id,\n  (rtc_data->>'$.bytesSent') :: double AS bytes_sent,\n  (rtc_data->>'$.headerBytesSent') :: double AS header_bytes_sent,\n  (rtc_data->>'$.nackCount') :: double AS nack_count,\n  (rtc_data->>'$.packetsSent') :: double AS packets_sent,\n  (rtc_data->>'$.retransmittedBytesSent') :: double AS retransmitted_bytes_sent,\n  (rtc_data->>'$.retransmittedPacketsSent') :: double AS retransmitted_packets_sent,\n  (rtc_data->>'$.targetBitrate') :: double AS target_bitrate,\n  (rtc_data->>'$.totalPacketSendDelay') :: double AS total_packet_send_delay,\nFROM\n  rtc_stats\nWHERE\n  $__timeFilter(timestamp)\n  AND connection_id IN (${connection_id})\n  AND rtc_id IN (${outbound_rtp_audio_rtc_id})\n  AND (rtc_data->>'$.type') = 'outbound-rtp'\nORDER BY\n  time\n;",
+              "refId": "A",
+              "sql": {
+                "columns": [
+                  {
+                    "parameters": [],
+                    "type": "function"
+                  }
+                ],
+                "groupBy": [
+                  {
+                    "property": {
+                      "type": "string"
+                    },
+                    "type": "groupBy"
+                  }
+                ],
+                "limit": 50
+              }
+            },
+            {
+              "datasource": {
+                "type": "motherduck-duckdb-datasource"
+              },
+              "editorMode": "code",
+              "format": 1,
+              "hide": false,
+              "rawQuery": true,
+              "rawSql": "SELECT\n  time_bucket($__interval, t.time) AS time,\n  t.connection_id AS connection_id,\n  t.outbound_rtp_audio_rtc_id AS outbound_rtp_audio_rtc_id,\n  ((t.packets_sent - lag(t.packets_sent, 1, t.packets_sent) OVER w) / $__interval_ms * 1000) :: numeric AS 'packetsSent/s',\n  ((t.bytes_sent - lag(t.bytes_sent, 1, t.bytes_sent) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'bytesSent_in_bits/s',\n  ((t.header_bytes_sent - lag(t.header_bytes_sent, 1, t.header_bytes_sent) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'headerBytesSent_in_bits/s'\nFROM (\n  SELECT\n    timestamp AS time,\n    connection_id AS connection_id,\n    rtc_id AS outbound_rtp_audio_rtc_id,\n    (rtc_data->>'$.packetsSent') :: numeric AS packets_sent,\n    (rtc_data->>'$.bytesSent') :: numeric AS bytes_sent,\n    (rtc_data->>'$.headerBytesSent') :: numeric AS header_bytes_sent\n  FROM rtc_stats\n  WHERE\n    $__timeFilter(timestamp)\n    AND connection_id = ('${connection_id}')\n    AND (rtc_data->>'$.id') IN ('${outbound_rtp_audio_rtc_id}')\n    AND (rtc_data->>'$.type') = 'outbound-rtp'\n  ORDER BY time\n) AS t\nWINDOW w AS (PARTITION BY t.connection_id, t.outbound_rtp_audio_rtc_id ORDER BY t.time)\nORDER BY time\n;",
+              "refId": "B",
+              "sql": {
+                "columns": [
+                  {
+                    "parameters": [],
+                    "type": "function"
+                  }
+                ],
+                "groupBy": [
+                  {
+                    "property": {
+                      "type": "string"
+                    },
+                    "type": "groupBy"
+                  }
+                ],
+                "limit": 50
+              }
+            }
+          ],
+          "title": "Outbound Audio Source Panel",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 100
+          },
+          "id": 90,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.2.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "datasource",
+                "uid": "-- Dashboard --"
+              },
+              "panelId": 89,
+              "refId": "A"
+            }
+          ],
+          "title": "bytesSent",
+          "transformations": [
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "byVariable": false,
+                "include": {
+                  "names": [
+                    "time",
+                    "A bytes_sent"
+                  ],
+                  "pattern": "^(bytes_sent .+|Time)_"
+                }
+              }
+            }
+          ],
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 100
+          },
+          "id": 91,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.2.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "datasource",
+                "uid": "-- Dashboard --"
+              },
+              "panelId": 89,
+              "refId": "A"
+            }
+          ],
+          "title": "headerBytesSent",
+          "transformations": [
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "byVariable": false,
+                "include": {
+                  "names": [
+                    "time",
+                    "A header_bytes_sent"
+                  ],
+                  "pattern": "^(header_bytes_sent .+|Time)_"
+                }
+              }
+            }
+          ],
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 100
+          },
+          "id": 92,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.2.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "datasource",
+                "uid": "-- Dashboard --"
+              },
+              "panelId": 89,
+              "refId": "A"
+            }
+          ],
+          "title": "nackCount",
+          "transformations": [
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "byVariable": false,
+                "include": {
+                  "names": [
+                    "time",
+                    "A nack_count"
+                  ],
+                  "pattern": "^(nack_count .+|Time)_"
+                }
+              }
+            }
+          ],
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 165
+          },
+          "id": 93,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.2.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "datasource",
+                "uid": "-- Dashboard --"
+              },
+              "panelId": 89,
+              "refId": "A"
+            }
+          ],
+          "title": "packetsSent",
+          "transformations": [
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "byVariable": false,
+                "include": {
+                  "names": [
+                    "time",
+                    "A packets_sent"
+                  ],
+                  "pattern": "^(packets_sent .+|Time)_"
+                }
+              }
+            }
+          ],
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 165
+          },
+          "id": 94,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.2.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "datasource",
+                "uid": "-- Dashboard --"
+              },
+              "panelId": 89,
+              "refId": "A"
+            }
+          ],
+          "title": "retransmittedBytesSent",
+          "transformations": [
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "byVariable": false,
+                "include": {
+                  "names": [
+                    "time",
+                    "A retransmitted_bytes_sent"
+                  ],
+                  "pattern": "^(retransmitted_bytes_sent .+|Time)_"
+                }
+              }
+            }
+          ],
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 165
+          },
+          "id": 95,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.2.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "datasource",
+                "uid": "-- Dashboard --"
+              },
+              "panelId": 89,
+              "refId": "A"
+            }
+          ],
+          "title": "retransmittedPacketsSent",
+          "transformations": [
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "byVariable": false,
+                "include": {
+                  "names": [
+                    "time",
+                    "A retransmitted_packets_sent"
+                  ],
+                  "pattern": "^(retransmitted_packets_sent .+|Time)_"
+                }
+              }
+            }
+          ],
+          "type": "timeseries"
+        }
+      ],
+      "title": "outbound-rtp audio (${outbound_rtp_audio_rtc_id})",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 2
       },
       "id": 1,
       "panels": [
@@ -2945,7 +3809,7 @@
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 2
+            "y": 3
           },
           "id": 3,
           "options": {
@@ -3084,7 +3948,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 60
+            "y": 4
           },
           "id": 4,
           "options": {
@@ -3194,7 +4058,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 60
+            "y": 4
           },
           "id": 8,
           "options": {
@@ -3304,7 +4168,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 60
+            "y": 4
           },
           "id": 5,
           "options": {
@@ -3413,7 +4277,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 68
+            "y": 12
           },
           "id": 9,
           "options": {
@@ -3522,7 +4386,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 68
+            "y": 12
           },
           "id": 6,
           "options": {
@@ -3631,7 +4495,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 68
+            "y": 12
           },
           "id": 10,
           "options": {
@@ -3740,7 +4604,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 76
+            "y": 20
           },
           "id": 7,
           "options": {
@@ -3850,7 +4714,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 76
+            "y": 20
           },
           "id": 11,
           "options": {
@@ -3959,7 +4823,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 76
+            "y": 20
           },
           "id": 12,
           "options": {
@@ -4069,7 +4933,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 84
+            "y": 28
           },
           "id": 13,
           "options": {
@@ -4178,7 +5042,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 84
+            "y": 28
           },
           "id": 14,
           "options": {
@@ -4288,7 +5152,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 84
+            "y": 28
           },
           "id": 15,
           "options": {
@@ -4397,7 +5261,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 92
+            "y": 36
           },
           "id": 16,
           "options": {
@@ -4507,7 +5371,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 92
+            "y": 36
           },
           "id": 17,
           "options": {
@@ -4616,7 +5480,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 92
+            "y": 36
           },
           "id": 18,
           "options": {
@@ -4726,7 +5590,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 100
+            "y": 44
           },
           "id": 19,
           "options": {
@@ -4835,7 +5699,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 100
+            "y": 44
           },
           "id": 20,
           "options": {
@@ -4945,7 +5809,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 100
+            "y": 44
           },
           "id": 21,
           "options": {
@@ -5054,7 +5918,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 108
+            "y": 52
           },
           "id": 22,
           "options": {
@@ -5164,7 +6028,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 108
+            "y": 52
           },
           "id": 23,
           "options": {
@@ -5273,7 +6137,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 108
+            "y": 52
           },
           "id": 24,
           "options": {
@@ -5383,7 +6247,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 116
+            "y": 60
           },
           "id": 25,
           "options": {
@@ -5493,7 +6357,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 116
+            "y": 60
           },
           "id": 26,
           "options": {
@@ -5602,7 +6466,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 116
+            "y": 60
           },
           "id": 27,
           "options": {
@@ -5712,7 +6576,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 124
+            "y": 68
           },
           "id": 28,
           "options": {
@@ -5822,7 +6686,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 124
+            "y": 68
           },
           "id": 29,
           "options": {
@@ -5931,7 +6795,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 124
+            "y": 68
           },
           "id": 30,
           "options": {
@@ -6041,7 +6905,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 132
+            "y": 76
           },
           "id": 34,
           "options": {
@@ -6151,7 +7015,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 132
+            "y": 76
           },
           "id": 35,
           "options": {
@@ -6260,7 +7124,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 132
+            "y": 76
           },
           "id": 33,
           "options": {
@@ -6370,7 +7234,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 140
+            "y": 84
           },
           "id": 31,
           "options": {
@@ -6480,7 +7344,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 140
+            "y": 84
           },
           "id": 32,
           "options": {
@@ -6589,7 +7453,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 140
+            "y": 84
           },
           "id": 36,
           "options": {
@@ -6699,7 +7563,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 148
+            "y": 92
           },
           "id": 37,
           "options": {
@@ -6809,7 +7673,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 148
+            "y": 92
           },
           "id": 38,
           "options": {
@@ -6918,7 +7782,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 148
+            "y": 92
           },
           "id": 39,
           "options": {
@@ -6964,7 +7828,7 @@
           "type": "timeseries"
         }
       ],
-      "title": "video (${inbound_rtp_video_rtc_id})",
+      "title": "inbound-rtp video (${inbound_rtp_video_rtc_id})",
       "type": "row"
     },
     {
@@ -6973,7 +7837,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 2
+        "y": 3
       },
       "id": 67,
       "panels": [
@@ -7042,7 +7906,7 @@
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 3
+            "y": 101
           },
           "id": 66,
           "options": {
@@ -7182,7 +8046,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 4
+            "y": 102
           },
           "id": 68,
           "options": {
@@ -7291,7 +8155,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 4
+            "y": 102
           },
           "id": 69,
           "options": {
@@ -7400,7 +8264,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 4
+            "y": 102
           },
           "id": 70,
           "options": {
@@ -7509,7 +8373,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 12
+            "y": 110
           },
           "id": 71,
           "options": {
@@ -7618,7 +8482,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 12
+            "y": 110
           },
           "id": 72,
           "options": {
@@ -7727,7 +8591,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 12
+            "y": 110
           },
           "id": 73,
           "options": {
@@ -7836,7 +8700,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 20
+            "y": 118
           },
           "id": 74,
           "options": {
@@ -7945,7 +8809,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 20
+            "y": 118
           },
           "id": 75,
           "options": {
@@ -8054,7 +8918,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 20
+            "y": 118
           },
           "id": 76,
           "options": {
@@ -8163,7 +9027,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 28
+            "y": 126
           },
           "id": 77,
           "options": {
@@ -8272,7 +9136,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 28
+            "y": 126
           },
           "id": 78,
           "options": {
@@ -8381,7 +9245,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 28
+            "y": 126
           },
           "id": 79,
           "options": {
@@ -8490,7 +9354,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 36
+            "y": 134
           },
           "id": 80,
           "options": {
@@ -8599,7 +9463,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 36
+            "y": 134
           },
           "id": 81,
           "options": {
@@ -8708,7 +9572,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 36
+            "y": 134
           },
           "id": 82,
           "options": {
@@ -8817,7 +9681,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 44
+            "y": 142
           },
           "id": 83,
           "options": {
@@ -8926,7 +9790,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 44
+            "y": 142
           },
           "id": 84,
           "options": {
@@ -9035,7 +9899,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 44
+            "y": 142
           },
           "id": 85,
           "options": {
@@ -9144,7 +10008,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 52
+            "y": 150
           },
           "id": 86,
           "options": {
@@ -9253,7 +10117,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 52
+            "y": 150
           },
           "id": 87,
           "options": {
@@ -9298,7 +10162,7 @@
           "type": "timeseries"
         }
       ],
-      "title": "video (${outbound_rtp_video_rtc_id})",
+      "title": "outbound-rtp video (${outbound_rtp_video_rtc_id})",
       "type": "row"
     }
   ],
