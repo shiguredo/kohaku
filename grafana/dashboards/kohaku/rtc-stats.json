@@ -234,7 +234,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 173
+            "y": 458
           },
           "id": 41,
           "options": {
@@ -344,7 +344,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 173
+            "y": 458
           },
           "id": 42,
           "options": {
@@ -454,7 +454,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 173
+            "y": 458
           },
           "id": 43,
           "options": {
@@ -564,7 +564,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 181
+            "y": 466
           },
           "id": 44,
           "options": {
@@ -674,7 +674,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 181
+            "y": 466
           },
           "id": 45,
           "options": {
@@ -784,7 +784,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 181
+            "y": 466
           },
           "id": 46,
           "options": {
@@ -894,7 +894,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 189
+            "y": 474
           },
           "id": 47,
           "options": {
@@ -1004,7 +1004,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 189
+            "y": 474
           },
           "id": 48,
           "options": {
@@ -1114,7 +1114,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 189
+            "y": 474
           },
           "id": 49,
           "options": {
@@ -1224,7 +1224,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 197
+            "y": 482
           },
           "id": 50,
           "options": {
@@ -1334,7 +1334,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 197
+            "y": 482
           },
           "id": 51,
           "options": {
@@ -1444,7 +1444,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 197
+            "y": 482
           },
           "id": 52,
           "options": {
@@ -1554,7 +1554,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 205
+            "y": 490
           },
           "id": 53,
           "options": {
@@ -1664,7 +1664,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 205
+            "y": 490
           },
           "id": 54,
           "options": {
@@ -1774,7 +1774,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 205
+            "y": 490
           },
           "id": 55,
           "options": {
@@ -1884,7 +1884,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 213
+            "y": 498
           },
           "id": 56,
           "options": {
@@ -1994,7 +1994,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 213
+            "y": 498
           },
           "id": 57,
           "options": {
@@ -2104,7 +2104,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 213
+            "y": 498
           },
           "id": 58,
           "options": {
@@ -2214,7 +2214,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 221
+            "y": 506
           },
           "id": 59,
           "options": {
@@ -2324,7 +2324,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 221
+            "y": 506
           },
           "id": 60,
           "options": {
@@ -2434,7 +2434,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 221
+            "y": 506
           },
           "id": 61,
           "options": {
@@ -2544,7 +2544,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 229
+            "y": 514
           },
           "id": 62,
           "options": {
@@ -2654,7 +2654,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 229
+            "y": 514
           },
           "id": 63,
           "options": {
@@ -2764,7 +2764,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 237
+            "y": 522
           },
           "id": 64,
           "options": {
@@ -2874,7 +2874,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 237
+            "y": 522
           },
           "id": 65,
           "options": {
@@ -2924,7 +2924,7 @@
       "type": "row"
     },
     {
-      "collapsed": true,
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -2932,808 +2932,807 @@
         "y": 1
       },
       "id": 88,
-      "panels": [
+      "panels": [],
+      "title": "outbound-rtp audio (${outbound_rtp_audio_rtc_id})",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "motherduck-duckdb-datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 2
+      },
+      "id": 89,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.2.1",
+      "targets": [
+        {
+          "editorMode": "code",
+          "format": 1,
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_bucket($__interval, timestamp) AS time,\n  connection_id AS connection_id,\n  rtc_id AS outbound_rtp_audio_rtc_id,\n  (rtc_data->>'$.bytesSent') :: numeric AS bytes_sent,\n  (rtc_data->>'$.headerBytesSent') :: numeric AS header_bytes_sent,\n  (rtc_data->>'$.nackCount') :: numeric AS nack_count,\n  (rtc_data->>'$.packetsSent') :: numeric AS packets_sent,\n  (rtc_data->>'$.retransmittedBytesSent') :: numeric AS retransmitted_bytes_sent,\n  (rtc_data->>'$.retransmittedPacketsSent') :: numeric AS retransmitted_packets_sent,\n  (rtc_data->>'$.targetBitrate') :: double AS target_bitrate,\n  (rtc_data->>'$.totalPacketSendDelay') :: double AS total_packet_send_delay,\nFROM\n  rtc_stats\nWHERE\n  $__timeFilter(timestamp)\n  AND connection_id IN (${connection_id})\n  AND rtc_id IN (${outbound_rtp_audio_rtc_id})\n  AND (rtc_data->>'$.type') = 'outbound-rtp'\nORDER BY\n  time\n;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
         {
           "datasource": {
             "type": "motherduck-duckdb-datasource"
           },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "showValues": false,
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": 0
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
+          "editorMode": "code",
+          "format": 1,
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_bucket($__interval, t.time) AS time,\n  t.connection_id AS connection_id,\n  t.outbound_rtp_audio_rtc_id AS outbound_rtp_audio_rtc_id,\n  ((t.packets_sent - lag(t.packets_sent, 1, t.packets_sent) OVER w) / $__interval_ms * 1000) :: numeric AS 'packetsSent/s',\n  ((t.bytes_sent - lag(t.bytes_sent, 1, t.bytes_sent) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'bytesSent_in_bits/s',\n  ((t.header_bytes_sent - lag(t.header_bytes_sent, 1, t.header_bytes_sent) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'headerBytesSent_in_bits/s'\nFROM (\n  SELECT\n    timestamp AS time,\n    connection_id AS connection_id,\n    rtc_id AS outbound_rtp_audio_rtc_id,\n    (rtc_data->>'$.packetsSent') :: numeric AS packets_sent,\n    (rtc_data->>'$.bytesSent') :: numeric AS bytes_sent,\n    (rtc_data->>'$.headerBytesSent') :: numeric AS header_bytes_sent\n  FROM rtc_stats\n  WHERE\n    $__timeFilter(timestamp)\n    AND connection_id = ('${connection_id}')\n    AND (rtc_data->>'$.id') IN ('${outbound_rtp_audio_rtc_id}')\n    AND (rtc_data->>'$.type') = 'outbound-rtp'\n  ORDER BY time\n) AS t\nWINDOW w AS (PARTITION BY t.connection_id, t.outbound_rtp_audio_rtc_id ORDER BY t.time)\nORDER BY time\n;",
+          "refId": "B",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
               }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 2
-          },
-          "id": 89,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": false
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "12.2.1",
-          "targets": [
-            {
-              "editorMode": "code",
-              "format": 1,
-              "rawQuery": true,
-              "rawSql": "SELECT\n  time_bucket($__interval, timestamp) AS time,\n  connection_id AS connection_id,\n  rtc_id AS outbound_rtp_audio_rtc_id,\n  (rtc_data->>'$.bytesSent') :: double AS bytes_sent,\n  (rtc_data->>'$.headerBytesSent') :: double AS header_bytes_sent,\n  (rtc_data->>'$.nackCount') :: double AS nack_count,\n  (rtc_data->>'$.packetsSent') :: double AS packets_sent,\n  (rtc_data->>'$.retransmittedBytesSent') :: double AS retransmitted_bytes_sent,\n  (rtc_data->>'$.retransmittedPacketsSent') :: double AS retransmitted_packets_sent,\n  (rtc_data->>'$.targetBitrate') :: double AS target_bitrate,\n  (rtc_data->>'$.totalPacketSendDelay') :: double AS total_packet_send_delay,\nFROM\n  rtc_stats\nWHERE\n  $__timeFilter(timestamp)\n  AND connection_id IN (${connection_id})\n  AND rtc_id IN (${outbound_rtp_audio_rtc_id})\n  AND (rtc_data->>'$.type') = 'outbound-rtp'\nORDER BY\n  time\n;",
-              "refId": "A",
-              "sql": {
-                "columns": [
-                  {
-                    "parameters": [],
-                    "type": "function"
-                  }
-                ],
-                "groupBy": [
-                  {
-                    "property": {
-                      "type": "string"
-                    },
-                    "type": "groupBy"
-                  }
-                ],
-                "limit": 50
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
               }
-            },
-            {
-              "datasource": {
-                "type": "motherduck-duckdb-datasource"
-              },
-              "editorMode": "code",
-              "format": 1,
-              "hide": false,
-              "rawQuery": true,
-              "rawSql": "SELECT\n  time_bucket($__interval, t.time) AS time,\n  t.connection_id AS connection_id,\n  t.outbound_rtp_audio_rtc_id AS outbound_rtp_audio_rtc_id,\n  ((t.packets_sent - lag(t.packets_sent, 1, t.packets_sent) OVER w) / $__interval_ms * 1000) :: numeric AS 'packetsSent/s',\n  ((t.bytes_sent - lag(t.bytes_sent, 1, t.bytes_sent) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'bytesSent_in_bits/s',\n  ((t.header_bytes_sent - lag(t.header_bytes_sent, 1, t.header_bytes_sent) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'headerBytesSent_in_bits/s'\nFROM (\n  SELECT\n    timestamp AS time,\n    connection_id AS connection_id,\n    rtc_id AS outbound_rtp_audio_rtc_id,\n    (rtc_data->>'$.packetsSent') :: numeric AS packets_sent,\n    (rtc_data->>'$.bytesSent') :: numeric AS bytes_sent,\n    (rtc_data->>'$.headerBytesSent') :: numeric AS header_bytes_sent\n  FROM rtc_stats\n  WHERE\n    $__timeFilter(timestamp)\n    AND connection_id = ('${connection_id}')\n    AND (rtc_data->>'$.id') IN ('${outbound_rtp_audio_rtc_id}')\n    AND (rtc_data->>'$.type') = 'outbound-rtp'\n  ORDER BY time\n) AS t\nWINDOW w AS (PARTITION BY t.connection_id, t.outbound_rtp_audio_rtc_id ORDER BY t.time)\nORDER BY time\n;",
-              "refId": "B",
-              "sql": {
-                "columns": [
-                  {
-                    "parameters": [],
-                    "type": "function"
-                  }
-                ],
-                "groupBy": [
-                  {
-                    "property": {
-                      "type": "string"
-                    },
-                    "type": "groupBy"
-                  }
-                ],
-                "limit": 50
-              }
-            }
-          ],
-          "title": "Outbound Audio Source Panel",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "datasource",
-            "uid": "-- Dashboard --"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "showValues": false,
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": 0
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 8,
-            "x": 0,
-            "y": 100
-          },
-          "id": 90,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "12.2.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "datasource",
-                "uid": "-- Dashboard --"
-              },
-              "panelId": 89,
-              "refId": "A"
-            }
-          ],
-          "title": "bytesSent",
-          "transformations": [
-            {
-              "id": "filterFieldsByName",
-              "options": {
-                "byVariable": false,
-                "include": {
-                  "names": [
-                    "time",
-                    "A bytes_sent"
-                  ],
-                  "pattern": "^(bytes_sent .+|Time)_"
-                }
-              }
-            }
-          ],
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "datasource",
-            "uid": "-- Dashboard --"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "showValues": false,
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": 0
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 8,
-            "x": 8,
-            "y": 100
-          },
-          "id": 91,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "12.2.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "datasource",
-                "uid": "-- Dashboard --"
-              },
-              "panelId": 89,
-              "refId": "A"
-            }
-          ],
-          "title": "headerBytesSent",
-          "transformations": [
-            {
-              "id": "filterFieldsByName",
-              "options": {
-                "byVariable": false,
-                "include": {
-                  "names": [
-                    "time",
-                    "A header_bytes_sent"
-                  ],
-                  "pattern": "^(header_bytes_sent .+|Time)_"
-                }
-              }
-            }
-          ],
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "datasource",
-            "uid": "-- Dashboard --"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "showValues": false,
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": 0
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 8,
-            "x": 16,
-            "y": 100
-          },
-          "id": 92,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "12.2.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "datasource",
-                "uid": "-- Dashboard --"
-              },
-              "panelId": 89,
-              "refId": "A"
-            }
-          ],
-          "title": "nackCount",
-          "transformations": [
-            {
-              "id": "filterFieldsByName",
-              "options": {
-                "byVariable": false,
-                "include": {
-                  "names": [
-                    "time",
-                    "A nack_count"
-                  ],
-                  "pattern": "^(nack_count .+|Time)_"
-                }
-              }
-            }
-          ],
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "datasource",
-            "uid": "-- Dashboard --"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "showValues": false,
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": 0
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 8,
-            "x": 0,
-            "y": 165
-          },
-          "id": 93,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "12.2.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "datasource",
-                "uid": "-- Dashboard --"
-              },
-              "panelId": 89,
-              "refId": "A"
-            }
-          ],
-          "title": "packetsSent",
-          "transformations": [
-            {
-              "id": "filterFieldsByName",
-              "options": {
-                "byVariable": false,
-                "include": {
-                  "names": [
-                    "time",
-                    "A packets_sent"
-                  ],
-                  "pattern": "^(packets_sent .+|Time)_"
-                }
-              }
-            }
-          ],
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "datasource",
-            "uid": "-- Dashboard --"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "showValues": false,
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": 0
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 8,
-            "x": 8,
-            "y": 165
-          },
-          "id": 94,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "12.2.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "datasource",
-                "uid": "-- Dashboard --"
-              },
-              "panelId": 89,
-              "refId": "A"
-            }
-          ],
-          "title": "retransmittedBytesSent",
-          "transformations": [
-            {
-              "id": "filterFieldsByName",
-              "options": {
-                "byVariable": false,
-                "include": {
-                  "names": [
-                    "time",
-                    "A retransmitted_bytes_sent"
-                  ],
-                  "pattern": "^(retransmitted_bytes_sent .+|Time)_"
-                }
-              }
-            }
-          ],
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "datasource",
-            "uid": "-- Dashboard --"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "showValues": false,
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": 0
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 8,
-            "x": 16,
-            "y": 165
-          },
-          "id": 95,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "12.2.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "datasource",
-                "uid": "-- Dashboard --"
-              },
-              "panelId": 89,
-              "refId": "A"
-            }
-          ],
-          "title": "retransmittedPacketsSent",
-          "transformations": [
-            {
-              "id": "filterFieldsByName",
-              "options": {
-                "byVariable": false,
-                "include": {
-                  "names": [
-                    "time",
-                    "A retransmitted_packets_sent"
-                  ],
-                  "pattern": "^(retransmitted_packets_sent .+|Time)_"
-                }
-              }
-            }
-          ],
-          "type": "timeseries"
+            ],
+            "limit": 50
+          }
         }
       ],
-      "title": "outbound-rtp audio (${outbound_rtp_audio_rtc_id})",
-      "type": "row"
+      "title": "Outbound Audio Source Panel",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 3
+      },
+      "id": 90,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 89,
+          "refId": "A"
+        }
+      ],
+      "title": "bytesSent",
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "byVariable": false,
+            "include": {
+              "names": [
+                "time",
+                "A bytes_sent"
+              ],
+              "pattern": "^(bytes_sent .+|Time)_"
+            }
+          }
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 3
+      },
+      "id": 91,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 89,
+          "refId": "A"
+        }
+      ],
+      "title": "headerBytesSent",
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "byVariable": false,
+            "include": {
+              "names": [
+                "time",
+                "A header_bytes_sent"
+              ],
+              "pattern": "^(header_bytes_sent .+|Time)_"
+            }
+          }
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 3
+      },
+      "id": 92,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 89,
+          "refId": "A"
+        }
+      ],
+      "title": "nackCount",
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "byVariable": false,
+            "include": {
+              "names": [
+                "time",
+                "A nack_count"
+              ],
+              "pattern": "^(nack_count .+|Time)_"
+            }
+          }
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 11
+      },
+      "id": 93,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 89,
+          "refId": "A"
+        }
+      ],
+      "title": "packetsSent",
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "byVariable": false,
+            "include": {
+              "names": [
+                "time",
+                "A packets_sent"
+              ],
+              "pattern": "^(packets_sent .+|Time)_"
+            }
+          }
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 11
+      },
+      "id": 94,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 89,
+          "refId": "A"
+        }
+      ],
+      "title": "retransmittedBytesSent",
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "byVariable": false,
+            "include": {
+              "names": [
+                "time",
+                "A retransmitted_bytes_sent"
+              ],
+              "pattern": "^(retransmitted_bytes_sent .+|Time)_"
+            }
+          }
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 11
+      },
+      "id": 95,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.2.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 89,
+          "refId": "A"
+        }
+      ],
+      "title": "retransmittedPacketsSent",
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "byVariable": false,
+            "include": {
+              "names": [
+                "time",
+                "A retransmitted_packets_sent"
+              ],
+              "pattern": "^(retransmitted_packets_sent .+|Time)_"
+            }
+          }
+        }
+      ],
+      "type": "timeseries"
     },
     {
       "collapsed": true,
@@ -3741,7 +3740,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 2
+        "y": 19
       },
       "id": 1,
       "panels": [
@@ -3809,7 +3808,7 @@
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 3
+            "y": 231
           },
           "id": 3,
           "options": {
@@ -3948,7 +3947,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 4
+            "y": 289
           },
           "id": 4,
           "options": {
@@ -4058,7 +4057,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 4
+            "y": 289
           },
           "id": 8,
           "options": {
@@ -4168,7 +4167,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 4
+            "y": 289
           },
           "id": 5,
           "options": {
@@ -4277,7 +4276,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 12
+            "y": 297
           },
           "id": 9,
           "options": {
@@ -4386,7 +4385,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 12
+            "y": 297
           },
           "id": 6,
           "options": {
@@ -4495,7 +4494,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 12
+            "y": 297
           },
           "id": 10,
           "options": {
@@ -4604,7 +4603,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 20
+            "y": 305
           },
           "id": 7,
           "options": {
@@ -4714,7 +4713,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 20
+            "y": 305
           },
           "id": 11,
           "options": {
@@ -4823,7 +4822,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 20
+            "y": 305
           },
           "id": 12,
           "options": {
@@ -4933,7 +4932,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 28
+            "y": 313
           },
           "id": 13,
           "options": {
@@ -5042,7 +5041,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 28
+            "y": 313
           },
           "id": 14,
           "options": {
@@ -5152,7 +5151,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 28
+            "y": 313
           },
           "id": 15,
           "options": {
@@ -5261,7 +5260,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 36
+            "y": 321
           },
           "id": 16,
           "options": {
@@ -5371,7 +5370,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 36
+            "y": 321
           },
           "id": 17,
           "options": {
@@ -5480,7 +5479,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 36
+            "y": 321
           },
           "id": 18,
           "options": {
@@ -5590,7 +5589,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 44
+            "y": 329
           },
           "id": 19,
           "options": {
@@ -5699,7 +5698,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 44
+            "y": 329
           },
           "id": 20,
           "options": {
@@ -5809,7 +5808,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 44
+            "y": 329
           },
           "id": 21,
           "options": {
@@ -5918,7 +5917,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 52
+            "y": 337
           },
           "id": 22,
           "options": {
@@ -6028,7 +6027,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 52
+            "y": 337
           },
           "id": 23,
           "options": {
@@ -6137,7 +6136,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 52
+            "y": 337
           },
           "id": 24,
           "options": {
@@ -6247,7 +6246,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 60
+            "y": 345
           },
           "id": 25,
           "options": {
@@ -6357,7 +6356,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 60
+            "y": 345
           },
           "id": 26,
           "options": {
@@ -6466,7 +6465,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 60
+            "y": 345
           },
           "id": 27,
           "options": {
@@ -6576,7 +6575,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 68
+            "y": 353
           },
           "id": 28,
           "options": {
@@ -6686,7 +6685,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 68
+            "y": 353
           },
           "id": 29,
           "options": {
@@ -6795,7 +6794,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 68
+            "y": 353
           },
           "id": 30,
           "options": {
@@ -6905,7 +6904,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 76
+            "y": 361
           },
           "id": 34,
           "options": {
@@ -7015,7 +7014,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 76
+            "y": 361
           },
           "id": 35,
           "options": {
@@ -7124,7 +7123,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 76
+            "y": 361
           },
           "id": 33,
           "options": {
@@ -7234,7 +7233,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 84
+            "y": 369
           },
           "id": 31,
           "options": {
@@ -7344,7 +7343,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 84
+            "y": 369
           },
           "id": 32,
           "options": {
@@ -7453,7 +7452,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 84
+            "y": 369
           },
           "id": 36,
           "options": {
@@ -7563,7 +7562,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 92
+            "y": 377
           },
           "id": 37,
           "options": {
@@ -7673,7 +7672,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 92
+            "y": 377
           },
           "id": 38,
           "options": {
@@ -7782,7 +7781,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 92
+            "y": 377
           },
           "id": 39,
           "options": {
@@ -7837,7 +7836,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 3
+        "y": 20
       },
       "id": 67,
       "panels": [
@@ -7906,7 +7905,7 @@
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 101
+            "y": 232
           },
           "id": 66,
           "options": {
@@ -7928,7 +7927,7 @@
               "editorMode": "code",
               "format": 1,
               "rawQuery": true,
-              "rawSql": "SELECT\n  time_bucket($__interval, timestamp) AS time,\n  connection_id AS connection_id,\n  rtc_id AS outbound_rtp_video_rtc_id,\n  (rtc_data->>'$.bytesSent') :: double AS bytes_sent,\n  (rtc_data->>'$.firCount') :: numeric AS fir_count,\n  (rtc_data->>'$.frameWidth') :: numeric AS frame_width,\n  (rtc_data->>'$.frameHeight') :: numeric AS frame_height,\n  (rtc_data->>'$.framesEncoded') :: numeric AS frames_encoded,\n  (rtc_data->>'$.framesPerSecond') :: numeric AS frames_per_second,\n  (rtc_data->>'$.framesSent') :: numeric AS frames_sent,\n  (rtc_data->>'$.headerBytesSent') :: numeric AS header_bytes_sent,\n  (rtc_data->>'$.hugeFramesSent') :: numeric AS huge_frames_sent,\n  (rtc_data->>'$.keyFramesEncoded') :: numeric AS key_frames_encoded,\n  (rtc_data->>'$.nackCount') :: numeric AS nack_count,\n  (rtc_data->>'$.packetsSent') :: numeric AS packets_sent,\n  (rtc_data->>'$.pliCount') :: numeric AS pli_count,\n  (rtc_data->>'$.qpSum') :: numeric AS qp_sum,\n  (rtc_data->>'$.retransmittedBytesSent') :: numeric AS retransmitted_bytes_sent,\n  (rtc_data->>'$.retransmittedPacketsSent') :: numeric AS retransmitted_packets_sent,\n  (rtc_data->>'$.targetBitrate') :: numeric AS target_bitrate,\n  (rtc_data->>'$.totalEncodeTime') :: double AS total_encode_time,\n  (rtc_data->>'$.totalPacketSendDelay') :: double AS total_packet_send_delay,\nFROM\n  rtc_stats\nWHERE\n  $__timeFilter(timestamp)\n  AND connection_id IN (${connection_id})\n  AND rtc_id IN (${outbound_rtp_video_rtc_id})\n  AND (rtc_data->>'$.type') = 'outbound-rtp'\nORDER BY\n  time\n;",
+              "rawSql": "SELECT\n  time_bucket($__interval, timestamp) AS time,\n  connection_id AS connection_id,\n  rtc_id AS outbound_rtp_video_rtc_id,\n  (rtc_data->>'$.bytesSent') :: numeric AS bytes_sent,\n  (rtc_data->>'$.firCount') :: numeric AS fir_count,\n  (rtc_data->>'$.frameWidth') :: numeric AS frame_width,\n  (rtc_data->>'$.frameHeight') :: numeric AS frame_height,\n  (rtc_data->>'$.framesEncoded') :: numeric AS frames_encoded,\n  (rtc_data->>'$.framesPerSecond') :: double AS frames_per_second,\n  (rtc_data->>'$.framesSent') :: numeric AS frames_sent,\n  (rtc_data->>'$.headerBytesSent') :: numeric AS header_bytes_sent,\n  (rtc_data->>'$.hugeFramesSent') :: numeric AS huge_frames_sent,\n  (rtc_data->>'$.keyFramesEncoded') :: numeric AS key_frames_encoded,\n  (rtc_data->>'$.nackCount') :: numeric AS nack_count,\n  (rtc_data->>'$.packetsSent') :: numeric AS packets_sent,\n  (rtc_data->>'$.pliCount') :: numeric AS pli_count,\n  (rtc_data->>'$.qpSum') :: numeric AS qp_sum,\n  (rtc_data->>'$.retransmittedBytesSent') :: numeric AS retransmitted_bytes_sent,\n  (rtc_data->>'$.retransmittedPacketsSent') :: numeric AS retransmitted_packets_sent,\n  (rtc_data->>'$.targetBitrate') :: double AS target_bitrate,\n  (rtc_data->>'$.totalEncodeTime') :: double AS total_encode_time,\n  (rtc_data->>'$.totalPacketSendDelay') :: double AS total_packet_send_delay,\nFROM\n  rtc_stats\nWHERE\n  $__timeFilter(timestamp)\n  AND connection_id IN (${connection_id})\n  AND rtc_id IN (${outbound_rtp_video_rtc_id})\n  AND (rtc_data->>'$.type') = 'outbound-rtp'\nORDER BY\n  time\n;",
               "refId": "A",
               "sql": {
                 "columns": [
@@ -8046,7 +8045,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 102
+            "y": 233
           },
           "id": 68,
           "options": {
@@ -8155,7 +8154,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 102
+            "y": 233
           },
           "id": 69,
           "options": {
@@ -8264,7 +8263,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 102
+            "y": 233
           },
           "id": 70,
           "options": {
@@ -8373,7 +8372,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 110
+            "y": 241
           },
           "id": 71,
           "options": {
@@ -8482,7 +8481,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 110
+            "y": 241
           },
           "id": 72,
           "options": {
@@ -8591,7 +8590,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 110
+            "y": 241
           },
           "id": 73,
           "options": {
@@ -8700,7 +8699,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 118
+            "y": 249
           },
           "id": 74,
           "options": {
@@ -8809,7 +8808,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 118
+            "y": 249
           },
           "id": 75,
           "options": {
@@ -8918,7 +8917,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 118
+            "y": 249
           },
           "id": 76,
           "options": {
@@ -9027,7 +9026,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 126
+            "y": 257
           },
           "id": 77,
           "options": {
@@ -9136,7 +9135,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 126
+            "y": 257
           },
           "id": 78,
           "options": {
@@ -9245,7 +9244,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 126
+            "y": 257
           },
           "id": 79,
           "options": {
@@ -9354,7 +9353,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 134
+            "y": 265
           },
           "id": 80,
           "options": {
@@ -9463,7 +9462,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 134
+            "y": 265
           },
           "id": 81,
           "options": {
@@ -9572,7 +9571,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 134
+            "y": 265
           },
           "id": 82,
           "options": {
@@ -9681,7 +9680,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 142
+            "y": 273
           },
           "id": 83,
           "options": {
@@ -9790,7 +9789,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 142
+            "y": 273
           },
           "id": 84,
           "options": {
@@ -9899,7 +9898,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 142
+            "y": 273
           },
           "id": 85,
           "options": {
@@ -10008,7 +10007,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 150
+            "y": 281
           },
           "id": 86,
           "options": {
@@ -10117,7 +10116,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 150
+            "y": 281
           },
           "id": 87,
           "options": {
