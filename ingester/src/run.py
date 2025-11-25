@@ -26,6 +26,7 @@ COLUMNS_DIR = "./DUCKDB_COLUMNS"
 LOG_TARGETS = [
 #    "connection",
     "rtc_stats",
+    "session_webhook",
 ]
 
 def load_columns():
