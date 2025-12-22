@@ -14,22 +14,22 @@ services:
       - mc
     command: /fluent-bit/bin/fluent-bit -c /fluent-bit/etc/fluent-bit.yml
 
-  minio:
-    image: minio/minio
-    container_name: minio
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: rustfs
     ports:
       - 9000:9000
       - 9001:9001
     networks:
       - kohaku
     environment:
-      - MINIO_ROOT_USER=${AWS_ACCESS_KEY_ID}
-      - MINIO_ROOT_PASSWORD=${AWS_SECRET_ACCESS_KEY}
-    command: server /data --address :9000 --console-address :9001
+      - RUSTFS_ACCESS_KEY=${AWS_ACCESS_KEY_ID}
+      - RUSTFS_SECRET_KEY=${AWS_SECRET_ACCESS_KEY}
     volumes:
-      - ${MINIO_DATA_PATH}:/data
+      - ${RUSTFS_BASE_DIR}/data:/data
+      - ${RUSTFS_BASE_DIR}/logs:/logs
 
-  # minio の初期設定用コンテナ
+  # rustfs の初期設定用コンテナ
   mc:
     image: minio/mc:RELEASE.2025-07-21T05-28-08Z
     container_name: mc
@@ -42,11 +42,11 @@ services:
       - S3_BUCKET=${S3_BUCKET}
       - RETENTION_PERIOD=${RETENTION_PERIOD}
     depends_on:
-      - minio
+      - rustfs
     entrypoint: >
       /bin/sh -c "
       sleep 5;
-      mc alias set myminio http://minio:9000 ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
+      mc alias set myminio http://rustfs:9000 ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
       mc mb --ignore-existing myminio/${S3_BUCKET};
       mc ilm rule add --expire-days ${RETENTION_PERIOD} myminio/${S3_BUCKET};
       "
@@ -67,7 +67,7 @@ services:
       - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
     depends_on:
-      - minio
+      - rustfs
     volumes:
       - ./grafana/datasources:/etc/grafana/provisioning/datasources
       - ./grafana/dashboards/kohaku.yml:/etc/grafana/provisioning/dashboards/kohaku.yml
