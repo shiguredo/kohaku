@@ -2,7 +2,7 @@
 
 init: build
 	mkdir -p rustfs/data  rustfs/logs plugins
-	chown -R 10001:10001 rustfs/data rustfs/logs
+	sudo chown -R 10001:10001 rustfs/data rustfs/logs
 
 up:
 	docker compose up -d
