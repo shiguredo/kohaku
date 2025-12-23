@@ -43,7 +43,7 @@ WebRTC 統計情報を収集し、TimescaleDB に保存するゲートウェイ�
 
 - [Fluent Bit](https://github.com/fluent/fluent-bit)
   - Sora のログをオブジェクトストレージに転送します
-- [MinIO](https://github.com/minio/minio)
+- [RustFS](https://github.com/rustfs/rustfs)
   - Fluent Bit から転送されてきたログを保存する S3 互換オブジェクトストレージ
 - [Grafana](https://github.com/grafana/grafana)
   - DuckDB で処理したデータを可視化します
@@ -52,7 +52,7 @@ WebRTC 統計情報を収集し、TimescaleDB に保存するゲートウェイ�
 - [DuckDB](https://github.com/duckdb/duckdb)
   - オブジェクトストレージに保存されたログを処理します
 
-### MinIO の代わりに利用できるサービス
+### RustFS の代わりに利用できるサービス
 
 - [Amazon | S3](https://aws.amazon.com/jp/s3/)
 - [Google Cloud | Cloud Storage](https://cloud.google.com/storage?hl=ja)
