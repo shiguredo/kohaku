@@ -46,9 +46,9 @@ services:
     entrypoint: >
       /bin/sh -c "
       sleep 5;
-      mc alias set myminio http://rustfs:9000 ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
-      mc mb --ignore-existing myminio/${S3_BUCKET};
-      mc ilm rule add --expire-days ${RETENTION_PERIOD} myminio/${S3_BUCKET};
+      mc alias set myrustfs http://rustfs:9000 ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
+      mc mb --ignore-existing myrustfs/${S3_BUCKET};
+      mc ilm rule add --expire-days ${RETENTION_PERIOD} myrustfs/${S3_BUCKET};
       "
 
   # motherduck-duckdb-datasource は./plugins に展開済みの想定
