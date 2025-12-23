@@ -7,7 +7,7 @@ up:
 	docker compose up -d
 
 down:
-	docker compose down
+	docker compose down --rmi local
 	sudo rm -rf ./ingester/.venv
 
 clean:
@@ -22,10 +22,12 @@ build: download
 	make -C init
 	cp init/dist/* plugins/motherduck-duckdb-datasource/
 
+GRAFANA_DUCKDB_DATASOURCE_VERSION ?= 0.4.0
+
 download:
-	curl -LO https://github.com/motherduckdb/grafana-duckdb-datasource/releases/download/v0.3.0/motherduck-duckdb-datasource-0.3.0.zip
-	unzip motherduck-duckdb-datasource-0.3.0.zip -d plugins/
-	rm motherduck-duckdb-datasource-0.3.0.zip
+	curl -LO https://github.com/motherduckdb/grafana-duckdb-datasource/releases/download/v${GRAFANA_DUCKDB_DATASOURCE_VERSION}/motherduck-duckdb-datasource-${GRAFANA_DUCKDB_DATASOURCE_VERSION}.zip
+	unzip motherduck-duckdb-datasource-${GRAFANA_DUCKDB_DATASOURCE_VERSION}.zip -d plugins/
+	rm motherduck-duckdb-datasource-${GRAFANA_DUCKDB_DATASOURCE_VERSION}.zip
 
 
 setup: setup-fluent-bit setup-grafana setup-kohaku

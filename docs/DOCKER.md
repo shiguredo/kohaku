@@ -76,6 +76,8 @@ make up
 
 Fluent Bit, MinIO, Grafana の Docker コンテナを削除します
 
+make down 時には、make up 時に作成した Grafana 用の Docker イメージも削除します
+
 ```bash
 make down
 ```
