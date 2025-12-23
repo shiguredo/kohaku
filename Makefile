@@ -2,6 +2,8 @@
 
 init: build
 	mkdir -p rustfs/data  rustfs/logs plugins
+	# rustfs コンテナ内のユーザー UID/GID に合わせる
+	# https://github.com/rustfs/rustfs/blob/1.0.0-alpha.76/Dockerfile#L69-L70
 	sudo chown -R 10001:10001 rustfs/data rustfs/logs
 
 up:
