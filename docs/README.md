@@ -110,7 +110,7 @@ make fluent-bit-yml
 - RustFS の場合
 
 ```bash
-make fluent-bit-yml-for-minio
+make fluent-bit-yml-for-rustfs
 ```
 
 ### Kohaku ユーザの作成
