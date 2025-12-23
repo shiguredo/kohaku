@@ -194,7 +194,7 @@ def test_init(request, minio_client, minio_container):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="minio",
+        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000
@@ -215,9 +215,9 @@ def test_init(request, minio_client, minio_container):
     # 取得したデータ数が正しいことを確認する
     # データが取得できていることを確認する
     assert result is not None
-    # MinIO にオブジェクトがアップロードできずに、MinIO と DuckDB のデータ数が 0 ではないことを確認する
+    # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
     assert result[0] > 0
-    # 取得したデータ数が、MinIO にアップロードしたオブジェクトの数と一致することを確認する
+    # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
     assert result[0] == len(objects)
 
     # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
@@ -250,7 +250,7 @@ def test_re_init(request, minio_client, minio_container):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="minio",
+        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000
@@ -269,9 +269,9 @@ def test_re_init(request, minio_client, minio_container):
     result = duckdb_connection.fetchone()
     # 取得したデータ数が正しいことを確認する
     assert result is not None
-    # MinIO にオブジェクトがアップロードできずに、MinIO と DuckDB のデータ数が 0 ではないことを確認する
+    # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
     assert result[0] > 0
-    # 取得したデータ数が、MinIO にアップロードしたオブジェクトの数と一致することを確認する
+    # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
     assert result[0] == len(objects)
 
     # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
@@ -321,7 +321,7 @@ def test_file_count_limit_for_init(request, minio_client, minio_container):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="minio",
+        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=initial_maximum_load
@@ -342,9 +342,9 @@ def test_file_count_limit_for_init(request, minio_client, minio_container):
     # 取得したデータ数が正しいことを確認する
     # データが取得できていることを確認する
     assert result is not None
-    # MinIO にオブジェクトがアップロードできずに、MinIO と DuckDB のデータ数が 0 ではないことを確認する
+    # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
     assert result[0] > 0
-    # 取得したデータ数が、MinIO にアップロードしたオブジェクトの数より少ないことを確認する
+    # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数より少ないことを確認する
     assert result[0] < len(objects)
     assert result[0] == initial_maximum_load
 
@@ -377,7 +377,7 @@ def test_update(request, minio_client, minio_container):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="minio",
+        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000
@@ -396,9 +396,9 @@ def test_update(request, minio_client, minio_container):
     result = duckdb_connection.fetchone()
     # 取得したデータ数が正しいことを確認する
     assert result is not None
-    # MinIO にオブジェクトがアップロードできずに、MinIO と DuckDB のデータ数が 0 ではないことを確認する
+    # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
     assert result[0] > 0
-    # 取得したデータ数が、MinIO にアップロードしたオブジェクトの数と一致することを確認する
+    # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
     assert result[0] == len(objects)
 
     # log データに変化がないため、update を呼び出してもデータ数が変わらないことを確認する
@@ -409,7 +409,7 @@ def test_update(request, minio_client, minio_container):
     assert result is not None
     assert result[0] == len(objects)
 
-    # 新規の log データを minio に追加した後に update を呼び出して、データ数が増えることを確認する
+    # 新規の log データを RustFS に追加した後に update を呼び出して、データ数が増えることを確認する
     new_log_file = os.path.join(LOG_DIR, "rtc_stats.jsonl")
     with open(new_log_file, 'rb') as data:
         for line in data:
@@ -436,7 +436,7 @@ def test_update(request, minio_client, minio_container):
     assert result is not None
     assert result[0] > len(objects)
 
-    # 取得したデータ数が、MinIO にアップロードしたオブジェクトの数と一致することを確認する
+    # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
     objects = list_objects(minio_client, BUCKET)
     assert result[0] == len(objects)
 
@@ -468,7 +468,7 @@ def test_all_delete(request, minio_client, minio_container):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="minio",
+        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000
@@ -486,9 +486,9 @@ def test_all_delete(request, minio_client, minio_container):
     result = duckdb_connection.fetchone()
     # 取得したデータ数が正しいことを確認する
     assert result is not None
-    # MinIO にオブジェクトがアップロードできずに、MinIO と DuckDB のデータ数が 0 ではないことを確認する
+    # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
     assert result[0] > 0
-    # 取得したデータ数が、MinIO にアップロードしたオブジェクトの数と一致することを確認する
+    # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
     assert result[0] == len(objects)
 
 
@@ -535,7 +535,7 @@ def test_delete(request, minio_client, minio_container):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="minio",
+        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000
@@ -553,9 +553,9 @@ def test_delete(request, minio_client, minio_container):
     result = duckdb_connection.fetchone()
     # 取得したデータ数が正しいことを確認する
     assert result is not None
-    # MinIO にオブジェクトがアップロードできずに、MinIO と DuckDB のデータ数が 0 ではないことを確認する
+    # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
     assert result[0] > 0
-    # 取得したデータ数が、MinIO にアップロードしたオブジェクトの数と一致することを確認する
+    # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
     assert result[0] == len(objects)
 
 
@@ -607,7 +607,7 @@ def test_delete_within_retention_period(request, minio_client, minio_container):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="minio",
+        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000
@@ -625,9 +625,9 @@ def test_delete_within_retention_period(request, minio_client, minio_container):
     result = duckdb_connection.fetchone()
     # 取得したデータ数が正しいことを確認する
     assert result is not None
-    # MinIO にオブジェクトがアップロードできずに、MinIO と DuckDB のデータ数が 0 ではないことを確認する
+    # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
     assert result[0] > 0
-    # 取得したデータ数が、MinIO にアップロードしたオブジェクトの数と一致することを確認する
+    # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
     assert result[0] == len(objects)
 
 
@@ -660,7 +660,7 @@ def test_delete_within_retention_period(request, minio_client, minio_container):
 
 def test_no_bucket(request, minio_container):
     """
-    MinIO のバケットが存在しない場合に例外が発生することを確認するテスト
+    RustFS のバケットが存在しない場合に例外が発生することを確認するテスト
     """
 
     with pytest.raises(Exception):
@@ -680,7 +680,7 @@ def test_no_bucket(request, minio_container):
             s3_secret_access_key=SECRET_KEY,
             s3_use_ssl=False,
             s3_region="ap-northeast-1",
-            storage="minio",
+            storage="rustfs",
             # 存在しないバケット名
             s3_bucket="non_existent_bucket",
             s3_prefix=PREFIX,
