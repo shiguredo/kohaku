@@ -2,25 +2,25 @@
 
 ## docker compose による構築手順
 
-Fluent Bit, MinIO, Grafana を Docker コンテナ上に用意する手順です
+Fluent Bit, RustFS, Grafana を Docker コンテナ上に用意する手順です
 
 Sora の log ディレクトリを Fluent Bit の Docker コンテナ上にマウントして、
-Sora のログを Fluent Bit が MinIO の Docker コンテナへ送信します
+Sora のログを Fluent Bit が RustFS の Docker コンテナへ送信します
 
-MinIO の Docker コンテナ上のログは Grafana の Docker コンテナを通して、グラフなどで確認します
+RustFS の Docker コンテナ上のログは Grafana の Docker コンテナを通して、グラフなどで確認します
 
 ## 環境
 
 下記の 4 点で構築します
 
 - Fluent Bit
-  - Sora のログの Minio への転送
+  - Sora のログの RustFS への転送
 
-- MinIO
+- RustFS
   - Fluent Bit で送信されてきたログの保存と Kohaku からの問い合わせ
 
 - Kohaku
-  - MinIO から取得したログを DB で管理
+  - RustFS から取得したログを DB で管理
 
 - Grafana
   - ログの視覚化
@@ -29,7 +29,7 @@ MinIO の Docker コンテナ上のログは Grafana の Docker コンテナを�
 
 ## 設定
 
-.env ファイルで、Sora の log ディレクトリのパスや MinIO の設定をおこないます
+.env ファイルで、Sora の log ディレクトリのパスや RustFS の設定をおこないます
 
 設定項目は .env.template に用意してありますので、これを利用して設定します
 
@@ -48,12 +48,12 @@ make init
 fluent-bit.yml を作成します
 
 ```bash
-DOCKER=true make fluent-bit-yml-for-minio
+DOCKER=true make fluent-bit-yml-for-rustfs
 ```
 
 ### 構築
 
-make up で、docker compose が実行され、Fluent Bit, MinIO, Grafana の Docker コンテナが立ち上がります
+make up で、docker compose が実行され、Fluent Bit, RustFS, Grafana の Docker コンテナが立ち上がります
 
 ```bash
 make up
@@ -74,7 +74,7 @@ make up
 
 ### 停止
 
-Fluent Bit, MinIO, Grafana の Docker コンテナを削除します
+Fluent Bit, RustFS, Grafana の Docker コンテナを削除します
 
 make down 時には、make up 時に作成した Grafana 用の Docker イメージも削除します
 
@@ -95,4 +95,4 @@ make clean
 
 ### 注意点
 
-- Docker Compose で起動した Grafana はポート番号 3000, MinIO はポート番号 9000 と 9001 が公開されますので、外部に公開されるサーバ上で起動させる場合には、適宜 Firewall などで、アクセスを制限するようにしてください
+- Docker Compose で起動した Grafana はポート番号 3000, RustFS はポート番号 9000 と 9001 が公開されますので、外部に公開されるサーバ上で起動させる場合には、適宜 Firewall などで、アクセスを制限するようにしてください

@@ -1,7 +1,10 @@
 .PHONY: init up down build
 
 init: build
-	mkdir -p data plugins
+	mkdir -p rustfs/data  rustfs/logs plugins
+	# rustfs コンテナ内のユーザー UID/GID に合わせる
+	# https://github.com/rustfs/rustfs/blob/1.0.0-alpha.76/Dockerfile#L69-L70
+	sudo chown -R 10001:10001 rustfs/data rustfs/logs
 
 up:
 	docker compose up -d
@@ -14,7 +17,7 @@ clean:
 	rm -rf ./plugins ./fluent-bit.yml
 	rm -rf init/dist
 	docker volume rm kohaku-volume
-	sudo rm -rf ./data
+	sudo rm -rf ./rustfs/data ./rustfs/logs
 	-docker network rm -f kohaku-network
 
 # 独自でビルドが必要になったとき用
@@ -47,7 +50,7 @@ else
   LOG_PATH=$(SORA_LOG_PATH)
 endif
 
-define ENV_FLUENT_BIT_FOR_MINIO
+define ENV_FLUENT_BIT_FOR_RUSTFS
 env:
   S3_ENDPOINT: ${S3_ENDPOINT_SCHEME}://${S3_ENDPOINT}
   S3_BUCKET: ${S3_BUCKET}
@@ -65,7 +68,7 @@ ExecStart=/opt/fluent-bit/bin/fluent-bit -c /etc/fluent-bit/fluent-bit.yml
 endef
 
 export ENV_FLUENT_BIT
-export ENV_FLUENT_BIT_FOR_MINIO
+export ENV_FLUENT_BIT_FOR_RUSTFS
 export SYSTEMD_FLUENT_BIT
 
 setup-fluent-bit: fluent-bit-yml
@@ -78,15 +81,15 @@ fluent-bit-yml:
 	echo "$$ENV_FLUENT_BIT" | tee fluent-bit.yml 1>/dev/null
 	cat ./fluent-bit/fluent-bit.yml.s3 | tee -a fluent-bit.yml 1>/dev/null
 
-setup-fluent-bit-for-minio: fluent-bit-yml-for-minio
+setup-fluent-bit-for-rustfs: fluent-bit-yml-for-rustfs
 	cp ./fluent-bit.yml /etc/fluent-bit/
 	mkdir -p /etc/systemd/system/fluent-bit.service.d
 	echo "$$SYSTEMD_FLUENT_BIT" | tee /etc/systemd/system/fluent-bit.service.d/override.conf 1>/dev/null
 	systemctl daemon-reload
 
-fluent-bit-yml-for-minio:
-	echo "$$ENV_FLUENT_BIT_FOR_MINIO" | tee fluent-bit.yml 1>/dev/null
-	cat ./fluent-bit/fluent-bit.yml.minio | tee -a fluent-bit.yml 1>/dev/null
+fluent-bit-yml-for-rustfs:
+	echo "$$ENV_FLUENT_BIT_FOR_RUSTFS" | tee fluent-bit.yml 1>/dev/null
+	cat ./fluent-bit/fluent-bit.yml.rustfs | tee -a fluent-bit.yml 1>/dev/null
 
 include .env
 
