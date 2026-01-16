@@ -135,7 +135,7 @@ def s3_setup(con, storage, s3_endpoint, s3_access_key_id, s3_secret_access_key, 
     con.execute("SET s3_secret_access_key=?", (s3_secret_access_key,))
     con.execute("SET s3_use_ssl=?", (s3_use_ssl,))
     if storage == "s3":
-        # minio で設定すると minio に接続できなくてエラーになるためタイプごとに設定の有無を決められて方が良さそう
+        # TODO: rustfs で region を設定しても動作するか確認し、問題がなければ、こちらの条件分岐は削除する
         con.execute("SET s3_region=?", (s3_region,))
 
 def create_log_table(con, table_name, target_urls):
@@ -276,7 +276,7 @@ def main():
     parser = argparse.ArgumentParser()
     # 共通オプション
     parser.add_argument("--db", default=DEFAULT_DUCKDB_FILE, help="DB file path")
-    parser.add_argument("--storage", default="s3", help="Storage type(s3, minio)")
+    parser.add_argument("--storage", default="s3", help="Storage type(s3, rustfs)")
     parser.add_argument("--s3_endpoint", default="127.0.0.1:9000", help="S3 endpoint")
     parser.add_argument("--s3_access_key_id", default="rootuser", help="S3 access key id")
     parser.add_argument("--s3_secret_access_key", default="password", help="S3 secret access key")
