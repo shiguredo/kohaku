@@ -1,4 +1,4 @@
-.PHONY: init up down build
+.PHONY: init up up-external-s3 down down-external-s3 build
 
 OS := $(shell uname -s)
 ifeq ($(OS),Linux)
@@ -14,10 +14,17 @@ init: build
 	sudo chown -R $(USER_GROUP) rustfs/data rustfs/logs
 
 up:
-	docker compose up -d
+	docker compose -f compose.yml up -d
+
+up-external-s3:
+	docker compose -f compose.external-s3.yml up -d
 
 down:
-	docker compose down --rmi local
+	docker compose -f compose.yml down --rmi local
+	sudo rm -rf ./ingester/.venv
+
+down-external-s3:
+	docker compose -f compose.external-s3.yml down --rmi local
 	sudo rm -rf ./ingester/.venv
 
 clean:
