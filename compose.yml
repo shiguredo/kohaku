@@ -47,9 +47,9 @@ services:
     entrypoint: >
       /bin/sh -c "
       sleep 5;
-      mc alias set myrustfs ${S3_ENDPOINT_SCHEME}://${S3_ENDPOINT} ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
-      mc mb --ignore-existing myrustfs/${S3_BUCKET};
-      mc ilm rule add --expire-days ${RETENTION_PERIOD} myrustfs/${S3_BUCKET};
+      mc alias set mystorage ${S3_ENDPOINT_SCHEME}://${S3_ENDPOINT} ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
+      mc mb --ignore-existing mystorage/${S3_BUCKET};
+      mc ilm rule add --expire-days ${RETENTION_PERIOD} mystorage/${S3_BUCKET};
       "
 
   # motherduck-duckdb-datasource は./plugins に展開済みの想定
