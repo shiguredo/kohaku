@@ -1,0 +1,90 @@
+services:
+  fluent-bit:
+    image: fluent/fluent-bit
+    container_name: fluent-bit
+    volumes:
+      - ${SORA_LOG_PATH}:/log
+      - ./fluent-bit.yml:/fluent-bit/etc/fluent-bit.yml
+    networks:
+      - kohaku
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    depends_on:
+      - mc
+    command: /fluent-bit/bin/fluent-bit -c /fluent-bit/etc/fluent-bit.yml
+
+  # 外部 S3 互換ストレージ の初期設定用コンテナ
+  mc:
+    image: minio/mc:RELEASE.2025-07-21T05-28-08Z
+    container_name: mc
+    networks:
+      - kohaku
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_ENDPOINT_SCHEME=${S3_ENDPOINT_SCHEME}
+      - RETENTION_PERIOD=${RETENTION_PERIOD}
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      mc alias set mys3 ${S3_ENDPOINT_SCHEME}://${S3_ENDPOINT} ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
+      mc mb --ignore-existing mys3/${S3_BUCKET};
+      mc ilm rule add --expire-days ${RETENTION_PERIOD} mys3/${S3_BUCKET};
+      "
+
+  # motherduck-duckdb-datasource は ./plugins に展開済みの想定
+  grafana:
+    build:
+      context: ./grafana
+      dockerfile: Dockerfile
+    container_name: grafana
+    ports:
+      - 3000:3000
+    networks:
+      - kohaku
+    environment:
+      - GF_LOG_MODE=console
+      - GF_PATHS_DATA=/var/lib/grafana
+      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+    volumes:
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/dashboards/kohaku.yml:/etc/grafana/provisioning/dashboards/kohaku.yml
+      - ./grafana/dashboards/kohaku:/var/lib/grafana/dashboards/kohaku
+      - ./plugins/motherduck-duckdb-datasource:/var/lib/grafana/plugins/motherduck-duckdb-datasource
+      - duckdb:/var/lib/kohaku
+
+  ingester:
+    image: ubuntu:24.04
+    container_name: ingester
+    environment:
+      - DUCKDB_DB_PATH=${DUCKDB_DB_PATH}
+      - STORAGE=s3
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_PREFIX=${S3_PREFIX}
+      - UPDATE_INTERVAL=${UPDATE_INTERVAL}
+      - RETENTION_PERIOD=${RETENTION_PERIOD}
+    depends_on:
+      - grafana
+    networks:
+      - kohaku
+    volumes:
+      - ./ingester:/ingester
+      - duckdb:/var/lib/kohaku
+    entrypoint: bash -c "/ingester/run.sh"
+
+volumes:
+  duckdb:
+    name: kohaku-volume
+    driver: local
+
+networks:
+  kohaku:
+    name: kohaku-network
+    driver: bridge
