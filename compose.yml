@@ -40,13 +40,14 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - S3_ENDPOINT=${S3_ENDPOINT}
       - S3_BUCKET=${S3_BUCKET}
+      - S3_ENDPOINT_SCHEME=${S3_ENDPOINT_SCHEME}
       - RETENTION_PERIOD=${RETENTION_PERIOD}
     depends_on:
       - rustfs
     entrypoint: >
       /bin/sh -c "
       sleep 5;
-      mc alias set myrustfs http://rustfs:9000 ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
+      mc alias set myrustfs ${S3_ENDPOINT_SCHEME}://${S3_ENDPOINT} ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
       mc mb --ignore-existing myrustfs/${S3_BUCKET};
       mc ilm rule add --expire-days ${RETENTION_PERIOD} myrustfs/${S3_BUCKET};
       "
