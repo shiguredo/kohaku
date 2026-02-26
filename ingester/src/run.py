@@ -20,6 +20,11 @@ DEFAULT_RETENTION_PERIOD=7
 DEFAULT_INITIAL_MAXIMUM_LOAD=100
 
 COLUMNS_DIR = "./DUCKDB_COLUMNS"
+BROKEN_DB_ERROR_PATTERNS = (
+    "corrupt",
+    "invalid database",
+    "not a valid duckdb",
+)
 
 # Sora のログテーブル名兼 DuckDB のテーブル名
 LOG_TARGETS = [
@@ -101,12 +106,7 @@ def table_exists(con, table_name):
 def is_broken_db_error(error):
     message = str(error).lower()
     # 下記のエラーメッセージが含まれている場合は DB ファイルが破損していると判断する
-    patterns = [
-        "corrupt",
-        "invalid database",
-        "not a valid duckdb",
-    ]
-    return any(pattern in message for pattern in patterns)
+    return any(pattern in message for pattern in BROKEN_DB_ERROR_PATTERNS)
 
 # DB ファイルが破損していると判断した場合、DB ファイルをリネームする
 def move_broken_db(db_path):
