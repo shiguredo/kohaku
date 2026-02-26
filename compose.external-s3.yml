@@ -32,7 +32,7 @@ services:
       sleep 5;
       mc alias set mys3 ${S3_ENDPOINT_SCHEME}://${S3_ENDPOINT} ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
       mc mb --ignore-existing mys3/${S3_BUCKET};
-      mc ilm rule add --expire-days ${RETENTION_PERIOD} mys3/${S3_BUCKET};
+      mc ilm rule add --expire-days ${RETENTION_PERIOD} mys3/${S3_BUCKET} || true;
       "
 
   # motherduck-duckdb-datasource は ./plugins に展開済みの想定
