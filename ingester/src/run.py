@@ -288,7 +288,7 @@ def main():
     parser.add_argument("--initial_maximum_load", default=DEFAULT_INITIAL_MAXIMUM_LOAD, help="Initial maximum load", type=int)
 
 
-    subparsers = parser.add_subparsers()
+    subparsers = parser.add_subparsers(required=True)
     subparsers_init = subparsers.add_parser("init")
     subparsers_init.set_defaults(func=init)
 
