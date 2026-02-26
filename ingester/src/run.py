@@ -15,7 +15,7 @@ DEFAULT_S3_BUCKET_NAME = "kohaku"
 DEFAULT_S3_PREFIX = "log"
 
 DEFAULT_S3_REGION="ap-northeast-1"
-DEFAULT_S3_USE_SSL="store_true"
+DEFAULT_S3_USE_SSL=True
 DEFAULT_RETENTION_PERIOD=7
 # init 時に読み込むファイル数の上限
 DEFAULT_INITIAL_MAXIMUM_LOAD=100
@@ -280,7 +280,7 @@ def main():
     parser.add_argument("--s3_endpoint", default="127.0.0.1:9000", help="S3 endpoint")
     parser.add_argument("--s3_access_key_id", default="rootuser", help="S3 access key id")
     parser.add_argument("--s3_secret_access_key", default="password", help="S3 secret access key")
-    parser.add_argument("--s3_use_ssl", action=DEFAULT_S3_USE_SSL, help="S3 use SSL")
+    parser.add_argument("--s3_use_ssl", action="store_true", help="S3 use SSL")
     parser.add_argument("--s3_region", default=DEFAULT_S3_REGION, help="S3 region")
     parser.add_argument("--s3_bucket", default=DEFAULT_S3_BUCKET_NAME, help="S3 bucket name")
     parser.add_argument("--s3_prefix", default=DEFAULT_S3_PREFIX, help="S3 prefix")
