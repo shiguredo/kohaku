@@ -47,7 +47,8 @@ def load_columns():
 
 def init(args):
     print("init")
-    if os.path.exists(args.db):
+    prepare_db_for_init(args.db)
+    if is_initialized_db(args.db):
         return
 
     client = minio.Minio(args.s3_endpoint,
@@ -90,6 +91,64 @@ def latest_object(objects):
 
 def create_s3_object_table(con):
     con.execute("CREATE TABLE IF NOT EXISTS s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)")
+
+def table_exists(con, table_name):
+    rel = con.execute("SELECT count(*) FROM information_schema.tables WHERE table_name=?", (table_name,))
+    count = rel.fetchone()
+    return count[0] > 0
+
+# DB ファイルが破損しているかどうかを判定する
+def is_broken_db_error(error):
+    message = str(error).lower()
+    # 下記のエラーメッセージが含まれている場合は DB ファイルが破損していると判断する
+    patterns = [
+        "corrupt",
+        "invalid database",
+        "not a valid duckdb",
+    ]
+    return any(pattern in message for pattern in patterns)
+
+# DB ファイルが破損していると判断した場合、DB ファイルをリネームする
+def move_broken_db(db_path):
+    timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
+    broken_db_path = f"{db_path}.broken.{timestamp}"
+    shutil.move(db_path, broken_db_path)
+
+    wal_path = f"{db_path}.wal"
+    if os.path.exists(wal_path):
+        shutil.move(wal_path, f"{broken_db_path}.wal")
+
+    return broken_db_path
+
+# DB ファイルが存在する場合に、DB ファイルが破損していないかを確認する
+def prepare_db_for_init(db_path):
+    if not os.path.exists(db_path):
+        return
+
+    try:
+        with duckdb.connect(db_path) as con:
+            con.execute("SELECT 1")
+    except Exception as error:
+        if is_broken_db_error(error):
+            broken_db_path = move_broken_db(db_path)
+            print(f"Detected broken DB file. moved to {broken_db_path}")
+            return
+        raise
+
+# DB ファイルの初期化が完了しているかどうかを確認する
+def is_initialized_db(db_path):
+    if not os.path.exists(db_path):
+        return False
+
+    with duckdb.connect(db_path) as con:
+        if not table_exists(con, "s3_objects"):
+            return False
+
+        for target in LOG_TARGETS:
+            if not table_exists(con, target):
+                return False
+
+    return True
 
 def update_s3_object_table(con, log_type, object):
     con.execute("""
@@ -146,8 +205,7 @@ def create_log_table(con, table_name, target_urls):
         raise ValueError(f"Unknown table name: {table_name}. Available tables: {list(duckdb_columns.keys())}")
 
     # テーブルが存在する場合はすぐにリターンする
-    rel = con.execute("SELECT table_name FROM duckdb_tables WHERE table_name=?", (table_name,))
-    if rel.fetchone() is not None:
+    if table_exists(con, table_name):
         print(f"Table {table_name} already exists.")
         return
 
@@ -258,9 +316,7 @@ def select_s3_object(con, log_type):
     return con.execute("SELECT * FROM s3_objects WHERE type=?", (log_type,)).fetchone()
 
 def delete_log_by_timestamp(con, table_name, timestamp):
-    object = con.execute("SELECT count(*) FROM information_schema.tables WHERE table_name=?", (table_name,))
-    count = object.fetchone()
-    if count[0] < 1:
+    if not table_exists(con, table_name):
         # テーブルが存在しない場合はスキップする
         # delete サブコマンドはテーブル名を指定して実行ではないため、テーブルが存在しない場合もエラーにはしない
         print(f"Table {table_name} does not exist.")
