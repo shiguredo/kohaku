@@ -163,12 +163,15 @@ def prepare_db_for_init(db_path):
     try:
         with duckdb.connect(db_path) as con:
             con.execute("SELECT 1")
-    except Exception as error:
+    except (duckdb.IOException, duckdb.InternalException, duckdb.FatalException) as error:
+        print(f"Error occurred while connecting to DB: {error}")
         if is_broken_db_error(error):
             broken_db_path = move_broken_db(db_path)
             print(f"Detected broken DB file. moved to {broken_db_path}")
             return
-        raise
+    except Exception as error:
+        print(f"Unexpected error occurred while connecting to DB: {error}")
+        raise error
 
 def is_initialized_db(db_path):
     """
