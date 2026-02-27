@@ -70,22 +70,49 @@ def init(args):
         create_s3_object_table(con)
 
         s3_setup(con, args.storage, args.s3_endpoint, args.s3_access_key_id, args.s3_secret_access_key, args.s3_use_ssl, args.s3_region)
+        sync_logs(con, client, args, "init")
 
-        for target in LOG_TARGETS:
-            log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
-            log_urls = get_target_urls(args.s3_bucket, log_objects[:args.initial_maximum_load])
+def sync_logs(con, client, args, mode):
+    for target in LOG_TARGETS:
+        if mode == "init":
+            sync_log_for_init(con, client, args, target)
+        elif mode == "update":
+            sync_log_for_update(con, client, args, target)
+        else:
+            raise ValueError(f"Unknown mode: {mode}")
 
-            try:
-                create_log_table(con, target, log_urls)
-                if len(log_objects) > 0:
-                    object = latest_object(log_objects)
-                    update_s3_object_table(con, target, object)
+def sync_log_for_init(con, client, args, target):
+    log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
+    log_urls = get_target_urls(args.s3_bucket, log_objects[:args.initial_maximum_load])
 
-            except duckdb.InvalidInputException as e:
-                # まだディレクトリがないため、エラーを表示して次へ
-                print(f"InvalidInputException ({target}): {e}")
-            except Exception as e:
-                raise e
+    try:
+        create_log_table(con, target, log_urls)
+        if len(log_objects) > 0:
+            object = latest_object(log_objects)
+            update_s3_object_table(con, target, object)
+    except duckdb.InvalidInputException as e:
+        # まだディレクトリがないため、エラーを表示して次へ
+        print(f"InvalidInputException ({target}): {e}")
+    except Exception as e:
+        raise e
+
+def sync_log_for_update(con, client, args, target):
+    object = select_s3_object(con, target)
+    if object is None:
+        log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
+        if len(log_objects) == 0:
+            print(f"No log found for {target} in {args.s3_bucket}.")
+            # 対象のオブジェクトが存在しない場合はスキップする
+            return
+
+        log_urls = get_target_urls(args.s3_bucket, log_objects[:args.initial_maximum_load])
+        create_log_table(con, target, log_urls)
+        if len(log_objects) > 0:
+            object = latest_object(log_objects)
+            update_s3_object_table(con, target, object)
+    else:
+        # テーブルが存在しているのでログを追加する
+        insert_log_from_s3(con, client, target, args.s3_bucket, args.s3_prefix)
 
 def latest_object(objects):
     if not objects:
@@ -226,24 +253,7 @@ def update(args):
 
     with duckdb.connect(args.db) as con:
         s3_setup(con, args.storage, args.s3_endpoint, args.s3_access_key_id, args.s3_secret_access_key, args.s3_use_ssl, args.s3_region)
-
-        for target in LOG_TARGETS:
-            object = select_s3_object(con, target)
-            if object is None:
-                log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
-                if len(log_objects) == 0:
-                    print(f"No log found for {target} in {args.s3_bucket}.")
-                    # 対象のオブジェクトが存在しない場合はスキップする
-                    continue
-
-                log_urls = get_target_urls(args.s3_bucket, log_objects[:args.initial_maximum_load])
-                create_log_table(con, target, log_urls)
-                if len(log_objects) > 0:
-                    object = latest_object(log_objects)
-                    update_s3_object_table(con, target, object)
-            else:
-                # テーブルが存在しているのでログを追加する
-                insert_log_from_s3(con, client, target, args.s3_bucket, args.s3_prefix)
+        sync_logs(con, client, args, "update")
 
 def delete(args):
     if not os.path.exists(args.db):
