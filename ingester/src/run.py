@@ -27,11 +27,11 @@ BROKEN_DB_ERROR_PATTERNS = (
 )
 
 # Sora のログテーブル名兼 DuckDB のテーブル名
-LOG_TARGETS = [
+LOG_TARGETS = (
 #    "connection",
     "rtc_stats",
     "session_webhook",
-]
+)
 
 def load_columns():
     duckdb_columns = {}
