@@ -130,14 +130,18 @@ def table_exists(con, table_name):
     count = rel.fetchone()
     return count[0] > 0
 
-# DB ファイルが破損しているかどうかを判定する
 def is_broken_db_error(error):
+    """
+    DB ファイルが破損しているかどうかを判定する
+    """
     message = str(error).lower()
     # 下記のエラーメッセージが含まれている場合は DB ファイルが破損していると判断する
     return any(pattern in message for pattern in BROKEN_DB_ERROR_PATTERNS)
 
-# DB ファイルが破損していると判断した場合、DB ファイルをリネームする
 def move_broken_db(db_path):
+    """
+    DB ファイルが破損していると判断した場合、DB ファイルをリネームする
+    """
     timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
     broken_db_path = f"{db_path}.broken.{timestamp}"
     shutil.move(db_path, broken_db_path)
@@ -148,8 +152,11 @@ def move_broken_db(db_path):
 
     return broken_db_path
 
-# DB ファイルが存在する場合に、DB ファイルが破損していないかを確認する
 def prepare_db_for_init(db_path):
+    """
+    DB ファイルが存在する場合に、DB ファイルが破損していないかを確認する
+    """
+
     if not os.path.exists(db_path):
         return
 
@@ -163,8 +170,11 @@ def prepare_db_for_init(db_path):
             return
         raise
 
-# DB ファイルの初期化が完了しているかどうかを確認する
 def is_initialized_db(db_path):
+    """
+    DB ファイルの初期化が完了しているかどうかを確認する
+    """
+
     if not os.path.exists(db_path):
         return False
 
