@@ -182,10 +182,6 @@ def is_initialized_db(db_path):
         if not table_exists(con, "s3_objects"):
             return False
 
-        for target in LOG_TARGETS:
-            if not table_exists(con, target):
-                return False
-
     return True
 
 def update_s3_object_table(con, log_type, object):
