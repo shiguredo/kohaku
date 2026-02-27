@@ -4,7 +4,7 @@ import datetime
 import gzip
 import json
 
-from run import init, update, delete
+from run import init, update, delete, prepare_db_for_init
 
 import uuid
 import pytest
@@ -688,3 +688,48 @@ def test_no_bucket(request, minio_container):
         )
 
         init(args)
+
+def test_prepare_db_for_init_renames_broken_db_file(tmp_path, monkeypatch):
+    db_path = tmp_path / "broken.db"
+    wal_path = tmp_path / "broken.db.wal"
+    db_path.write_bytes(b"invalid db")
+    wal_path.write_bytes(b"wal")
+
+    def mock_connect(_):
+        raise duckdb.IOException("invalid database file")
+
+    monkeypatch.setattr(duckdb, "connect", mock_connect)
+
+    prepare_db_for_init(str(db_path))
+
+    renamed_files = list(tmp_path.glob("broken.db.broken.*"))
+    assert len(renamed_files) == 2
+    renamed_db_files = [path for path in renamed_files if not str(path).endswith(".wal")]
+    renamed_wal_files = [path for path in renamed_files if str(path).endswith(".wal")]
+    assert len(renamed_db_files) == 1
+    assert len(renamed_wal_files) == 1
+
+    assert db_path.exists() is False
+    assert wal_path.exists() is False
+    assert renamed_db_files[0].exists()
+    assert renamed_wal_files[0].exists()
+
+
+def test_prepare_db_for_init_skips_permission_error(tmp_path, monkeypatch):
+    db_path = tmp_path / "permission.db"
+    wal_path = tmp_path / "permission.db.wal"
+    db_path.write_bytes(b"db")
+    wal_path.write_bytes(b"wal")
+
+    def mock_connect(_):
+        raise duckdb.IOException("Permission denied")
+
+    monkeypatch.setattr(duckdb, "connect", mock_connect)
+
+    prepare_db_for_init(str(db_path))
+
+    renamed_files = list(tmp_path.glob("permission.db.broken.*"))
+    # Permission denied エラーの場合はファイルをリネームせずにスキップするため、リネームされたファイルが存在しないことを確認する
+    assert len(renamed_files) == 0
+    assert db_path.exists()
+    assert wal_path.exists()
