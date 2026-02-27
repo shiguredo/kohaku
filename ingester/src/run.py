@@ -20,6 +20,7 @@ DEFAULT_RETENTION_PERIOD=7
 DEFAULT_INITIAL_MAXIMUM_LOAD=100
 
 COLUMNS_DIR = "./DUCKDB_COLUMNS"
+# DB ファイルが破損していると判断するためのエラーメッセージのパターン
 BROKEN_DB_ERROR_PATTERNS = (
     "corrupt",
     "invalid database",
