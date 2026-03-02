@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 DEBIAN_FRONTEND=noninteractive
 
 apt-get -y update && apt-get -y install curl python3
