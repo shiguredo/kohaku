@@ -1,5 +1,8 @@
 .PHONY: init up up-external-s3 down down-external-s3 build
 
+COMPOSE_RUSTFS := compose.yml
+COMPOSE_EXTERNAL_S3 := compose.external-s3.yml
+
 OS := $(shell uname -s)
 ifeq ($(OS),Linux)
 	USER_GROUP=10001:10001
@@ -14,18 +17,16 @@ init: build
 	sudo chown -R $(USER_GROUP) rustfs/data rustfs/logs
 
 up:
-	docker compose -f compose.yml up -d
+	docker compose -f $(COMPOSE_RUSTFS) up -d --build
 
 up-external-s3:
-	docker compose -f compose.external-s3.yml up -d
+	docker compose -f $(COMPOSE_EXTERNAL_S3) up -d --build
 
 down:
-	docker compose -f compose.yml down --rmi local
-	sudo rm -rf ./ingester/.venv
+	docker compose -f $(COMPOSE_RUSTFS) down --rmi local
 
 down-external-s3:
-	docker compose -f compose.external-s3.yml down --rmi local
-	sudo rm -rf ./ingester/.venv
+	docker compose -f $(COMPOSE_EXTERNAL_S3) down --rmi local
 
 clean:
 	rm -rf ./plugins ./fluent-bit.yml
