@@ -2,9 +2,7 @@
 
 set -euo pipefail
 
-DEBIAN_FRONTEND=noninteractive
-
-apt-get -y update && apt-get -y install curl python3
+DEBIAN_FRONTEND=noninteractive apt-get -y update && apt-get -y install curl python3
 
 # UTC ではなく /UTC にリンクが貼られ、DuckDB の TimeZone 設定も /UTC になるため、
 # Python API 側で UnknownTimeZoneError になるため、リンクを UTC に変更する
