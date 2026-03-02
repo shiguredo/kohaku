@@ -26,8 +26,6 @@ uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
                       --s3_prefix "${S3_PREFIX}" \
                       init
 
-[ $? -ne 0 ] && echo "Failed to initialize the database." && exit 1
-
 # TODO: 他の定期実行の方法を検討する
 # 定期的にデータを更新
 while :;
@@ -41,13 +39,9 @@ do
                         --s3_prefix "${S3_PREFIX}" \
                         update
 
-  [ $? -ne 0 ] && echo "Failed to update the database." && exit 1
-
   uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
                         --retention_period "${RETENTION_PERIOD}" \
                         delete
-
-  [ $? -ne 0 ] && echo "Failed to delete old logs." && exit 1
 
   sleep "${UPDATE_INTERVAL}"
 done
