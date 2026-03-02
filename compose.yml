@@ -77,7 +77,9 @@ services:
       - duckdb:/var/lib/kohaku
 
   ingester:
-    image: ubuntu:24.04
+    build:
+      context: ./ingester
+      dockerfile: Dockerfile
     container_name: ingester
     environment:
       - DUCKDB_DB_PATH=${DUCKDB_DB_PATH}
@@ -94,9 +96,7 @@ services:
     networks:
       - kohaku
     volumes:
-      - ./ingester:/ingester
       - duckdb:/var/lib/kohaku
-    entrypoint: bash -c "/ingester/run.sh"
 
 volumes:
   duckdb:

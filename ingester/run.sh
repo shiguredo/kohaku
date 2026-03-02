@@ -2,20 +2,14 @@
 
 set -euo pipefail
 
-DEBIAN_FRONTEND=noninteractive apt-get -y update && apt-get -y install curl python3
-
 # UTC ではなく /UTC にリンクが貼られ、DuckDB の TimeZone 設定も /UTC になるため、
 # Python API 側で UnknownTimeZoneError になるため、リンクを UTC に変更する
 ln -fs /usr/share/zoneinfo/UTC /etc/localtime
 
-curl -LsSf https://astral.sh/uv/install.sh | sh
-. $HOME/.local/bin/env
-
 mkdir -p /var/lib/kohaku/duckdb
 
 cd /ingester
-rm -rf ./.venv
-uv sync
+
 # テーブル作成および初期データの挿入
 uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
                       --storage "${STORAGE}" \
