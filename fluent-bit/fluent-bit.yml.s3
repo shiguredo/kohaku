@@ -12,9 +12,23 @@ pipeline:
       read_from_head: false
       db: rtc_stats.db
       tag: rtc_stats
+    - name: tail
+      path: ${SORA_LOG_PATH}/session_webhook.jsonl
+      parser: json
+      read_from_head: false
+      db: session_webhook.db
+      tag: session_webhook
   outputs:
     - name: s3
       match: 'rtc_stats'
+      bucket: ${S3_BUCKET}
+      region: ${S3_REGION}
+      compression: gzip
+      s3_key_format: /${S3_PREFIX}/$TAG/%Y/%m/%d/$UUID.gz
+      upload_timeout: 5m
+      json_date_key: off
+    - name: s3
+      match: 'session_webhook'
       bucket: ${S3_BUCKET}
       region: ${S3_REGION}
       compression: gzip
