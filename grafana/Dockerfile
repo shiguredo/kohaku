@@ -8,6 +8,8 @@ ENV GF_CONFIG=/etc/grafana/grafana.ini
 ENV GF_PATHS_PLUGINS=/var/lib/grafana/plugins
 ENV GF_PATHS_PROVISIONING=/etc/grafana/provisioning
 
+SHELL ["/bin/bash", "-c"]
+
 RUN <<EOF
   set -euo pipefail
   apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends apt-transport-https software-properties-common wget
