@@ -31,10 +31,10 @@ RustFS の Docker コンテナ上のログは Grafana の Docker コンテナを
 
 .env ファイルで、Sora の log ディレクトリのパスや RustFS の設定をおこないます
 
-設定項目は .env.template に用意してありますので、これを利用して設定します
+設定項目は .env.common.template, .env.docker.template に用意してありますので、これを利用して設定します
 
 ```bash
-cp .env.template .env
+cat .env.common.template .env.docker.template > .env
 ```
 
 ### 初期設定
