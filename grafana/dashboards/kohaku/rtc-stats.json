@@ -88,7 +88,7 @@
           "editorMode": "code",
           "format": 1,
           "rawQuery": true,
-          "rawSql": "SELECT\n    (req->>'$.timestamp') AS timestamp,\n    (req->>'$.max_connections') AS max_connections,\n    (req->>'$.total_connections') AS total_connections,\n    (req->>'$.version') AS version,\n    (req->>'$.node_name') AS node_name,\n    (req->>'$.group_id') AS group_id,\n    (req->>'$.spotlight') AS spotlight,\n    (req->>'$.connections') AS conenctions\nFROM session_webhook\nWHERE $__timeFilter(timestamp) AND (req->>'$.session_id') :: VARCHAR = $session_id\nORDER BY timestamp DESC\nLIMIT 1;",
+          "rawSql": "SELECT\n    (req->>'$.timestamp') AS timestamp,\n    (req->>'$.max_connections') AS max_connections,\n    (req->>'$.total_connections') AS total_connections,\n    (req->>'$.version') AS version,\n    (req->>'$.node_name') AS node_name,\n    (req->>'$.group_id') AS group_id,\n    (req->>'$.spotlight') AS spotlight,\n    (req->>'$.connections') AS conenctions\nFROM session_webhook\nWHERE (req->>'$.session_id') :: VARCHAR = $session_id\nORDER BY timestamp DESC\nLIMIT 1;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -571,7 +571,7 @@
           "editorMode": "code",
           "format": 1,
           "rawQuery": true,
-          "rawSql": "WITH connections_list AS (\n  SELECT\n    (req->>'$.timestamp') AS timestamp,\n    (req->>'$.connections') AS connections\n  FROM session_webhook\n  WHERE $__timeFilter(timestamp) AND (req->>'$.session_id') :: VARCHAR = $session_id\nORDER BY timestamp DESC\nLIMIT 1\n)\nSELECT\n    value ->> 'connection_id' AS connection_id,\n    value ->> 'role' AS role,\n    value ->> 'client_id' AS client_id,\n    value ->> 'audio' AS audio,\n    value ->> 'video' AS video,\n    value ->> 'simulcast' AS simulcast,\n    value ->> 'connection_created_timestamp' AS connection_created_timestamp,\n    value ->> 'connection_destroyed_timestamp' AS connection_destroyed_timestamp,\nFROM connections_list,\n     json_each(connections_list.connections, '$');",
+          "rawSql": "WITH connections_list AS (\n  SELECT\n    (req->>'$.timestamp') AS timestamp,\n    (req->>'$.connections') AS connections\n  FROM session_webhook\n  WHERE (req->>'$.session_id') :: VARCHAR = $session_id\nORDER BY timestamp DESC\nLIMIT 1\n)\nSELECT\n    value ->> 'connection_id' AS connection_id,\n    value ->> 'role' AS role,\n    value ->> 'client_id' AS client_id,\n    value ->> 'audio' AS audio,\n    value ->> 'video' AS video,\n    value ->> 'simulcast' AS simulcast,\n    value ->> 'connection_created_timestamp' AS connection_created_timestamp,\n    value ->> 'connection_destroyed_timestamp' AS connection_destroyed_timestamp,\nFROM connections_list,\n     json_each(connections_list.connections, '$');",
           "refId": "A",
           "sql": {
             "columns": [
