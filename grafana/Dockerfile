@@ -7,6 +7,7 @@ ENV GF_HOMEPATH=/usr/share/grafana
 ENV GF_CONFIG=/etc/grafana/grafana.ini
 ENV GF_PATHS_PLUGINS=/var/lib/grafana/plugins
 ENV GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+ENV GF_PLUGINS_FORWARD_HOST_ENV_VARS=motherduck-duckdb-datasource
 
 SHELL ["/bin/bash", "-c"]
 
