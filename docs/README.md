@@ -42,11 +42,11 @@ git clone https://github.com/shiguredo/kohaku.git kohaku
 
 .env ファイルに、Sora の log ディレクトリのパスや Amazon S3, RustFS へのアクセスに必要な設定をおこないます
 
-設定項目のテンプレートは .env.template に用意してありますので、これを利用して設定します
+設定項目のテンプレートは .env.common.template に用意してありますので、これを利用して設定します
 
 ```bash
 cd kohaku
-cp .env.template .env
+cp .env.common.template .env
 vim .env
 ...
 ```
