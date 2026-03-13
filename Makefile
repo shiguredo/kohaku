@@ -109,9 +109,9 @@ fluent-bit-yml-for-rustfs:
 include .env
 
 setup-grafana:
-	grep GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS /etc/default/grafana-server >/dev/null 2>&1; [ "0" -ne "$$?" ] && echo 'GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=motherduck-duckdb-datasource' | tee -a /etc/default/grafana-server
-	grep GF_PATHS_DATA /etc/default/grafana-server >/dev/null 2>&1; [ "0" -ne "$$?" ] && echo 'GF_PATHS_DATA=/var/lib/grafana' | tee -a /etc/default/grafana-server
-	grep GF_PLUGINS_FORWARD_HOST_ENV_VARS /etc/default/grafana-server >/dev/null 2>&1; [ "0" -ne "$$?" ] && echo 'GF_PLUGINS_FORWARD_HOST_ENV_VARS=motherduck-duckdb-datasource' | tee -a /etc/default/grafana-server
+	grep GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS /etc/default/grafana-server >/dev/null 2>&1 || echo 'GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=motherduck-duckdb-datasource' | tee -a /etc/default/grafana-server
+	grep GF_PATHS_DATA /etc/default/grafana-server >/dev/null 2>&1 || echo 'GF_PATHS_DATA=/var/lib/grafana' | tee -a /etc/default/grafana-server
+	grep GF_PLUGINS_FORWARD_HOST_ENV_VARS /etc/default/grafana-server >/dev/null 2>&1 || echo 'GF_PLUGINS_FORWARD_HOST_ENV_VARS=motherduck-duckdb-datasource' | tee -a /etc/default/grafana-server
 	sed "s@path:.*@path: ${DUCKDB_DB_PATH}.readonly@g" grafana/datasources/duckdb.yml > duckdb.yml
 	cp duckdb.yml /etc/grafana/provisioning/datasources/duckdb.yml
 	cp grafana/dashboards/kohaku.yml /etc/grafana/provisioning/dashboards/kohaku.yml
