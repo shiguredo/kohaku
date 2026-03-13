@@ -11,6 +11,7 @@ Environment=UV_CACHE_DIR=/opt/kohaku/ingester/.cache
 Environment=HOME=/opt/kohaku
 WorkingDirectory=/opt/kohaku/ingester
 TimeoutStartSec=10min
+ExecCondition=/bin/test -f ${DUCKDB_DB_PATH}
 ExecStart=/opt/uv/bin/uv run python src/run.py \
 		--db ${DUCKDB_DB_PATH} \
 		--storage ${STORAGE} \
