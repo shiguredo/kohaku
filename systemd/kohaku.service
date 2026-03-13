@@ -26,5 +26,8 @@ ExecStartPost=/opt/uv/bin/uv run python src/run.py \
 		--retention_period ${RETENTION_PERIOD} \
 		delete
 
+Restart=on-failure
+RestartSec=5min
+
 [Install]
 WantedBy=multi-user.target
