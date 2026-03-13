@@ -4,6 +4,7 @@ Description=Update DB
 [Timer]
 OnUnitInactiveSec=5min
 Persistent=true
+Unit=kohaku.service
 
 [Install]
 WantedBy=timers.target
