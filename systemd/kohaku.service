@@ -1,14 +1,17 @@
 [Unit]
 Description=WebRTC Stats Analyzer Kohaku
-RefuseManualStop=true
+Wants=network-online.target
+After=network-online.target
 
 [Service]
 Type=oneshot
 User=kohaku
-EnvironmentFile=-/opt/kohaku/.env
+EnvironmentFile=/opt/kohaku/.env
 Environment=UV_CACHE_DIR=/opt/kohaku/ingester/.cache
 Environment=HOME=/opt/kohaku
 WorkingDirectory=/opt/kohaku/ingester
+TimeoutStartSec=10min
+ExecCondition=/bin/test -f ${DUCKDB_DB_PATH}
 ExecStart=/opt/uv/bin/uv run python src/run.py \
 		--db ${DUCKDB_DB_PATH} \
 		--storage ${STORAGE} \
@@ -22,6 +25,9 @@ ExecStartPost=/opt/uv/bin/uv run python src/run.py \
 		--db ${DUCKDB_DB_PATH} \
 		--retention_period ${RETENTION_PERIOD} \
 		delete
+
+Restart=on-failure
+RestartSec=5min
 
 [Install]
 WantedBy=multi-user.target

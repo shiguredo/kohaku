@@ -2,8 +2,9 @@
 Description=Update DB
 
 [Timer]
-OnCalendar=*-*-* *:00/5:00
+OnUnitInactiveSec=5min
 Persistent=true
+Unit=kohaku.service
 
 [Install]
 WantedBy=timers.target
