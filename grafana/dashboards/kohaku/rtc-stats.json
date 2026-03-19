@@ -18,7 +18,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 3,
   "links": [],
   "panels": [
     {
@@ -82,7 +81,7 @@
         "cellHeight": "sm",
         "showHeader": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "editorMode": "code",
@@ -164,7 +163,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "datasource": {
@@ -244,7 +243,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "datasource": {
@@ -324,7 +323,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "datasource": {
@@ -404,7 +403,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "datasource": {
@@ -484,7 +483,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "datasource": {
@@ -561,7 +560,7 @@
         "cellHeight": "sm",
         "showHeader": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "datasource": {
@@ -669,7 +668,7 @@
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 10
+            "y": 14
           },
           "id": 40,
           "options": {
@@ -685,13 +684,13 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "editorMode": "code",
               "format": 1,
               "rawQuery": true,
-              "rawSql": "SELECT\n  time_bucket($__interval, timestamp) AS time,\n  connection_id AS connection_id,\n  rtc_id AS inbound_rtp_audio_rtc_id,\n  (rtc_data->>'$.jitter') :: double AS jitter,\n  (rtc_data->>'$.packetsLost') :: numeric AS packets_lost,\n  (rtc_data->>'$.packetsReceived') :: numeric AS packets_received,\n  (rtc_data->>'$.packetsDiscarded') :: numeric AS packets_discarded,\n  (rtc_data->>'$.fecPacketsReceived') :: numeric AS fec_packets_received,\n  (rtc_data->>'$.fecPacketsDiscarded') :: numeric AS fec_packets_discarded,\n  (rtc_data->>'$.bytesReceived') :: numeric AS bytes_received,\n  (rtc_data->>'$.headerBytesReceived') :: numeric AS header_bytes_received,\n  (rtc_data->>'$.lastPacketReceivedTimestamp') :: double AS last_packet_received_timestamp,\n  (rtc_data->>'$.jitterBufferDelay') :: double AS jitter_buffer_delay,\n  (rtc_data->>'$.jitterBufferTargetDelay') :: double AS jitter_buffer_target_delay,\n  (rtc_data->>'$.jitterBufferMinimumDelay') :: double AS jitter_buffer_minimum_delay,\n  (rtc_data->>'$.jitterBufferEmittedCount') :: numeric AS jitter_buffer_emitted_count,\n  (rtc_data->>'$.totalSamplesReceived') :: numeric AS total_samples_received,\n  (rtc_data->>'$.concealedSamples') :: numeric AS concealed_samples,\n  (rtc_data->>'$.silentConcealedSamples') :: numeric AS silent_concealed_samples,\n  (rtc_data->>'$.concealmentEvents') :: numeric AS concealment_events,\n  (rtc_data->>'$.insertedSamplesForDeceleration') :: numeric AS inserted_samples_for_deceleration,\n  (rtc_data->>'$.removedSamplesForAcceleration') :: numeric AS removed_samples_for_acceleration,\n  (rtc_data->>'$.audioLevel') :: double AS audio_level,\n  (rtc_data->>'$.totalAudioEnergy') :: double AS total_audio_energy,\n  (rtc_data->>'$.totalSamplesDuration') :: double AS total_samples_duration,\n  (rtc_data->>'$.estimatedPlayoutTimestamp') :: numeric AS estimated_playout_timestamp\nFROM\n  rtc_stats\nWHERE\n  $__timeFilter(timestamp)\n  AND connection_id IN (${connection_id})\n  AND rtc_id IN (${inbound_rtp_audio_rtc_id})\n  AND (rtc_data->>'$.type') = 'inbound-rtp'\nORDER BY\n  time\n;",
+              "rawSql": "SELECT\n  time_bucket(LEAST($__interval, '${interval}'::interval), timestamp) AS time,\n  connection_id AS connection_id,\n  rtc_id AS inbound_rtp_audio_rtc_id,\n  (rtc_data->>'$.jitter') :: double AS jitter,\n  (rtc_data->>'$.packetsLost') :: numeric AS packets_lost,\n  (rtc_data->>'$.packetsReceived') :: numeric AS packets_received,\n  (rtc_data->>'$.packetsDiscarded') :: numeric AS packets_discarded,\n  (rtc_data->>'$.fecPacketsReceived') :: numeric AS fec_packets_received,\n  (rtc_data->>'$.fecPacketsDiscarded') :: numeric AS fec_packets_discarded,\n  (rtc_data->>'$.bytesReceived') :: numeric AS bytes_received,\n  (rtc_data->>'$.headerBytesReceived') :: numeric AS header_bytes_received,\n  (rtc_data->>'$.lastPacketReceivedTimestamp') :: double AS last_packet_received_timestamp,\n  (rtc_data->>'$.jitterBufferDelay') :: double AS jitter_buffer_delay,\n  (rtc_data->>'$.jitterBufferTargetDelay') :: double AS jitter_buffer_target_delay,\n  (rtc_data->>'$.jitterBufferMinimumDelay') :: double AS jitter_buffer_minimum_delay,\n  (rtc_data->>'$.jitterBufferEmittedCount') :: numeric AS jitter_buffer_emitted_count,\n  (rtc_data->>'$.totalSamplesReceived') :: numeric AS total_samples_received,\n  (rtc_data->>'$.concealedSamples') :: numeric AS concealed_samples,\n  (rtc_data->>'$.silentConcealedSamples') :: numeric AS silent_concealed_samples,\n  (rtc_data->>'$.concealmentEvents') :: numeric AS concealment_events,\n  (rtc_data->>'$.insertedSamplesForDeceleration') :: numeric AS inserted_samples_for_deceleration,\n  (rtc_data->>'$.removedSamplesForAcceleration') :: numeric AS removed_samples_for_acceleration,\n  (rtc_data->>'$.audioLevel') :: double AS audio_level,\n  (rtc_data->>'$.totalAudioEnergy') :: double AS total_audio_energy,\n  (rtc_data->>'$.totalSamplesDuration') :: double AS total_samples_duration,\n  (rtc_data->>'$.estimatedPlayoutTimestamp') :: numeric AS estimated_playout_timestamp\nFROM\n  rtc_stats\nWHERE\n  $__timeFilter(timestamp)\n  AND connection_id IN (${connection_id})\n  AND rtc_id IN (${inbound_rtp_audio_rtc_id})\n  AND (rtc_data->>'$.type') = 'inbound-rtp'\nORDER BY\n  time\n;",
               "refId": "A",
               "sql": {
                 "columns": [
@@ -717,9 +716,8 @@
               },
               "editorMode": "code",
               "format": 1,
-              "hide": false,
               "rawQuery": true,
-              "rawSql": "SELECT\n  time_bucket($__interval, t.time) AS time,\n  t.connection_id AS connection_id,\n  t.inbound_rtp_audio_rtc_id AS inbound_rtp_audio_rtc_id,\n  ((t.packets_received - lag(t.packets_received, 1, t.packets_received) OVER w) / $__interval_ms * 1000) :: numeric AS 'packetsReceived/s',\n  ((t.bytes_received - lag(t.bytes_received, 1, t.bytes_received) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'bytesReceived_in_bits/s',\n  ((t.header_bytes_received - lag(t.header_bytes_received, 1, t.header_bytes_received) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'headerBytesReceived_in_bits/s'\nFROM (\n  SELECT\n    timestamp AS time,\n    connection_id AS connection_id,\n    rtc_id AS inbound_rtp_audio_rtc_id,\n    (rtc_data->>'$.packetsReceived') :: numeric AS packets_received,\n    (rtc_data->>'$.bytesReceived') :: numeric AS bytes_received,\n    (rtc_data->>'$.headerBytesReceived') :: numeric AS header_bytes_received\n  FROM rtc_stats\n  WHERE\n    $__timeFilter(timestamp)\n    AND connection_id = ('${connection_id}')\n    AND (rtc_data->>'$.id') IN ('${inbound_rtp_audio_rtc_id}')\n    AND (rtc_data->>'$.type') = 'inbound-rtp'\n  ORDER BY time\n) AS t\nWINDOW w AS (PARTITION BY t.connection_id, t.inbound_rtp_audio_rtc_id ORDER BY t.time)\nORDER BY time\n;",
+              "rawSql": "SELECT\n  time_bucket(LEAST($__interval, '${interval}'::interval), t.time) AS time,\n  t.connection_id AS connection_id,\n  t.inbound_rtp_audio_rtc_id AS inbound_rtp_audio_rtc_id,\n  ((t.packets_received - lag(t.packets_received, 1, t.packets_received) OVER w) / $__interval_ms * 1000) :: numeric AS 'packetsReceived/s',\n  ((t.bytes_received - lag(t.bytes_received, 1, t.bytes_received) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'bytesReceived_in_bits/s',\n  ((t.header_bytes_received - lag(t.header_bytes_received, 1, t.header_bytes_received) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'headerBytesReceived_in_bits/s'\nFROM (\n  SELECT\n    timestamp AS time,\n    connection_id AS connection_id,\n    rtc_id AS inbound_rtp_audio_rtc_id,\n    (rtc_data->>'$.packetsReceived') :: numeric AS packets_received,\n    (rtc_data->>'$.bytesReceived') :: numeric AS bytes_received,\n    (rtc_data->>'$.headerBytesReceived') :: numeric AS header_bytes_received\n  FROM rtc_stats\n  WHERE\n    $__timeFilter(timestamp)\n    AND connection_id = ('${connection_id}')\n    AND (rtc_data->>'$.id') IN ('${inbound_rtp_audio_rtc_id}')\n    AND (rtc_data->>'$.type') = 'inbound-rtp'\n  ORDER BY time\n) AS t\nWINDOW w AS (PARTITION BY t.connection_id, t.inbound_rtp_audio_rtc_id ORDER BY t.time)\nORDER BY time\n;",
               "refId": "B",
               "sql": {
                 "columns": [
@@ -808,7 +806,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 11
+            "y": 15
           },
           "id": 41,
           "options": {
@@ -824,7 +822,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "datasource": {
@@ -918,7 +916,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 11
+            "y": 15
           },
           "id": 42,
           "options": {
@@ -934,7 +932,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "datasource": {
@@ -1028,7 +1026,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 11
+            "y": 15
           },
           "id": 43,
           "options": {
@@ -1044,7 +1042,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "datasource": {
@@ -1138,7 +1136,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 19
+            "y": 23
           },
           "id": 44,
           "options": {
@@ -1154,7 +1152,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "datasource": {
@@ -1248,7 +1246,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 19
+            "y": 23
           },
           "id": 45,
           "options": {
@@ -1264,7 +1262,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "datasource": {
@@ -1358,7 +1356,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 19
+            "y": 23
           },
           "id": 46,
           "options": {
@@ -1374,7 +1372,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "datasource": {
@@ -1468,7 +1466,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 27
+            "y": 31
           },
           "id": 47,
           "options": {
@@ -1578,7 +1576,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 27
+            "y": 31
           },
           "id": 48,
           "options": {
@@ -1688,7 +1686,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 27
+            "y": 31
           },
           "id": 49,
           "options": {
@@ -1798,7 +1796,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 35
+            "y": 39
           },
           "id": 50,
           "options": {
@@ -1908,7 +1906,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 35
+            "y": 39
           },
           "id": 51,
           "options": {
@@ -2018,7 +2016,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 35
+            "y": 39
           },
           "id": 52,
           "options": {
@@ -2128,7 +2126,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 43
+            "y": 47
           },
           "id": 53,
           "options": {
@@ -2238,7 +2236,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 43
+            "y": 47
           },
           "id": 54,
           "options": {
@@ -2348,7 +2346,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 43
+            "y": 47
           },
           "id": 55,
           "options": {
@@ -2458,7 +2456,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 51
+            "y": 55
           },
           "id": 56,
           "options": {
@@ -2568,7 +2566,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 51
+            "y": 55
           },
           "id": 57,
           "options": {
@@ -2678,7 +2676,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 51
+            "y": 55
           },
           "id": 58,
           "options": {
@@ -2788,7 +2786,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 59
+            "y": 63
           },
           "id": 59,
           "options": {
@@ -2898,7 +2896,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 59
+            "y": 63
           },
           "id": 60,
           "options": {
@@ -3008,7 +3006,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 59
+            "y": 63
           },
           "id": 61,
           "options": {
@@ -3118,7 +3116,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 67
+            "y": 71
           },
           "id": 62,
           "options": {
@@ -3228,7 +3226,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 67
+            "y": 71
           },
           "id": 63,
           "options": {
@@ -3338,7 +3336,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 75
+            "y": 79
           },
           "id": 64,
           "options": {
@@ -3448,7 +3446,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 75
+            "y": 79
           },
           "id": 65,
           "options": {
@@ -3571,7 +3569,7 @@
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 427
+            "y": 324
           },
           "id": 89,
           "options": {
@@ -3587,13 +3585,13 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "editorMode": "code",
               "format": 1,
               "rawQuery": true,
-              "rawSql": "SELECT\n  time_bucket($__interval, timestamp) AS time,\n  connection_id AS connection_id,\n  rtc_id AS outbound_rtp_audio_rtc_id,\n  (rtc_data->>'$.bytesSent') :: numeric AS bytes_sent,\n  (rtc_data->>'$.headerBytesSent') :: numeric AS header_bytes_sent,\n  (rtc_data->>'$.nackCount') :: numeric AS nack_count,\n  (rtc_data->>'$.packetsSent') :: numeric AS packets_sent,\n  (rtc_data->>'$.packetsSentWithEct1') :: numeric AS packets_sent_with_ect1,\n  (rtc_data->>'$.retransmittedBytesSent') :: numeric AS retransmitted_bytes_sent,\n  (rtc_data->>'$.retransmittedPacketsSent') :: numeric AS retransmitted_packets_sent,\n  (rtc_data->>'$.targetBitrate') :: double AS target_bitrate,\n  (rtc_data->>'$.totalPacketSendDelay') :: double AS total_packet_send_delay,\nFROM\n  rtc_stats\nWHERE\n  $__timeFilter(timestamp)\n  AND connection_id IN (${connection_id})\n  AND rtc_id IN (${outbound_rtp_audio_rtc_id})\n  AND (rtc_data->>'$.type') = 'outbound-rtp'\nORDER BY\n  time\n;",
+              "rawSql": "SELECT\n  time_bucket(LEAST($__interval, '${interval}'::interval), timestamp) AS time,\n  connection_id AS connection_id,\n  rtc_id AS outbound_rtp_audio_rtc_id,\n  (rtc_data->>'$.bytesSent') :: numeric AS bytes_sent,\n  (rtc_data->>'$.headerBytesSent') :: numeric AS header_bytes_sent,\n  (rtc_data->>'$.nackCount') :: numeric AS nack_count,\n  (rtc_data->>'$.packetsSent') :: numeric AS packets_sent,\n  (rtc_data->>'$.packetsSentWithEct1') :: numeric AS packets_sent_with_ect1,\n  (rtc_data->>'$.retransmittedBytesSent') :: numeric AS retransmitted_bytes_sent,\n  (rtc_data->>'$.retransmittedPacketsSent') :: numeric AS retransmitted_packets_sent,\n  (rtc_data->>'$.targetBitrate') :: double AS target_bitrate,\n  (rtc_data->>'$.totalPacketSendDelay') :: double AS total_packet_send_delay,\nFROM\n  rtc_stats\nWHERE\n  $__timeFilter(timestamp)\n  AND connection_id IN (${connection_id})\n  AND rtc_id IN (${outbound_rtp_audio_rtc_id})\n  AND (rtc_data->>'$.type') = 'outbound-rtp'\nORDER BY\n  time\n;",
               "refId": "A",
               "sql": {
                 "columns": [
@@ -3619,9 +3617,8 @@
               },
               "editorMode": "code",
               "format": 1,
-              "hide": false,
               "rawQuery": true,
-              "rawSql": "SELECT\n  time_bucket($__interval, t.time) AS time,\n  t.connection_id AS connection_id,\n  t.outbound_rtp_audio_rtc_id AS outbound_rtp_audio_rtc_id,\n  ((t.packets_sent - lag(t.packets_sent, 1, t.packets_sent) OVER w) / $__interval_ms * 1000) :: numeric AS 'packetsSent/s',\n  ((t.bytes_sent - lag(t.bytes_sent, 1, t.bytes_sent) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'bytesSent_in_bits/s',\n  ((t.header_bytes_sent - lag(t.header_bytes_sent, 1, t.header_bytes_sent) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'headerBytesSent_in_bits/s'\nFROM (\n  SELECT\n    timestamp AS time,\n    connection_id AS connection_id,\n    rtc_id AS outbound_rtp_audio_rtc_id,\n    (rtc_data->>'$.packetsSent') :: numeric AS packets_sent,\n    (rtc_data->>'$.bytesSent') :: numeric AS bytes_sent,\n    (rtc_data->>'$.headerBytesSent') :: numeric AS header_bytes_sent\n  FROM rtc_stats\n  WHERE\n    $__timeFilter(timestamp)\n    AND connection_id = ('${connection_id}')\n    AND (rtc_data->>'$.id') IN ('${outbound_rtp_audio_rtc_id}')\n    AND (rtc_data->>'$.type') = 'outbound-rtp'\n  ORDER BY time\n) AS t\nWINDOW w AS (PARTITION BY t.connection_id, t.outbound_rtp_audio_rtc_id ORDER BY t.time)\nORDER BY time\n;",
+              "rawSql": "SELECT\n  time_bucket(LEAST($__interval, '${interval}'::interval), t.time) AS timee,\n  t.connection_id AS connection_id,\n  t.outbound_rtp_audio_rtc_id AS outbound_rtp_audio_rtc_id,\n  ((t.packets_sent - lag(t.packets_sent, 1, t.packets_sent) OVER w) / $__interval_ms * 1000) :: numeric AS 'packetsSent/s',\n  ((t.bytes_sent - lag(t.bytes_sent, 1, t.bytes_sent) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'bytesSent_in_bits/s',\n  ((t.header_bytes_sent - lag(t.header_bytes_sent, 1, t.header_bytes_sent) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'headerBytesSent_in_bits/s'\nFROM (\n  SELECT\n    timestamp AS time,\n    connection_id AS connection_id,\n    rtc_id AS outbound_rtp_audio_rtc_id,\n    (rtc_data->>'$.packetsSent') :: numeric AS packets_sent,\n    (rtc_data->>'$.bytesSent') :: numeric AS bytes_sent,\n    (rtc_data->>'$.headerBytesSent') :: numeric AS header_bytes_sent\n  FROM rtc_stats\n  WHERE\n    $__timeFilter(timestamp)\n    AND connection_id = ('${connection_id}')\n    AND (rtc_data->>'$.id') IN ('${outbound_rtp_audio_rtc_id}')\n    AND (rtc_data->>'$.type') = 'outbound-rtp'\n  ORDER BY time\n) AS t\nWINDOW w AS (PARTITION BY t.connection_id, t.outbound_rtp_audio_rtc_id ORDER BY t.time)\nORDER BY time\n;",
               "refId": "B",
               "sql": {
                 "columns": [
@@ -3710,7 +3707,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 428
+            "y": 536
           },
           "id": 90,
           "options": {
@@ -3726,7 +3723,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "datasource": {
@@ -3820,7 +3817,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 428
+            "y": 536
           },
           "id": 91,
           "options": {
@@ -3836,7 +3833,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "datasource": {
@@ -3930,7 +3927,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 428
+            "y": 536
           },
           "id": 92,
           "options": {
@@ -3946,7 +3943,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "datasource": {
@@ -4040,7 +4037,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 436
+            "y": 544
           },
           "id": 93,
           "options": {
@@ -4150,7 +4147,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 436
+            "y": 544
           },
           "id": 94,
           "options": {
@@ -4260,7 +4257,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 436
+            "y": 544
           },
           "id": 95,
           "options": {
@@ -4370,7 +4367,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 444
+            "y": 552
           },
           "id": 96,
           "options": {
@@ -4493,7 +4490,7 @@
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 1740
+            "y": 325
           },
           "id": 3,
           "options": {
@@ -4509,13 +4506,13 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "editorMode": "code",
               "format": 1,
               "rawQuery": true,
-              "rawSql": "SELECT\n  time_bucket($__interval, timestamp) AS time,\n  connection_id AS connection_id,\n  rtc_id AS inbound_rtp_video_rtc_id,\n  (rtc_data->>'$.jitter') :: double AS jitter,\n  (rtc_data->>'$.packetsLost') :: numeric AS packets_lost,\n  (rtc_data->>'$.packetsReceived') :: numeric AS packets_received,\n  (rtc_data->>'$.bytesReceived') :: numeric AS bytes_received,\n  (rtc_data->>'$.headerBytesReceived') :: numeric AS header_bytes_received,\n  (rtc_data->>'$.lastPacketReceivedTimestamp') :: double AS last_packet_received_timestamp,\n  (rtc_data->>'$.jitterBufferDelay') :: double AS jitter_buffer_delay,\n  (rtc_data->>'$.jitterBufferTargetDelay') :: double AS jitter_buffer_target_delay,\n  (rtc_data->>'$.jitterBufferMinimumDelay') :: double AS jitter_buffer_minimum_delay,\n  (rtc_data->>'$.jitterBufferEmittedCount') :: numeric AS jitter_buffer_emitted_count,\n  (rtc_data->>'$.framesReceived') :: numeric AS frames_received,\n  (rtc_data->>'$.framesDecoded') :: numeric AS frames_decoded,\n  (rtc_data->>'$.frameWidth') :: numeric AS frame_width,\n  (rtc_data->>'$.frameHeight') :: numeric AS frame_height,\n  (rtc_data->>'$.framesPerSecond') :: numeric AS frames_per_second,\n  (rtc_data->>'$.keyFramesDecoded') :: numeric AS key_frames_decoded,\n  (rtc_data->>'$.framesDropped') :: numeric AS frames_dropped,\n  (rtc_data->>'$.totalDecodeTime') :: double AS total_decode_time,\n  (rtc_data->>'$.totalInterFrameDelay') :: double AS total_inter_frame_delay,\n  (rtc_data->>'$.totalProcessingDelay') :: double AS total_processing_delay,\n  (rtc_data->>'$.totalAssemblyTime') :: double AS total_assembly_time,\n  (rtc_data->>'$.totalSquaredInterFrameDelay') :: double AS total_squared_inter_frame_delay,\n  (rtc_data->>'$.totalPausesDuration') :: double AS total_pauses_duration,\n  (rtc_data->>'$.totalFreezesDuration') :: double AS total_freezes_duration,\n  (rtc_data->>'$.freezeCount') :: numeric AS freeze_count,\n  (rtc_data->>'$.firCount') :: numeric AS fir_count,\n  (rtc_data->>'$.pliCount') :: numeric AS pli_count,\n  (rtc_data->>'$.pauseCount') :: numeric AS pause_count,\n  (rtc_data->>'$.nackCount') :: numeric AS nack_count,\n  (rtc_data->>'$.estimatedPlayoutTimestamp') :: numeric AS estimated_playout_timestamp\nFROM\n  rtc_stats\nWHERE\n  $__timeFilter(timestamp)\n  AND connection_id IN (${connection_id})\n  AND rtc_id IN (${inbound_rtp_video_rtc_id})\n  AND (rtc_data->>'$.type') = 'inbound-rtp'\nORDER BY\n  time\n;\n",
+              "rawSql": "SELECT\n  time_bucket(LEAST($__interval, '${interval}'::interval), timestamp) AS time,\n  connection_id AS connection_id,\n  rtc_id AS inbound_rtp_video_rtc_id,\n  (rtc_data->>'$.jitter') :: double AS jitter,\n  (rtc_data->>'$.packetsLost') :: numeric AS packets_lost,\n  (rtc_data->>'$.packetsReceived') :: numeric AS packets_received,\n  (rtc_data->>'$.bytesReceived') :: numeric AS bytes_received,\n  (rtc_data->>'$.headerBytesReceived') :: numeric AS header_bytes_received,\n  (rtc_data->>'$.lastPacketReceivedTimestamp') :: double AS last_packet_received_timestamp,\n  (rtc_data->>'$.jitterBufferDelay') :: double AS jitter_buffer_delay,\n  (rtc_data->>'$.jitterBufferTargetDelay') :: double AS jitter_buffer_target_delay,\n  (rtc_data->>'$.jitterBufferMinimumDelay') :: double AS jitter_buffer_minimum_delay,\n  (rtc_data->>'$.jitterBufferEmittedCount') :: numeric AS jitter_buffer_emitted_count,\n  (rtc_data->>'$.framesReceived') :: numeric AS frames_received,\n  (rtc_data->>'$.framesDecoded') :: numeric AS frames_decoded,\n  (rtc_data->>'$.frameWidth') :: numeric AS frame_width,\n  (rtc_data->>'$.frameHeight') :: numeric AS frame_height,\n  (rtc_data->>'$.framesPerSecond') :: numeric AS frames_per_second,\n  (rtc_data->>'$.keyFramesDecoded') :: numeric AS key_frames_decoded,\n  (rtc_data->>'$.framesDropped') :: numeric AS frames_dropped,\n  (rtc_data->>'$.totalDecodeTime') :: double AS total_decode_time,\n  (rtc_data->>'$.totalInterFrameDelay') :: double AS total_inter_frame_delay,\n  (rtc_data->>'$.totalProcessingDelay') :: double AS total_processing_delay,\n  (rtc_data->>'$.totalAssemblyTime') :: double AS total_assembly_time,\n  (rtc_data->>'$.totalSquaredInterFrameDelay') :: double AS total_squared_inter_frame_delay,\n  (rtc_data->>'$.totalPausesDuration') :: double AS total_pauses_duration,\n  (rtc_data->>'$.totalFreezesDuration') :: double AS total_freezes_duration,\n  (rtc_data->>'$.freezeCount') :: numeric AS freeze_count,\n  (rtc_data->>'$.firCount') :: numeric AS fir_count,\n  (rtc_data->>'$.pliCount') :: numeric AS pli_count,\n  (rtc_data->>'$.pauseCount') :: numeric AS pause_count,\n  (rtc_data->>'$.nackCount') :: numeric AS nack_count,\n  (rtc_data->>'$.estimatedPlayoutTimestamp') :: numeric AS estimated_playout_timestamp\nFROM\n  rtc_stats\nWHERE\n  $__timeFilter(timestamp)\n  AND connection_id IN (${connection_id})\n  AND rtc_id IN (${inbound_rtp_video_rtc_id})\n  AND (rtc_data->>'$.type') = 'inbound-rtp'\nORDER BY\n  time\n;\n",
               "refId": "A",
               "sql": {
                 "columns": [
@@ -4541,9 +4538,8 @@
               },
               "editorMode": "code",
               "format": 1,
-              "hide": false,
               "rawQuery": true,
-              "rawSql": "SELECT\n  time_bucket($__interval, t.time) AS time,\n  t.connection_id AS connection_id,\n  t.inbound_rtp_video_rtc_id AS inbound_rtp_video_rtc_id,\n  ((t.packets_received - lag(t.packets_received, 1, NULL) OVER w) / $__interval_ms * 1000) :: numeric AS 'packetsReceived/s',\n  ((t.bytes_received - lag(t.bytes_received, 1, t.bytes_received) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'bytesReceived_in_bits/s',\n  ((t.header_bytes_received - lag(t.header_bytes_received, 1, t.header_bytes_received) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'headerBytesReceived_in_bits/s',\n  ((t.frames_received - lag(t.frames_received, 1, t.frames_received) OVER w) / $__interval_ms * 1000) :: numeric AS 'framesReceived/s',\n  ((t.frames_decoded - lag(t.frames_decoded, 1, t.frames_decoded) OVER w) / $__interval_ms * 1000) :: numeric AS 'framesDecoded/s',\n  ((t.key_frames_decoded - lag(t.key_frames_decoded, 1, t.key_frames_decoded) OVER w) / $__interval_ms * 1000) :: numeric AS 'keyFramesDecoded/s'\nFROM (\n  SELECT\n    timestamp AS time,\n    connection_id,\n    rtc_id AS inbound_rtp_video_rtc_id,\n    (rtc_data->>'$.packetsReceived') :: numeric AS packets_received,\n    (rtc_data->>'$.bytesReceived') :: numeric AS bytes_received,\n    (rtc_data->>'$.headerBytesReceived') :: numeric AS header_bytes_received,\n    (rtc_data->>'$.framesReceived') :: numeric AS frames_received,\n    (rtc_data->>'$.framesDecoded') :: numeric AS frames_decoded,\n    (rtc_data->>'$.keyFramesDecoded') :: numeric AS key_frames_decoded\n  FROM rtc_stats\n  WHERE\n    $__timeFilter(timestamp)\n    AND connection_id = ('${connection_id}')\n    AND (rtc_data->>'$.id') IN ('${inbound_rtp_video_rtc_id}')\n    AND (rtc_data->>'$.type') = 'inbound-rtp'\n  ORDER BY time\n) AS t\nWINDOW w AS (PARTITION BY t.connection_id, t.inbound_rtp_video_rtc_id ORDER BY t.time)\nORDER BY time\n;",
+              "rawSql": "SELECT\n  time_bucket(LEAST($__interval, '${interval}'::interval), t.time) AS time,\n  t.connection_id AS connection_id,\n  t.inbound_rtp_video_rtc_id AS inbound_rtp_video_rtc_id,\n  ((t.packets_received - lag(t.packets_received, 1, NULL) OVER w) / $__interval_ms * 1000) :: numeric AS 'packetsReceived/s',\n  ((t.bytes_received - lag(t.bytes_received, 1, t.bytes_received) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'bytesReceived_in_bits/s',\n  ((t.header_bytes_received - lag(t.header_bytes_received, 1, t.header_bytes_received) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'headerBytesReceived_in_bits/s',\n  ((t.frames_received - lag(t.frames_received, 1, t.frames_received) OVER w) / $__interval_ms * 1000) :: numeric AS 'framesReceived/s',\n  ((t.frames_decoded - lag(t.frames_decoded, 1, t.frames_decoded) OVER w) / $__interval_ms * 1000) :: numeric AS 'framesDecoded/s',\n  ((t.key_frames_decoded - lag(t.key_frames_decoded, 1, t.key_frames_decoded) OVER w) / $__interval_ms * 1000) :: numeric AS 'keyFramesDecoded/s'\nFROM (\n  SELECT\n    timestamp AS time,\n    connection_id,\n    rtc_id AS inbound_rtp_video_rtc_id,\n    (rtc_data->>'$.packetsReceived') :: numeric AS packets_received,\n    (rtc_data->>'$.bytesReceived') :: numeric AS bytes_received,\n    (rtc_data->>'$.headerBytesReceived') :: numeric AS header_bytes_received,\n    (rtc_data->>'$.framesReceived') :: numeric AS frames_received,\n    (rtc_data->>'$.framesDecoded') :: numeric AS frames_decoded,\n    (rtc_data->>'$.keyFramesDecoded') :: numeric AS key_frames_decoded\n  FROM rtc_stats\n  WHERE\n    $__timeFilter(timestamp)\n    AND connection_id = ('${connection_id}')\n    AND (rtc_data->>'$.id') IN ('${inbound_rtp_video_rtc_id}')\n    AND (rtc_data->>'$.type') = 'inbound-rtp'\n  ORDER BY time\n) AS t\nWINDOW w AS (PARTITION BY t.connection_id, t.inbound_rtp_video_rtc_id ORDER BY t.time)\nORDER BY time\n;",
               "refId": "B",
               "sql": {
                 "columns": [
@@ -4632,7 +4628,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1798
+            "y": 383
           },
           "id": 4,
           "options": {
@@ -4648,7 +4644,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "datasource": {
@@ -4742,7 +4738,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1798
+            "y": 383
           },
           "id": 8,
           "options": {
@@ -4758,7 +4754,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "datasource": {
@@ -4852,7 +4848,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1798
+            "y": 383
           },
           "id": 5,
           "options": {
@@ -4868,7 +4864,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "datasource": {
@@ -4961,7 +4957,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1806
+            "y": 391
           },
           "id": 9,
           "options": {
@@ -4977,7 +4973,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "datasource": {
@@ -5070,7 +5066,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1806
+            "y": 391
           },
           "id": 6,
           "options": {
@@ -5086,7 +5082,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "datasource": {
@@ -5179,7 +5175,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1806
+            "y": 391
           },
           "id": 10,
           "options": {
@@ -5195,7 +5191,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "datasource": {
@@ -5288,7 +5284,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1814
+            "y": 399
           },
           "id": 7,
           "options": {
@@ -5398,7 +5394,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1814
+            "y": 399
           },
           "id": 11,
           "options": {
@@ -5507,7 +5503,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1814
+            "y": 399
           },
           "id": 12,
           "options": {
@@ -5617,7 +5613,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1822
+            "y": 407
           },
           "id": 13,
           "options": {
@@ -5726,7 +5722,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1822
+            "y": 407
           },
           "id": 14,
           "options": {
@@ -5836,7 +5832,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1822
+            "y": 407
           },
           "id": 15,
           "options": {
@@ -5945,7 +5941,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1830
+            "y": 415
           },
           "id": 16,
           "options": {
@@ -6055,7 +6051,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1830
+            "y": 415
           },
           "id": 17,
           "options": {
@@ -6164,7 +6160,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1830
+            "y": 415
           },
           "id": 18,
           "options": {
@@ -6274,7 +6270,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1838
+            "y": 423
           },
           "id": 19,
           "options": {
@@ -6383,7 +6379,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1838
+            "y": 423
           },
           "id": 20,
           "options": {
@@ -6493,7 +6489,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1838
+            "y": 423
           },
           "id": 21,
           "options": {
@@ -6602,7 +6598,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1846
+            "y": 431
           },
           "id": 22,
           "options": {
@@ -6712,7 +6708,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1846
+            "y": 431
           },
           "id": 23,
           "options": {
@@ -6821,7 +6817,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1846
+            "y": 431
           },
           "id": 24,
           "options": {
@@ -6931,7 +6927,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1854
+            "y": 439
           },
           "id": 25,
           "options": {
@@ -7041,7 +7037,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1854
+            "y": 439
           },
           "id": 26,
           "options": {
@@ -7150,7 +7146,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1854
+            "y": 439
           },
           "id": 27,
           "options": {
@@ -7260,7 +7256,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1862
+            "y": 447
           },
           "id": 28,
           "options": {
@@ -7370,7 +7366,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1862
+            "y": 447
           },
           "id": 29,
           "options": {
@@ -7479,7 +7475,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1862
+            "y": 447
           },
           "id": 30,
           "options": {
@@ -7589,7 +7585,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1870
+            "y": 455
           },
           "id": 34,
           "options": {
@@ -7699,7 +7695,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1870
+            "y": 455
           },
           "id": 35,
           "options": {
@@ -7808,7 +7804,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1870
+            "y": 455
           },
           "id": 33,
           "options": {
@@ -7918,7 +7914,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1878
+            "y": 463
           },
           "id": 31,
           "options": {
@@ -8028,7 +8024,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1878
+            "y": 463
           },
           "id": 32,
           "options": {
@@ -8137,7 +8133,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1878
+            "y": 463
           },
           "id": 36,
           "options": {
@@ -8247,7 +8243,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1886
+            "y": 471
           },
           "id": 37,
           "options": {
@@ -8357,7 +8353,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1886
+            "y": 471
           },
           "id": 38,
           "options": {
@@ -8466,7 +8462,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1886
+            "y": 471
           },
           "id": 39,
           "options": {
@@ -8590,7 +8586,7 @@
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 217
+            "y": 326
           },
           "id": 66,
           "options": {
@@ -8606,13 +8602,13 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "editorMode": "code",
               "format": 1,
               "rawQuery": true,
-              "rawSql": "SELECT\n  time_bucket($__interval, timestamp) AS time,\n  connection_id AS connection_id,\n  rtc_id AS outbound_rtp_video_rtc_id,\n  (rtc_data->>'$.bytesSent') :: numeric AS bytes_sent,\n  (rtc_data->>'$.firCount') :: numeric AS fir_count,\n  (rtc_data->>'$.frameWidth') :: numeric AS frame_width,\n  (rtc_data->>'$.frameHeight') :: numeric AS frame_height,\n  (rtc_data->>'$.framesEncoded') :: numeric AS frames_encoded,\n  (rtc_data->>'$.framesPerSecond') :: double AS frames_per_second,\n  (rtc_data->>'$.framesSent') :: numeric AS frames_sent,\n  (rtc_data->>'$.headerBytesSent') :: numeric AS header_bytes_sent,\n  (rtc_data->>'$.hugeFramesSent') :: numeric AS huge_frames_sent,\n  (rtc_data->>'$.keyFramesEncoded') :: numeric AS key_frames_encoded,\n  (rtc_data->>'$.nackCount') :: numeric AS nack_count,\n  (rtc_data->>'$.packetsSent') :: numeric AS packets_sent,\n  (rtc_data->>'$.packetsSentWithEct1') :: numeric AS packets_sent_with_ect1,\n  (rtc_data->>'$.pliCount') :: numeric AS pli_count,\n  (rtc_data->>'$.qpSum') :: numeric AS qp_sum,\n  (rtc_data->>'$.retransmittedBytesSent') :: numeric AS retransmitted_bytes_sent,\n  (rtc_data->>'$.retransmittedPacketsSent') :: numeric AS retransmitted_packets_sent,\n  (rtc_data->>'$.targetBitrate') :: double AS target_bitrate,\n  (rtc_data->>'$.totalEncodeTime') :: double AS total_encode_time,\n  (rtc_data->>'$.totalPacketSendDelay') :: double AS total_packet_send_delay,\nFROM\n  rtc_stats\nWHERE\n  $__timeFilter(timestamp)\n  AND connection_id IN (${connection_id})\n  AND rtc_id IN (${outbound_rtp_video_rtc_id})\n  AND (rtc_data->>'$.type') = 'outbound-rtp'\nORDER BY\n  time\n;",
+              "rawSql": "SELECT\n  time_bucket(LEAST($__interval, '${interval}'::interval), timestamp) AS time,\n  connection_id AS connection_id,\n  rtc_id AS outbound_rtp_video_rtc_id,\n  (rtc_data->>'$.bytesSent') :: numeric AS bytes_sent,\n  (rtc_data->>'$.firCount') :: numeric AS fir_count,\n  (rtc_data->>'$.frameWidth') :: numeric AS frame_width,\n  (rtc_data->>'$.frameHeight') :: numeric AS frame_height,\n  (rtc_data->>'$.framesEncoded') :: numeric AS frames_encoded,\n  (rtc_data->>'$.framesPerSecond') :: double AS frames_per_second,\n  (rtc_data->>'$.framesSent') :: numeric AS frames_sent,\n  (rtc_data->>'$.headerBytesSent') :: numeric AS header_bytes_sent,\n  (rtc_data->>'$.hugeFramesSent') :: numeric AS huge_frames_sent,\n  (rtc_data->>'$.keyFramesEncoded') :: numeric AS key_frames_encoded,\n  (rtc_data->>'$.nackCount') :: numeric AS nack_count,\n  (rtc_data->>'$.packetsSent') :: numeric AS packets_sent,\n  (rtc_data->>'$.packetsSentWithEct1') :: numeric AS packets_sent_with_ect1,\n  (rtc_data->>'$.pliCount') :: numeric AS pli_count,\n  (rtc_data->>'$.qpSum') :: numeric AS qp_sum,\n  (rtc_data->>'$.retransmittedBytesSent') :: numeric AS retransmitted_bytes_sent,\n  (rtc_data->>'$.retransmittedPacketsSent') :: numeric AS retransmitted_packets_sent,\n  (rtc_data->>'$.targetBitrate') :: double AS target_bitrate,\n  (rtc_data->>'$.totalEncodeTime') :: double AS total_encode_time,\n  (rtc_data->>'$.totalPacketSendDelay') :: double AS total_packet_send_delay,\nFROM\n  rtc_stats\nWHERE\n  $__timeFilter(timestamp)\n  AND connection_id IN (${connection_id})\n  AND rtc_id IN (${outbound_rtp_video_rtc_id})\n  AND (rtc_data->>'$.type') = 'outbound-rtp'\nORDER BY\n  time\n;",
               "refId": "A",
               "sql": {
                 "columns": [
@@ -8639,9 +8635,8 @@
               },
               "editorMode": "code",
               "format": 1,
-              "hide": false,
               "rawQuery": true,
-              "rawSql": "SELECT\n  time_bucket($__interval, t.time) AS time,\n  t.connection_id AS connection_id,\n  t.outbound_rtp_video_rtc_id AS outbound_rtp_video_rtc_id,\n  ((t.packets_sent - lag(t.packets_sent, 1, NULL) OVER w) / $__interval_ms * 1000) :: numeric AS 'packetsSent/s',\n  ((t.bytes_sent - lag(t.bytes_sent, 1, t.bytes_sent) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'bytesSent_in_bits/s',\n  ((t.header_bytes_sent - lag(t.header_bytes_sent, 1, t.header_bytes_sent) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'headerBytesSent_in_bits/s',\n  ((t.frames_sent - lag(t.frames_sent, 1, t.frames_sent) OVER w) / $__interval_ms * 1000) :: numeric AS 'framesSent/s',\n  ((t.frames_encoded - lag(t.frames_encoded, 1, t.frames_encoded) OVER w) / $__interval_ms * 1000) :: numeric AS 'framesEncoded/s',\n  ((t.key_frames_encoded - lag(t.key_frames_encoded, 1, t.key_frames_encoded) OVER w) / $__interval_ms * 1000) :: numeric AS 'keyFramesEncoded/s'\nFROM (\n  SELECT\n    timestamp AS time,\n    connection_id,\n    rtc_id AS outbound_rtp_video_rtc_id,\n    (rtc_data->>'$.packetsSent') :: numeric AS packets_sent,\n    (rtc_data->>'$.bytesSent') :: numeric AS bytes_sent,\n    (rtc_data->>'$.headerBytesSent') :: numeric AS header_bytes_sent,\n    (rtc_data->>'$.framesSent') :: numeric AS frames_sent,\n    (rtc_data->>'$.framesEncoded') :: numeric AS frames_encoded,\n    (rtc_data->>'$.keyFramesEncoded') :: numeric AS key_frames_encoded\n  FROM rtc_stats\n  WHERE\n    $__timeFilter(timestamp)\n    AND connection_id = ('${connection_id}')\n    AND (rtc_data->>'$.id') IN ('${outbound_rtp_video_rtc_id}')\n    AND (rtc_data->>'$.type') = 'outbound-rtp'\n  ORDER BY time\n) AS t\nWINDOW w AS (PARTITION BY t.connection_id, t.outbound_rtp_video_rtc_id ORDER BY t.time)\nORDER BY time\n;",
+              "rawSql": "SELECT\n  time_bucket(LEAST($__interval, '${interval}'::interval), t.time) AS time,\n  t.connection_id AS connection_id,\n  t.outbound_rtp_video_rtc_id AS outbound_rtp_video_rtc_id,\n  ((t.packets_sent - lag(t.packets_sent, 1, NULL) OVER w) / $__interval_ms * 1000) :: numeric AS 'packetsSent/s',\n  ((t.bytes_sent - lag(t.bytes_sent, 1, t.bytes_sent) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'bytesSent_in_bits/s',\n  ((t.header_bytes_sent - lag(t.header_bytes_sent, 1, t.header_bytes_sent) OVER w) / $__interval_ms * 1000 * 8) :: numeric AS 'headerBytesSent_in_bits/s',\n  ((t.frames_sent - lag(t.frames_sent, 1, t.frames_sent) OVER w) / $__interval_ms * 1000) :: numeric AS 'framesSent/s',\n  ((t.frames_encoded - lag(t.frames_encoded, 1, t.frames_encoded) OVER w) / $__interval_ms * 1000) :: numeric AS 'framesEncoded/s',\n  ((t.key_frames_encoded - lag(t.key_frames_encoded, 1, t.key_frames_encoded) OVER w) / $__interval_ms * 1000) :: numeric AS 'keyFramesEncoded/s'\nFROM (\n  SELECT\n    timestamp AS time,\n    connection_id,\n    rtc_id AS outbound_rtp_video_rtc_id,\n    (rtc_data->>'$.packetsSent') :: numeric AS packets_sent,\n    (rtc_data->>'$.bytesSent') :: numeric AS bytes_sent,\n    (rtc_data->>'$.headerBytesSent') :: numeric AS header_bytes_sent,\n    (rtc_data->>'$.framesSent') :: numeric AS frames_sent,\n    (rtc_data->>'$.framesEncoded') :: numeric AS frames_encoded,\n    (rtc_data->>'$.keyFramesEncoded') :: numeric AS key_frames_encoded\n  FROM rtc_stats\n  WHERE\n    $__timeFilter(timestamp)\n    AND connection_id = ('${connection_id}')\n    AND (rtc_data->>'$.id') IN ('${outbound_rtp_video_rtc_id}')\n    AND (rtc_data->>'$.type') = 'outbound-rtp'\n  ORDER BY time\n) AS t\nWINDOW w AS (PARTITION BY t.connection_id, t.outbound_rtp_video_rtc_id ORDER BY t.time)\nORDER BY time\n;",
               "refId": "B",
               "sql": {
                 "columns": [
@@ -8730,7 +8725,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 218
+            "y": 327
           },
           "id": 68,
           "options": {
@@ -8746,7 +8741,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "datasource": {
@@ -8839,7 +8834,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 218
+            "y": 327
           },
           "id": 69,
           "options": {
@@ -8855,7 +8850,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "datasource": {
@@ -8948,7 +8943,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 218
+            "y": 327
           },
           "id": 70,
           "options": {
@@ -8964,7 +8959,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.2.1",
+          "pluginVersion": "12.4.1",
           "targets": [
             {
               "datasource": {
@@ -9057,7 +9052,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 226
+            "y": 335
           },
           "id": 71,
           "options": {
@@ -9166,7 +9161,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 226
+            "y": 335
           },
           "id": 72,
           "options": {
@@ -9275,7 +9270,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 226
+            "y": 335
           },
           "id": 73,
           "options": {
@@ -9384,7 +9379,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 234
+            "y": 343
           },
           "id": 74,
           "options": {
@@ -9493,7 +9488,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 234
+            "y": 343
           },
           "id": 75,
           "options": {
@@ -9602,7 +9597,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 234
+            "y": 343
           },
           "id": 76,
           "options": {
@@ -9711,7 +9706,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 242
+            "y": 351
           },
           "id": 77,
           "options": {
@@ -9820,7 +9815,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 242
+            "y": 351
           },
           "id": 78,
           "options": {
@@ -9929,7 +9924,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 242
+            "y": 351
           },
           "id": 79,
           "options": {
@@ -10038,7 +10033,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 250
+            "y": 359
           },
           "id": 80,
           "options": {
@@ -10147,7 +10142,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 250
+            "y": 359
           },
           "id": 81,
           "options": {
@@ -10256,7 +10251,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 250
+            "y": 359
           },
           "id": 82,
           "options": {
@@ -10365,7 +10360,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 258
+            "y": 367
           },
           "id": 83,
           "options": {
@@ -10474,7 +10469,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 258
+            "y": 367
           },
           "id": 84,
           "options": {
@@ -10583,7 +10578,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 258
+            "y": 367
           },
           "id": 85,
           "options": {
@@ -10692,7 +10687,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 266
+            "y": 375
           },
           "id": 86,
           "options": {
@@ -10801,7 +10796,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 266
+            "y": 375
           },
           "id": 87,
           "options": {
@@ -10910,7 +10905,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 266
+            "y": 375
           },
           "id": 97,
           "options": {
@@ -10984,25 +10979,25 @@
       },
       {
         "current": {
-          "text": "W5NS0J9EBH6K59EPY7YQRB2C64",
-          "value": "W5NS0J9EBH6K59EPY7YQRB2C64"
+          "text": "7621G5JDMN2SVDZ5702EMV6B54",
+          "value": "7621G5JDMN2SVDZ5702EMV6B54"
         },
         "label": "Session ID",
         "name": "session_id",
         "options": [
           {
             "selected": true,
-            "text": "W5NS0J9EBH6K59EPY7YQRB2C64",
-            "value": "W5NS0J9EBH6K59EPY7YQRB2C64"
+            "text": "7621G5JDMN2SVDZ5702EMV6B54",
+            "value": "7621G5JDMN2SVDZ5702EMV6B54"
           }
         ],
-        "query": "W5NS0J9EBH6K59EPY7YQRB2C64",
+        "query": "7621G5JDMN2SVDZ5702EMV6B54",
         "type": "textbox"
       },
       {
         "current": {
-          "text": "6XZ5YE3P3X4GN00WM3DT6JCX5W",
-          "value": "6XZ5YE3P3X4GN00WM3DT6JCX5W"
+          "text": "K18GQ4BREH617DCXTXD2Q5QYTG",
+          "value": "K18GQ4BREH617DCXTXD2Q5QYTG"
         },
         "definition": "SELECT\n  connection_id\nFROM rtc_stats\nWHERE\n  channel_id = '${channel_id}'\n  AND session_id IN ('${session_id}')\n;",
         "label": "Connection ID",
@@ -11011,6 +11006,7 @@
         "query": "SELECT\n  connection_id\nFROM rtc_stats\nWHERE\n  channel_id = '${channel_id}'\n  AND session_id IN ('${session_id}')\n;",
         "refresh": 1,
         "regex": "",
+        "regexApplyTo": "value",
         "type": "query"
       },
       {
@@ -11029,6 +11025,7 @@
         "query": "WITH result AS (\n  SELECT DISTINCT\n    rtc_id,\n  FROM rtc_stats\n  WHERE $__timeFilter(timestamp)\n    AND connection_id = '${connection_id}'\n    AND rtc_type = 'inbound-rtp'\n    AND (rtc_data->>'$.kind') = 'audio'\n)\nSELECT * FROM result\nUNION ALL\nSELECT ' '\nWHERE NOT EXISTS (SELECT 1 FROM result);",
         "refresh": 1,
         "regex": "",
+        "regexApplyTo": "value",
         "type": "query"
       },
       {
@@ -11046,6 +11043,7 @@
         "query": "WITH result AS (\n  SELECT DISTINCT\n    rtc_id,\n  FROM rtc_stats\n  WHERE $__timeFilter(timestamp)\n    AND connection_id = '${connection_id}'\n    AND rtc_type = 'inbound-rtp'\n    AND (rtc_data->>'$.kind') = 'video'\n)\nSELECT * FROM result\nUNION ALL\nSELECT ' '\nWHERE NOT EXISTS (SELECT 1 FROM result);",
         "refresh": 1,
         "regex": "",
+        "regexApplyTo": "value",
         "type": "query"
       },
       {
@@ -11064,15 +11062,14 @@
         "query": "WITH result AS (\n  SELECT DISTINCT\n    rtc_id,\n  FROM rtc_stats\n  WHERE $__timeFilter(timestamp)\n    AND connection_id = '${connection_id}'\n    AND rtc_type = 'outbound-rtp'\n    AND (rtc_data->>'$.kind') = 'audio'\n)\nSELECT * FROM result\nUNION ALL\nSELECT ' '\nWHERE NOT EXISTS (SELECT 1 FROM result);",
         "refresh": 1,
         "regex": "",
+        "regexApplyTo": "value",
         "type": "query"
       },
       {
         "current": {
-          "text": [
-            "OTaudio_Mh4W0V1V2443673187"
-          ],
+          "text": "All",
           "value": [
-            "OTaudio_Mh4W0V1V2443673187"
+            "$__all"
           ]
         },
         "definition": "WITH result AS (\n  SELECT DISTINCT\n    rtc_id,\n  FROM rtc_stats\n  WHERE $__timeFilter(timestamp)\n    AND connection_id = '${connection_id}'\n    AND rtc_type = 'outbound-rtp'\n    AND (rtc_data->>'$.kind') = 'video'\n)\nSELECT * FROM result\nUNION ALL\nSELECT ' '\nWHERE NOT EXISTS (SELECT 1 FROM result);",
@@ -11085,13 +11082,27 @@
         "query": "WITH result AS (\n  SELECT DISTINCT\n    rtc_id,\n  FROM rtc_stats\n  WHERE $__timeFilter(timestamp)\n    AND connection_id = '${connection_id}'\n    AND rtc_type = 'outbound-rtp'\n    AND (rtc_data->>'$.kind') = 'video'\n)\nSELECT * FROM result\nUNION ALL\nSELECT ' '\nWHERE NOT EXISTS (SELECT 1 FROM result);",
         "refresh": 1,
         "regex": "",
+        "regexApplyTo": "value",
         "type": "query"
+      },
+      {
+        "current": {
+          "text": "1m",
+          "value": "1m"
+        },
+        "description": "",
+        "label": "interval",
+        "name": "interval",
+        "options": [],
+        "query": "1m,30s,10s,5s,1s",
+        "type": "custom",
+        "valuesFormat": "csv"
       }
     ]
   },
   "time": {
-    "from": "2025-09-19T04:42:35.000Z",
-    "to": "2025-09-19T07:36:36.000Z"
+    "from": "now-15m",
+    "to": "now"
   },
   "timepicker": {
     "refresh_intervals": [
@@ -11106,5 +11117,6 @@
   "timezone": "browser",
   "title": "RTC Stats",
   "uid": "feg4t1lbp3b40b",
-  "version": 1
+  "version": 3,
+  "weekStart": ""
 }
