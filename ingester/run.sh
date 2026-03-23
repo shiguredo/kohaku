@@ -11,14 +11,16 @@ mkdir -p /var/lib/kohaku/duckdb
 cd /ingester
 
 # テーブル作成および初期データの挿入
-uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
-                      --storage "${STORAGE}" \
-                      --s3_endpoint "${S3_ENDPOINT}" \
-                      --s3_access_key_id "${AWS_ACCESS_KEY_ID}" \
-                      --s3_secret_access_key "${AWS_SECRET_ACCESS_KEY}" \
-                      --s3_bucket "${S3_BUCKET}" \
-                      --s3_prefix "${S3_PREFIX}" \
-                      init
+if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
+                           --storage "${STORAGE}" \
+                           --s3_endpoint "${S3_ENDPOINT}" \
+                           --s3_access_key_id "${AWS_ACCESS_KEY_ID}" \
+                           --s3_secret_access_key "${AWS_SECRET_ACCESS_KEY}" \
+                           --s3_bucket "${S3_BUCKET}" \
+                           --s3_prefix "${S3_PREFIX}" \
+                           init; then
+  echo "run.py init failed. continue to update loop." >&2
+fi
 
 # TODO: 他の定期実行の方法を検討する
 # 定期的にデータを更新

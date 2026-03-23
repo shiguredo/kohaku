@@ -8,6 +8,7 @@ import sys
 import yaml
 import duckdb
 import minio
+from minio.error import S3Error
 
 DEFAULT_DUCKDB_FILE = "duck.db"
 # /kohaku/log/connection/2025/06/01/a.gz のようなパスを想定
@@ -376,9 +377,23 @@ def main():
     args = parser.parse_args()
     db = args.db
 
+    def exit_with_stderr(message):
+        print(message, file=sys.stderr)
+        sys.exit(1)
+
+    def handle_storage_error(error):
+        if isinstance(error, S3Error):
+            if error.code == "NoSuchBucket":
+                exit_with_stderr(f"S3 bucket not found: {args.s3_bucket}")
+            exit_with_stderr(f"S3 error occurred (code={error.code}): {error.message}")
+        raise error
+
     if args.func == init:
         # init は DB ファイルがない、または、DB にデータが入っていない場合のみ実行する想定のため、ファイル更新比較処理の対象外
-        args.func(args)
+        try:
+            args.func(args)
+        except Exception as error:
+            handle_storage_error(error)
     else:
         # DB ファイルがない場合は終了する
         if not os.path.exists(db):
@@ -389,7 +404,10 @@ def main():
             statinfo = os.stat(db)
             mtime = statinfo.st_mtime
 
-            args.func(args)
+            try:
+                args.func(args)
+            except Exception as error:
+                handle_storage_error(error)
 
             statinfo = os.stat(db)
             if mtime == statinfo.st_mtime:
