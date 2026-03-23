@@ -15,7 +15,7 @@ services:
     command: /fluent-bit/bin/fluent-bit -c /fluent-bit/etc/fluent-bit.yml
 
   rustfs:
-    image: rustfs/rustfs:1.0.0-alpha.78
+    image: rustfs/rustfs:1.0.0-alpha.89
     container_name: rustfs
     ports:
       - 9000:9000
