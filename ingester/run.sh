@@ -15,6 +15,8 @@ if [ "${S3_USE_SSL:-}" = "true" ]; then
   s3_ssl_args+=(--s3_use_ssl)
 fi
 
+initial_maximum_load="${INITIAL_MAXIMUM_LOAD:-100}"
+
 # テーブル作成および初期データの挿入
 if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
                            --s3_endpoint "${S3_ENDPOINT}" \
@@ -22,6 +24,7 @@ if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
                            --s3_secret_access_key "${AWS_SECRET_ACCESS_KEY}" \
                            --s3_bucket "${S3_BUCKET}" \
                            --s3_prefix "${S3_PREFIX}" \
+                           --initial_maximum_load "${initial_maximum_load}" \
                            "${s3_ssl_args[@]}" \
                            init; then
   echo "run.py init failed. continue to update loop." >&2
@@ -37,6 +40,7 @@ do
                              --s3_secret_access_key "${AWS_SECRET_ACCESS_KEY}" \
                              --s3_bucket "${S3_BUCKET}" \
                              --s3_prefix "${S3_PREFIX}" \
+                             --initial_maximum_load "${initial_maximum_load}" \
                              "${s3_ssl_args[@]}" \
                              update; then
     echo "run.py update failed. continue loop." >&2

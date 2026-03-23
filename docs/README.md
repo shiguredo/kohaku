@@ -194,6 +194,7 @@ sudo -E -u kohaku HOME=/opt/kohaku/ingester /opt/uv/bin/uv run python src/run.py
   --s3_secret_access_key $AWS_SECRET_ACCESS_KEY \
   --s3_bucket $S3_BUCKET \
   --s3_prefix $S3_PREFIX \
+  --initial_maximum_load $INITIAL_MAXIMUM_LOAD \
   init
 popd
 set +a
