@@ -6,6 +6,7 @@ After=network-online.target
 [Service]
 Type=oneshot
 User=kohaku
+Environment=INITIAL_MAXIMUM_LOAD=100
 EnvironmentFile=/opt/kohaku/.env
 Environment=UV_CACHE_DIR=/opt/kohaku/ingester/.cache
 Environment=HOME=/opt/kohaku
