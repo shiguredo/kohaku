@@ -189,7 +189,6 @@ pushd /opt/kohaku/ingester
 sudo -E -u kohaku /opt/uv/bin/uv --cache-dir /opt/kohaku/ingester/.cache sync
 sudo -E -u kohaku HOME=/opt/kohaku/ingester /opt/uv/bin/uv run python src/run.py \
   --db $DUCKDB_DB_PATH \
-  --storage $STORAGE \
   --s3_endpoint $S3_ENDPOINT \
   --s3_access_key_id $AWS_ACCESS_KEY_ID \
   --s3_secret_access_key $AWS_SECRET_ACCESS_KEY \

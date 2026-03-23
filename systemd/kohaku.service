@@ -14,7 +14,6 @@ TimeoutStartSec=10min
 ExecCondition=/bin/test -f ${DUCKDB_DB_PATH}
 ExecStart=/opt/uv/bin/uv run python src/run.py \
 		--db ${DUCKDB_DB_PATH} \
-		--storage ${STORAGE} \
 		--s3_endpoint ${S3_ENDPOINT} \
 		--s3_access_key_id ${AWS_ACCESS_KEY_ID} \
 		--s3_secret_access_key ${AWS_SECRET_ACCESS_KEY} \

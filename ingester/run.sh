@@ -17,7 +17,6 @@ fi
 
 # テーブル作成および初期データの挿入
 if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
-                           --storage "${STORAGE}" \
                            --s3_endpoint "${S3_ENDPOINT}" \
                            --s3_access_key_id "${AWS_ACCESS_KEY_ID}" \
                            --s3_secret_access_key "${AWS_SECRET_ACCESS_KEY}" \
@@ -33,7 +32,6 @@ fi
 while :;
 do
   if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
-                             --storage "${STORAGE}" \
                              --s3_endpoint "${S3_ENDPOINT}" \
                              --s3_access_key_id "${AWS_ACCESS_KEY_ID}" \
                              --s3_secret_access_key "${AWS_SECRET_ACCESS_KEY}" \

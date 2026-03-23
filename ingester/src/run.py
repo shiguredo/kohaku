@@ -71,7 +71,7 @@ def init(args):
         # 取得済みの最後のオブジェクト情報を保存するテーブルを作成
         create_s3_object_table(con)
 
-        s3_setup(con, args.storage, args.s3_endpoint, args.s3_access_key_id, args.s3_secret_access_key, args.s3_use_ssl, args.s3_region)
+        s3_setup(con, args.s3_endpoint, args.s3_access_key_id, args.s3_secret_access_key, args.s3_use_ssl, args.s3_region)
         sync_logs(con, client, args, "init")
 
 def sync_logs(con, client, args, mode):
@@ -222,7 +222,7 @@ def remove_delete_incompleted_copy_files(copyfile):
         except FileNotFoundError:
             pass
 
-def s3_setup(con, storage, s3_endpoint, s3_access_key_id, s3_secret_access_key, s3_use_ssl, s3_region):
+def s3_setup(con, s3_endpoint, s3_access_key_id, s3_secret_access_key, s3_use_ssl, s3_region):
     con.execute("INSTALL httpfs")
     con.execute("LOAD httpfs")
     con.execute("SET s3_url_style='path'")
@@ -261,7 +261,7 @@ def update(args):
                          secure=args.s3_use_ssl)
 
     with duckdb.connect(args.db) as con:
-        s3_setup(con, args.storage, args.s3_endpoint, args.s3_access_key_id, args.s3_secret_access_key, args.s3_use_ssl, args.s3_region)
+        s3_setup(con, args.s3_endpoint, args.s3_access_key_id, args.s3_secret_access_key, args.s3_use_ssl, args.s3_region)
         sync_logs(con, client, args, "update")
 
 def delete(args):
@@ -350,7 +350,6 @@ def main():
     parser = argparse.ArgumentParser()
     # 共通オプション
     parser.add_argument("--db", default=DEFAULT_DUCKDB_FILE, help="DB file path")
-    parser.add_argument("--storage", default="s3", help="Storage type(s3, rustfs)")
     parser.add_argument("--s3_endpoint", default="127.0.0.1:9000", help="S3 endpoint")
     parser.add_argument("--s3_access_key_id", default="rootuser", help="S3 access key id")
     parser.add_argument("--s3_secret_access_key", default="password", help="S3 secret access key")
