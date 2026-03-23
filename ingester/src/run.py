@@ -230,9 +230,7 @@ def s3_setup(con, storage, s3_endpoint, s3_access_key_id, s3_secret_access_key, 
     con.execute("SET s3_access_key_id=?", (s3_access_key_id,))
     con.execute("SET s3_secret_access_key=?", (s3_secret_access_key,))
     con.execute("SET s3_use_ssl=?", (s3_use_ssl,))
-    if storage == "s3":
-        # TODO: rustfs で region を設定しても動作するか確認し、問題がなければ、こちらの条件分岐は削除する
-        con.execute("SET s3_region=?", (s3_region,))
+    con.execute("SET s3_region=?", (s3_region,))
 
 def create_log_table(con, table_name, target_urls):
     # s3://log/connection/2021/06/01/a.gz, s3://log/connection/2021/06/02/b.gz, ... のようなパスを想定
