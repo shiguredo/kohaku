@@ -25,12 +25,17 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - S3_ENDPOINT=${S3_ENDPOINT}
       - S3_BUCKET=${S3_BUCKET}
-      - S3_ENDPOINT_SCHEME=${S3_ENDPOINT_SCHEME}
+      - S3_USE_SSL=${S3_USE_SSL:-true}
       - RETENTION_PERIOD=${RETENTION_PERIOD}
     entrypoint: >
       /bin/sh -c "
       sleep 5;
-      mc alias set mys3 ${S3_ENDPOINT_SCHEME}://${S3_ENDPOINT} ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
+      if [ \"${S3_USE_SSL:-}\" = \"true\" ]; then
+      endpoint_scheme=https;
+      else
+      endpoint_scheme=http;
+      fi;
+      mc alias set mys3 $$endpoint_scheme://${S3_ENDPOINT} ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
       mc mb --ignore-existing mys3/${S3_BUCKET};
       mc ilm rule add --expire-days ${RETENTION_PERIOD} mys3/${S3_BUCKET} || true;
       "
@@ -68,6 +73,7 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_USE_SSL=${S3_USE_SSL:-true}
       - S3_BUCKET=${S3_BUCKET}
       - S3_PREFIX=${S3_PREFIX}
       - UPDATE_INTERVAL=${UPDATE_INTERVAL}
