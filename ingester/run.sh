@@ -26,14 +26,16 @@ fi
 # 定期的にデータを更新
 while :;
 do
-  uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
-                        --storage "${STORAGE}" \
-                        --s3_endpoint "${S3_ENDPOINT}" \
-                        --s3_access_key_id "${AWS_ACCESS_KEY_ID}" \
-                        --s3_secret_access_key "${AWS_SECRET_ACCESS_KEY}" \
-                        --s3_bucket "${S3_BUCKET}" \
-                        --s3_prefix "${S3_PREFIX}" \
-                        update
+  if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
+                             --storage "${STORAGE}" \
+                             --s3_endpoint "${S3_ENDPOINT}" \
+                             --s3_access_key_id "${AWS_ACCESS_KEY_ID}" \
+                             --s3_secret_access_key "${AWS_SECRET_ACCESS_KEY}" \
+                             --s3_bucket "${S3_BUCKET}" \
+                             --s3_prefix "${S3_PREFIX}" \
+                             update; then
+    echo "run.py update failed. continue loop." >&2
+  fi
 
   uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
                         --retention_period "${RETENTION_PERIOD}" \
