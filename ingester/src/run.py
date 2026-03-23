@@ -35,6 +35,12 @@ LOG_TARGETS = (
     "session_webhook",
 )
 
+def positive_int(value):
+    int_value = int(value)
+    if int_value < 1:
+        raise argparse.ArgumentTypeError("initial_maximum_load must be >= 1")
+    return int_value
+
 def load_columns():
     duckdb_columns = {}
     for target in LOG_TARGETS:
@@ -358,7 +364,7 @@ def main():
     parser.add_argument("--s3_bucket", default=DEFAULT_S3_BUCKET_NAME, help="S3 bucket name")
     parser.add_argument("--s3_prefix", default=DEFAULT_S3_PREFIX, help="S3 prefix")
     parser.add_argument("--retention_period", default=DEFAULT_RETENTION_PERIOD, help="retention period", type=int)
-    parser.add_argument("--initial_maximum_load", default=DEFAULT_INITIAL_MAXIMUM_LOAD, help="Initial maximum load", type=int)
+    parser.add_argument("--initial_maximum_load", default=DEFAULT_INITIAL_MAXIMUM_LOAD, help="Initial maximum load", type=positive_int)
 
 
     subparsers = parser.add_subparsers(required=True)
