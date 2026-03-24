@@ -121,8 +121,8 @@ setup-grafana:
 	sed "s@path:.*@path: ${DUCKDB_DB_PATH}.readonly@g" grafana/datasources/duckdb.yml > duckdb.yml
 	cp duckdb.yml /etc/grafana/provisioning/datasources/duckdb.yml
 	cp grafana/dashboards/kohaku.yml /etc/grafana/provisioning/dashboards/kohaku.yml
-	mkdir -p /var/lib/grafana/dashboards
-	cp -r grafana/dashboards/kohaku /var/lib/grafana/dashboards/kohaku
+	mkdir -p /var/lib/grafana/dashboards/kohaku
+	cp -r grafana/dashboards/kohaku/. /var/lib/grafana/dashboards/kohaku/
 	sudo chown -R grafana:grafana /var/lib/grafana/dashboards/kohaku/
 
 setup-kohaku:
