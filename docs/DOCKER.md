@@ -90,8 +90,10 @@ make clean
 
 ## Docker コンテナ上に作成される DB について
 
-- Docker Compose で作成した volume は、Docker ホスト上のパスをマウントしていないため、Docker Compose を停止すると、ログを保存した DB は削除されます
-  - Docker Compose 停止後も DB を保持したい場合には、compose.yml で Docker ホスト上のパスをマウントしてください
+- Docker Compose で作成した volume は、Docker ホスト上のパスをマウントしていません
+- `make down` では Docker コンテナとローカルビルドイメージを削除しますが、volume は削除しないため、ログを保存した DB は保持されます
+- `make clean` では volume も削除されるため、ログを保存した DB は削除されます
+- Docker Compose 停止後も DB を Docker ホスト上の任意パスで保持したい場合には、`compose.yml` で Docker ホスト上のパスをマウントしてください
 
 ### 注意点
 
