@@ -59,6 +59,34 @@ make up で、docker compose が実行され、Fluent Bit, RustFS, Grafana の D
 make up
 ```
 
+### 外部 S3 互換ストレージ を利用する場合
+
+外部 S3 互換ストレージ を利用する場合は `compose.external-s3.yml` を使用します
+
+```bash
+make up-external-s3
+```
+
+停止は下記です
+
+```bash
+make down-external-s3
+```
+
+`compose.external-s3.yml` では、`s3-cleaner` サービスは `profiles: [cleanup]` のため、`COMPOSE_PROFILES=cleanup` を指定した時のみ起動します
+
+- 外部 S3 互換ストレージ が Lifecycle Management に対応している場合
+  - `make up-external-s3` のみ実行してください
+- 外部 S3 互換ストレージ が Lifecycle Management 非対応の場合
+  - `COMPOSE_PROFILES` 環境変数を指定して `make up-external-s3` を実行してください
+
+```bash
+COMPOSE_PROFILES=cleanup make up-external-s3
+```
+
+`s3-cleaner` の削除実行間隔は `.env` の `CLEANUP_INTERVAL`（秒）で設定します
+保持期間は `RETENTION_PERIOD`（日）を使用します
+
 ### Grafana の設定
 
 - ログイン
