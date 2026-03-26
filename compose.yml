@@ -54,7 +54,40 @@ services:
       fi;
       mc alias set mystorage $$endpoint_scheme://${S3_ENDPOINT} ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
       mc mb --ignore-existing mystorage/${S3_BUCKET};
-      mc ilm rule add --expire-days ${RETENTION_PERIOD} mystorage/${S3_BUCKET};
+      # S3 互換ストレージ が Lifecycle Management に対応したら有効化する
+      # mc ilm rule add --expire-days ${RETENTION_PERIOD} mystorage/${S3_BUCKET};
+      "
+
+  # S3 互換ストレージ 上の保持期間超過オブジェクト削除用コンテナ
+  s3-cleaner:
+    image: minio/mc:RELEASE.2025-07-21T05-28-08Z
+    container_name: s3-cleaner
+    restart: unless-stopped
+    networks:
+      - kohaku
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_PREFIX=${S3_PREFIX}
+      - S3_USE_SSL=${S3_USE_SSL:-false}
+      - RETENTION_PERIOD=${RETENTION_PERIOD}
+      - CLEANUP_INTERVAL=${CLEANUP_INTERVAL:-3600}
+    depends_on:
+      - mc
+    entrypoint: >
+      /bin/sh -ceu "
+      if [ \"${S3_USE_SSL:-}\" = \"true\" ]; then
+      endpoint_scheme=https;
+      else
+      endpoint_scheme=http;
+      fi;
+      mc alias set mystorage $$endpoint_scheme://${S3_ENDPOINT} ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
+      while :; do
+      mc find mystorage/${S3_BUCKET}/${S3_PREFIX} --older-than $${RETENTION_PERIOD}d --exec 'mc rm {}';
+      sleep $${CLEANUP_INTERVAL};
+      done;
       "
 
   # motherduck-duckdb-datasource は./plugins に展開済みの想定
