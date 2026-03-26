@@ -27,18 +27,12 @@ services:
       - S3_BUCKET=${S3_BUCKET}
       - S3_USE_SSL=${S3_USE_SSL:-true}
       - RETENTION_PERIOD=${RETENTION_PERIOD}
-    entrypoint: >
-      /bin/sh -c "
-      sleep 5;
-      if [ \"${S3_USE_SSL:-}\" = \"true\" ]; then
-      endpoint_scheme=https;
-      else
-      endpoint_scheme=http;
-      fi;
-      mc alias set mys3 $$endpoint_scheme://${S3_ENDPOINT} ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
-      mc mb --ignore-existing mys3/${S3_BUCKET};
-      mc ilm rule add --expire-days ${RETENTION_PERIOD} mys3/${S3_BUCKET} || true;
-      "
+      - MC_INIT_ENABLE_ILM=true
+    volumes:
+      - ./scripts/mc-init.sh:/scripts/mc-init.sh:ro
+    entrypoint:
+      - /bin/sh
+      - /scripts/mc-init.sh
 
   # 外部 S3 互換ストレージ 上の保持期間超過オブジェクト削除用コンテナ
   s3-cleaner:
@@ -60,19 +54,11 @@ services:
       - CLEANUP_INTERVAL=${CLEANUP_INTERVAL:-3600}
     depends_on:
       - mc
-    entrypoint: >
-      /bin/sh -ceu "
-      if [ \"${S3_USE_SSL:-}\" = \"true\" ]; then
-      endpoint_scheme=https;
-      else
-      endpoint_scheme=http;
-      fi;
-      mc alias set mys3 $$endpoint_scheme://${S3_ENDPOINT} ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY};
-      while :; do
-      mc find mys3/${S3_BUCKET}/${S3_PREFIX} --older-than $${RETENTION_PERIOD}d --exec 'mc rm {}';
-      sleep $${CLEANUP_INTERVAL};
-      done;
-      "
+    volumes:
+      - ./scripts/s3-cleaner.sh:/scripts/s3-cleaner.sh:ro
+    entrypoint:
+      - /bin/sh
+      - /scripts/s3-cleaner.sh
 
   # motherduck-duckdb-datasource は ./plugins に展開済みの想定
   grafana:
