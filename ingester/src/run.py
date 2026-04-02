@@ -323,7 +323,7 @@ def delete(args):
 
 def insert_log_from_s3(con, client, table_name, bucket, prefix):
     object = select_s3_object(con, table_name)
-    _, object_name, object_last_modified = object
+    object_name, object_last_modified = object
 
     log_objects = list_objects(client, bucket, f"{prefix}/{table_name}/")
 
@@ -353,7 +353,10 @@ def insert_log(con, table_name, target_urls):
     rel.insert_into(table_name)
 
 def select_s3_object(con, log_type):
-    return con.execute("SELECT * FROM s3_objects WHERE type=?", (log_type,)).fetchone()
+    return con.execute(
+        "SELECT object_name, last_modified FROM s3_objects WHERE type=?",
+        (log_type,),
+    ).fetchone()
 
 def delete_log_by_timestamp(con, table_name, timestamp):
     if not table_exists(con, table_name):
