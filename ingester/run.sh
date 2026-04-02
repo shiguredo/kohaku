@@ -46,9 +46,11 @@ do
     echo "run.py update failed. continue loop." >&2
   fi
 
-  uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
-                        --retention_period "${RETENTION_PERIOD}" \
-                        delete
+  if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
+                             --retention_period "${RETENTION_PERIOD}" \
+                             delete; then
+    echo "run.py delete failed. continue loop." >&2
+  fi
 
   sleep "${UPDATE_INTERVAL}"
 done
