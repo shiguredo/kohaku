@@ -127,7 +127,19 @@ def latest_object(objects):
         return None
 
     # 最後に更新されたオブジェクトを取得する
-    return max(objects, key=lambda obj: obj.last_modified)
+    # last_modified が同値の場合は object_name で順序を決める
+    return max(objects, key=lambda obj: (obj.last_modified, obj.object_name))
+
+
+def is_after_s3_cursor(obj, last_modified, object_name):
+    """
+    s3_objects テーブルに保存したカーソルより新しいオブジェクトかを判定する
+    """
+    if obj.last_modified > last_modified:
+        return True
+    if obj.last_modified < last_modified:
+        return False
+    return obj.object_name > object_name
 
 def create_s3_object_table(con):
     con.execute("CREATE TABLE IF NOT EXISTS s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)")
@@ -311,11 +323,14 @@ def delete(args):
 
 def insert_log_from_s3(con, client, table_name, bucket, prefix):
     object = select_s3_object(con, table_name)
-    _, _, object_last_modified = object
+    _, object_name, object_last_modified = object
 
     log_objects = list_objects(client, bucket, f"{prefix}/{table_name}/")
 
-    target_log_objects = [obj for obj in log_objects if obj.last_modified > object_last_modified]
+    target_log_objects = [
+        obj for obj in log_objects
+        if is_after_s3_cursor(obj, object_last_modified, object_name)
+    ]
     target_urls = get_target_urls(bucket, target_log_objects)
 
     if len(target_log_objects) > 0:
