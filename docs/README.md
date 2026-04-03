@@ -148,6 +148,7 @@ Kohaku 管理用の systemd の unit ファイルを /etc/systemd/system/ 以下
 ```bash
 sudo cp systemd/kohaku.service /etc/systemd/system/
 sudo cp systemd/kohaku.timer /etc/systemd/system/
+sudo systemctl daemon-reload
 ```
 
 ### Kohaku ディレクトリの設置
