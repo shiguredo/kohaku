@@ -11,21 +11,29 @@ RustFS の Docker コンテナ上のログは Grafana の Docker コンテナを
 
 ## 環境
 
-下記の 4 点で構築します
+下記の 6 点で構築します
 
 - Fluent Bit
-  - Sora のログの RustFS への転送
+  - Sora のログを Storage へ転送
 
-- RustFS
-  - Fluent Bit で送信されてきたログの保存と Kohaku からの問い合わせ
+- RustFS（`compose.yml` の場合）
+  - Fluent Bit で送信されたログの保存と Kohaku からの問い合わせ
+
+- mc
+  - バケット作成や Lifecycle Management 設定などの初期設定
+
+- s3-cleaner
+  - 保持期間を超えたオブジェクトの削除
 
 - Kohaku
-  - RustFS から取得したログを DB で管理
+  - Storage から取得したログを DB で管理
 
 - Grafana
   - ログの視覚化
 
 これらは全て、Docker Compose で構築します
+
+外部 S3 互換ストレージ を利用する `compose.external-s3.yml` の場合、`RustFS` は起動しません
 
 ## 設定
 
@@ -53,11 +61,15 @@ DOCKER=true make fluent-bit-yml-for-rustfs
 
 ### 構築
 
-make up で、docker compose が実行され、Fluent Bit, RustFS, Grafana の Docker コンテナが立ち上がります
+make up で、docker compose が実行され、Fluent Bit, RustFS, mc, s3-cleaner, Grafana, ingester の Docker コンテナが立ち上がります
 
 ```bash
 make up
 ```
+
+`compose.yml` では、`s3-cleaner` サービスは常に起動します
+
+`s3-cleaner` は `.env` の `RETENTION_PERIOD`（日）を超えたオブジェクトを、`CLEANUP_INTERVAL`（秒）ごとに削除します
 
 ### 外部 S3 互換ストレージ を利用する場合
 
