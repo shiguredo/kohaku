@@ -85,6 +85,8 @@ make up-external-s3
 make down-external-s3
 ```
 
+`make down-external-s3` は `compose.external-s3.yml` のサービス（Fluent Bit, mc, s3-cleaner, Grafana, ingester）の Docker コンテナを削除します
+
 `compose.external-s3.yml` では、`s3-cleaner` サービスは `profiles: [cleanup]` のため、`COMPOSE_PROFILES=cleanup` を指定した時のみ起動します
 
 - 外部 S3 互換ストレージ が Lifecycle Management に対応している場合
@@ -114,7 +116,7 @@ COMPOSE_PROFILES=cleanup make up-external-s3
 
 ### 停止
 
-Fluent Bit, RustFS, Grafana の Docker コンテナを削除します
+`make down` は `compose.yml` のサービス（Fluent Bit, RustFS, mc, s3-cleaner, Grafana, ingester）の Docker コンテナを削除します
 
 make down 時には、make up 時に作成した Grafana 用の Docker イメージも削除します
 
