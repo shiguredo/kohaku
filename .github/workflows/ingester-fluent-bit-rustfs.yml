@@ -1,0 +1,24 @@
+name: ingester-fluent-bit-rustfs
+
+on:
+  workflow_dispatch:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  test-fluent-bit-rustfs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: false
+      - name: Install dependencies
+        working-directory: ingester
+        run: uv sync
+      - name: Run fluent-bit and rustfs integration test
+        working-directory: ingester
+        run: uv run pytest tests/test_fluent_bit_rustfs_integration.py -vv
