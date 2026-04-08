@@ -9,6 +9,22 @@ permissions:
 
 
 jobs:
+  mc-init-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - run: |
+          scripts/tests/test-mc-init.sh
+
+  s3-cleaner-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - run: |
+          scripts/tests/test-s3-cleaner.sh
+
   ci:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
