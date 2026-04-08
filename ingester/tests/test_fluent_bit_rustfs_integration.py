@@ -1,3 +1,5 @@
+import json
+import shutil
 import subprocess
 import time
 from pathlib import Path
@@ -12,6 +14,7 @@ ACCESS_KEY = "kohakuadmin"
 SECRET_KEY = "kohakuadmin"
 BUCKET = "kohaku"
 PREFIX = "log"
+RUSTFS_PORT = 9000
 RUSTFS_IMAGE = "rustfs/rustfs:1.0.0-alpha.89"
 FLUENT_BIT_IMAGE = "fluent/fluent-bit"
 
@@ -39,11 +42,54 @@ def decode_logs(logs):
     return str(logs)
 
 
-@pytest.fixture
-def fluent_bit_config_file(tmp_path):
-    config_path = tmp_path / "fluent-bit.yml"
+def create_test_log_dir(tmp_path, source_log_dir):
+    # fluent-bit 入力用のログディレクトリをテスト毎に作成する
+    log_dir = tmp_path / "log"
+    log_dir.mkdir()
+    shutil.copyfile(source_log_dir / "rtc_stats.jsonl", log_dir / "rtc_stats.jsonl")
+
+    session_webhook_path = log_dir / "session_webhook.jsonl"
+    session_webhook_path.write_text(
+        "\n".join(
+            [
+                json.dumps(
+                    {
+                        "id": "session-webhook-1",
+                        "timestamp": "2025-07-25T06:06:51.592776Z",
+                        "req": {
+                            "event_type": "connection.created",
+                            "connection_id": "JXW8K4FG6H7TZ2F63T38ZHSJQG",
+                        },
+                    }
+                ),
+                json.dumps(
+                    {
+                        "id": "session-webhook-2",
+                        "timestamp": "2025-07-25T06:07:51.592776Z",
+                        "req": {
+                            "event_type": "connection.destroyed",
+                            "connection_id": "JXW8K4FG6H7TZ2F63T38ZHSJQG",
+                        },
+                    }
+                ),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return log_dir
+
+
+def create_fluent_bit_config(config_path):
+    # RustFS への転送設定を含む fluent-bit 設定を都度生成する
     config_path.write_text(
         """
+env:
+  S3_ENDPOINT: http://rustfs:9000
+  S3_BUCKET: kohaku
+  S3_PREFIX: log
+  SORA_LOG_PATH: /log
+
 service:
   flush:        1
   daemon:       Off
@@ -53,18 +99,32 @@ service:
 pipeline:
   inputs:
     - name: tail
-      path: /log/rtc_stats.jsonl
+      path: ${SORA_LOG_PATH}/rtc_stats.jsonl
       parser: json
       read_from_head: true
-      db: /tmp/rtc_stats.db
+      db: /state/rtc_stats.db
       tag: rtc_stats
+    - name: tail
+      path: ${SORA_LOG_PATH}/session_webhook.jsonl
+      parser: json
+      read_from_head: true
+      db: /state/session_webhook.db
+      tag: session_webhook
   outputs:
     - name: s3
       match: 'rtc_stats'
-      bucket: kohaku
-      endpoint: http://rustfs:9000
+      bucket: ${S3_BUCKET}
+      endpoint: ${S3_ENDPOINT}
       compression: gzip
-      s3_key_format: /log/$TAG/%Y/%m/%d/$UUID.gz
+      s3_key_format: /${S3_PREFIX}/$TAG/%Y/%m/%d/$UUID.gz
+      upload_timeout: 10s
+      json_date_key: off
+    - name: s3
+      match: 'session_webhook'
+      bucket: ${S3_BUCKET}
+      endpoint: ${S3_ENDPOINT}
+      compression: gzip
+      s3_key_format: /${S3_PREFIX}/$TAG/%Y/%m/%d/$UUID.gz
       upload_timeout: 10s
       json_date_key: off
 
@@ -77,14 +137,95 @@ parsers:
 """.lstrip(),
         encoding="utf-8",
     )
-    return config_path
 
 
-def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path, fluent_bit_config_file):
+def run_fluent_bit_and_wait(network, log_dir, config_path, state_dir, client, expected_prefix_counts):
+    # fluent-bit を起動し、期待オブジェクト数に達するまで待機する
+    with (
+        DockerContainer(FLUENT_BIT_IMAGE)
+        .with_env("AWS_ACCESS_KEY_ID", ACCESS_KEY)
+        .with_env("AWS_SECRET_ACCESS_KEY", SECRET_KEY)
+        .with_volume_mapping(str(log_dir), "/log", mode="rw")
+        .with_volume_mapping(str(config_path), "/fluent-bit/etc/fluent-bit.yml", mode="ro")
+        .with_volume_mapping(str(state_dir), "/state", mode="rw")
+        .with_network(network)
+        .with_command("/fluent-bit/bin/fluent-bit -c /fluent-bit/etc/fluent-bit.yml") as fluent_bit
+    ):
+        try:
+            for prefix, expected_count in expected_prefix_counts.items():
+                wait_until(lambda p=prefix, n=expected_count: count_objects(client, p) >= n)
+        except WaitTimeoutError as error:
+            fluent_bit_logs = decode_logs(fluent_bit.get_logs())
+            pytest.fail(
+                f"{error}\n\n"
+                f"fluent-bit logs:\n{fluent_bit_logs}"
+            )
+
+
+def run_ingester_cli(ingester_dir, db_path, endpoint, command, initial_maximum_load=1000):
+    # run.py を CLI 経由で実行し、stdout/stderr を呼び出し元で検証できるようにする
+    cmd = [
+        "uv",
+        "run",
+        "python",
+        "src/run.py",
+        "--db",
+        str(db_path),
+        "--s3_endpoint",
+        endpoint,
+        "--s3_access_key_id",
+        ACCESS_KEY,
+        "--s3_secret_access_key",
+        SECRET_KEY,
+        "--s3_bucket",
+        BUCKET,
+        "--s3_prefix",
+        PREFIX,
+        "--initial_maximum_load",
+        str(initial_maximum_load),
+        command,
+    ]
+    return subprocess.run(
+        cmd,
+        cwd=ingester_dir,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def append_rtc_stats_log(log_dir):
+    # 既存ログ 1 行を複製して識別子だけ変え、新規オブジェクト送信を発生させる
+    rtc_stats_path = log_dir / "rtc_stats.jsonl"
+    first_line = rtc_stats_path.read_text(encoding="utf-8").splitlines()[0]
+    data = json.loads(first_line)
+    data["id"] = "NKSZER34ZN5J77HTVNQP1FWJ1X"
+    data["rtc_id"] = "AP-NEW"
+    data["timestamp"] = "2025-07-25T06:08:51.592776Z"
+    data["rtc_timestamp"] = 1753423731556.0
+
+    with rtc_stats_path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(data) + "\n")
+
+
+def get_s3_cursor(con, log_type):
+    return con.execute(
+        "SELECT object_name, last_modified FROM s3_objects WHERE type=?",
+        (log_type,),
+    ).fetchone()
+
+
+# fluent-bit -> rustfs -> run.py init の経路で rtc_stats と session_webhook の取り込みを検証する
+def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path):
     repo_root = Path(__file__).resolve().parents[2]
     ingester_dir = repo_root / "ingester"
-    # fluent-bit が読み取るテスト用ログ
-    log_dir = ingester_dir / "tests" / "log"
+    source_log_dir = ingester_dir / "tests" / "log"
+    log_dir = create_test_log_dir(tmp_path, source_log_dir)
+
+    state_dir = tmp_path / "state"
+    state_dir.mkdir()
+    config_path = tmp_path / "fluent-bit.yml"
+    create_fluent_bit_config(config_path)
     duckdb_path = tmp_path / "duck.db"
 
     # RustFS と fluent-bit を同一 Docker network 上で接続する
@@ -95,9 +236,9 @@ def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path, fluent_bit_config_file)
             .with_env("RUSTFS_SECRET_KEY", SECRET_KEY)
             .with_network(network)
             .with_network_aliases("rustfs")
-            .with_exposed_ports(9000) as rustfs
+            .with_exposed_ports(RUSTFS_PORT) as rustfs
         ):
-            endpoint = f"{rustfs.get_container_host_ip()}:{rustfs.get_exposed_port(9000)}"
+            endpoint = f"{rustfs.get_container_host_ip()}:{rustfs.get_exposed_port(RUSTFS_PORT)}"
             client = minio.Minio(
                 endpoint,
                 access_key=ACCESS_KEY,
@@ -108,67 +249,156 @@ def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path, fluent_bit_config_file)
             wait_until(lambda: client.list_buckets() is not None)
             client.make_bucket(BUCKET)
 
-            # fluent-bit でローカルログを RustFS に転送する
-            with (
-                DockerContainer(FLUENT_BIT_IMAGE)
-                .with_env("AWS_ACCESS_KEY_ID", ACCESS_KEY)
-                .with_env("AWS_SECRET_ACCESS_KEY", SECRET_KEY)
-                .with_volume_mapping(str(log_dir), "/log", mode="ro")
-                .with_volume_mapping(str(fluent_bit_config_file), "/fluent-bit/etc/fluent-bit.yml", mode="ro")
-                .with_network(network)
-                .with_command("/fluent-bit/bin/fluent-bit -c /fluent-bit/etc/fluent-bit.yml") as fluent_bit
-            ):
-                try:
-                    wait_until(lambda: count_objects(client, f"{PREFIX}/rtc_stats/") > 0)
-                except WaitTimeoutError as error:
-                    fluent_bit_logs = decode_logs(fluent_bit.get_logs())
-                    rustfs_logs = decode_logs(rustfs.get_logs())
-                    pytest.fail(
-                        f"{error}\n\n"
-                        f"fluent-bit logs:\n{fluent_bit_logs}\n\n"
-                        f"rustfs logs:\n{rustfs_logs}"
-                    )
-
-            # run.py の CLI を実行して、RustFS 上のログを DuckDB に取り込む
-            cmd = [
-                "uv",
-                "run",
-                "python",
-                "src/run.py",
-                "--db",
-                str(duckdb_path),
-                "--s3_endpoint",
-                endpoint,
-                "--s3_access_key_id",
-                ACCESS_KEY,
-                "--s3_secret_access_key",
-                SECRET_KEY,
-                "--s3_bucket",
-                BUCKET,
-                "--s3_prefix",
-                PREFIX,
-                "--initial_maximum_load",
-                "1000",
-                "init",
-            ]
-            run = subprocess.run(
-                cmd,
-                cwd=ingester_dir,
-                capture_output=True,
-                text=True,
-                check=False,
+            run_fluent_bit_and_wait(
+                network,
+                log_dir,
+                config_path,
+                state_dir,
+                client,
+                {
+                    f"{PREFIX}/rtc_stats/": 1,
+                    f"{PREFIX}/session_webhook/": 1,
+                },
             )
 
+            run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
             assert run.returncode == 0, run.stderr
             assert duckdb_path.exists()
 
-            # DuckDB への取り込み結果を検証する
             con = duckdb.connect(str(duckdb_path))
             try:
                 rtc_stats_count = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
+                session_webhook_count = con.execute("SELECT COUNT(*) FROM session_webhook").fetchone()[0]
                 s3_objects_count = con.execute("SELECT COUNT(*) FROM s3_objects").fetchone()[0]
             finally:
                 con.close()
 
             assert rtc_stats_count > 0
-            assert s3_objects_count == 1
+            assert session_webhook_count > 0
+            # LOG_TARGETS が 2 種類のため、カーソルテーブルも 2 行になる
+            assert s3_objects_count == 2
+
+
+# 追記ログの update で差分だけ取り込み、cursor が進み、再 update で重複しないことを検証する
+def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
+    repo_root = Path(__file__).resolve().parents[2]
+    ingester_dir = repo_root / "ingester"
+    source_log_dir = ingester_dir / "tests" / "log"
+    log_dir = create_test_log_dir(tmp_path, source_log_dir)
+
+    state_dir = tmp_path / "state"
+    state_dir.mkdir()
+    config_path = tmp_path / "fluent-bit.yml"
+    create_fluent_bit_config(config_path)
+    duckdb_path = tmp_path / "duck.db"
+
+    with Network() as network:
+        with (
+            DockerContainer(RUSTFS_IMAGE)
+            .with_env("RUSTFS_ACCESS_KEY", ACCESS_KEY)
+            .with_env("RUSTFS_SECRET_KEY", SECRET_KEY)
+            .with_network(network)
+            .with_network_aliases("rustfs")
+            .with_exposed_ports(RUSTFS_PORT) as rustfs
+        ):
+            endpoint = f"{rustfs.get_container_host_ip()}:{rustfs.get_exposed_port(RUSTFS_PORT)}"
+            client = minio.Minio(
+                endpoint,
+                access_key=ACCESS_KEY,
+                secret_key=SECRET_KEY,
+                secure=False,
+            )
+            wait_until(lambda: client.list_buckets() is not None)
+            client.make_bucket(BUCKET)
+
+            run_fluent_bit_and_wait(
+                network,
+                log_dir,
+                config_path,
+                state_dir,
+                client,
+                {
+                    f"{PREFIX}/rtc_stats/": 1,
+                    f"{PREFIX}/session_webhook/": 1,
+                },
+            )
+
+            init_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
+            assert init_run.returncode == 0, init_run.stderr
+
+            con = duckdb.connect(str(duckdb_path))
+            try:
+                before_count = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
+                before_cursor = get_s3_cursor(con, "rtc_stats")
+            finally:
+                con.close()
+
+            append_rtc_stats_log(log_dir)
+            rtc_stats_object_count_before = count_objects(client, f"{PREFIX}/rtc_stats/")
+            run_fluent_bit_and_wait(
+                network,
+                log_dir,
+                config_path,
+                state_dir,
+                client,
+                {f"{PREFIX}/rtc_stats/": rtc_stats_object_count_before + 1},
+            )
+
+            update_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
+            assert update_run.returncode == 0, update_run.stderr
+
+            con = duckdb.connect(str(duckdb_path))
+            try:
+                after_count = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
+                after_cursor = get_s3_cursor(con, "rtc_stats")
+            finally:
+                con.close()
+
+            assert after_count > before_count
+            assert after_cursor is not None
+            assert before_cursor is not None
+            # 新規オブジェクト取り込み後は cursor が進む
+            assert after_cursor != before_cursor
+
+            # 新規ログなしの update では重複取り込みしないことを確認する
+            update_run_again = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
+            assert update_run_again.returncode == 0, update_run_again.stderr
+
+            con = duckdb.connect(str(duckdb_path))
+            try:
+                final_count = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
+            finally:
+                con.close()
+            assert final_count == after_count
+
+
+# バケット未作成時に run.py init が失敗し、期待メッセージを返すことを検証する
+def test_runpy_init_fails_when_bucket_not_found(tmp_path):
+    repo_root = Path(__file__).resolve().parents[2]
+    ingester_dir = repo_root / "ingester"
+    duckdb_path = tmp_path / "duck.db"
+
+    with Network() as network:
+        with (
+            DockerContainer(RUSTFS_IMAGE)
+            .with_env("RUSTFS_ACCESS_KEY", ACCESS_KEY)
+            .with_env("RUSTFS_SECRET_KEY", SECRET_KEY)
+            .with_network(network)
+            .with_network_aliases("rustfs")
+            .with_exposed_ports(RUSTFS_PORT) as rustfs
+        ):
+            endpoint = f"{rustfs.get_container_host_ip()}:{rustfs.get_exposed_port(RUSTFS_PORT)}"
+
+            wait_until(
+                lambda: minio.Minio(
+                    endpoint,
+                    access_key=ACCESS_KEY,
+                    secret_key=SECRET_KEY,
+                    secure=False,
+                ).list_buckets()
+                is not None
+            )
+
+            run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
+            assert run.returncode != 0
+            assert "S3 bucket not found" in run.stderr
