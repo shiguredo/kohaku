@@ -173,6 +173,7 @@ def duckdb_connection(filepath):
     con.close()
 
 def test_init(request, minio_client, minio_container):
+    """init 実行でログを取り込み、DuckDB とオブジェクトカーソルが作成されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
     duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
@@ -227,8 +228,8 @@ def test_init(request, minio_client, minio_container):
     assert result is not None
     assert result[0] == 1
 
-# 再度 init を呼び出しても、内容が変わらないことを確認する
 def test_re_init(request, minio_client, minio_container):
+    """init を再実行してもデータ件数とカーソル情報が変化しないことを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
     duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
@@ -297,6 +298,7 @@ def test_re_init(request, minio_client, minio_container):
     assert result[0] == 1
 
 def test_file_count_limit_for_init(request, minio_client, minio_container):
+    """init の初期読み込み上限で取り込み件数が制限されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
     duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
@@ -356,6 +358,7 @@ def test_file_count_limit_for_init(request, minio_client, minio_container):
     assert result[0] == 1
 
 def test_update(request, minio_client, minio_container):
+    """update 実行時に差分ログのみが追加され、件数とカーソルが更新されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
     duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
@@ -448,6 +451,7 @@ def test_update(request, minio_client, minio_container):
     assert result[0] == 1
 
 def test_all_delete(request, minio_client, minio_container):
+    """保持期間外のデータだけで構成された場合に delete で全件削除されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
     duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
@@ -515,6 +519,7 @@ def test_all_delete(request, minio_client, minio_container):
     assert result[0] == 0
 
 def test_delete(request, minio_client, minio_container):
+    """保持期間外と期間内が混在する場合に delete で期間外のみ削除されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
     duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
@@ -587,6 +592,7 @@ def test_delete(request, minio_client, minio_container):
     assert result[0] == len(objects) // 2
 
 def test_delete_within_retention_period(request, minio_client, minio_container):
+    """保持期間内のデータのみの場合に delete を実行しても削除されないことを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
     duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
@@ -659,9 +665,7 @@ def test_delete_within_retention_period(request, minio_client, minio_container):
     assert result[0] == len(objects)
 
 def test_no_bucket(request, minio_container):
-    """
-    RustFS のバケットが存在しない場合に例外が発生することを確認するテスト
-    """
+    """RustFS のバケットが存在しない場合に init が例外を送出することを確認する。"""
 
     with pytest.raises(Exception):
         duckdb_filename = f"{request.node.name}.db"
@@ -690,6 +694,7 @@ def test_no_bucket(request, minio_container):
         init(args)
 
 def test_prepare_db_for_init_renames_broken_db_file(tmp_path, monkeypatch):
+    """壊れた DB を prepare_db_for_init が検出し、DB と WAL を退避リネームすることを確認する。"""
     db_path = tmp_path / "broken.db"
     wal_path = tmp_path / "broken.db.wal"
     db_path.write_bytes(b"invalid db")
@@ -716,6 +721,7 @@ def test_prepare_db_for_init_renames_broken_db_file(tmp_path, monkeypatch):
 
 
 def test_prepare_db_for_init_skips_permission_error(tmp_path, monkeypatch):
+    """Permission denied 時は prepare_db_for_init がファイルをリネームせず終了することを確認する。"""
     db_path = tmp_path / "permission.db"
     wal_path = tmp_path / "permission.db.wal"
     db_path.write_bytes(b"db")

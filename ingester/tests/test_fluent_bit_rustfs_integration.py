@@ -215,8 +215,8 @@ def get_s3_cursor(con, log_type):
     ).fetchone()
 
 
-# fluent-bit -> rustfs -> run.py init の経路で rtc_stats と session_webhook の取り込みを検証する
 def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path):
+    """fluent-bit 経由で RustFS に保存したログを init で取り込めることを確認する。"""
     repo_root = Path(__file__).resolve().parents[2]
     ingester_dir = repo_root / "ingester"
     source_log_dir = ingester_dir / "tests" / "log"
@@ -279,8 +279,8 @@ def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path):
             assert s3_objects_count == 2
 
 
-# 追記ログの update で差分だけ取り込み、cursor が進み、再 update で重複しないことを検証する
 def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
+    """update が差分のみを取り込み、カーソル更新後の再実行で重複しないことを確認する。"""
     repo_root = Path(__file__).resolve().parents[2]
     ingester_dir = repo_root / "ingester"
     source_log_dir = ingester_dir / "tests" / "log"
@@ -372,8 +372,8 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
             assert final_count == after_count
 
 
-# バケット未作成時に run.py init が失敗し、期待メッセージを返すことを検証する
 def test_runpy_init_fails_when_bucket_not_found(tmp_path):
+    """S3 バケット未作成時に init が失敗し、エラーメッセージを返すことを確認する。"""
     repo_root = Path(__file__).resolve().parents[2]
     ingester_dir = repo_root / "ingester"
     duckdb_path = tmp_path / "duck.db"
