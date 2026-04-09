@@ -9,21 +9,16 @@ permissions:
 
 
 jobs:
-  mc-init-test:
+  scripts-tests:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: false
       - run: |
-          scripts/tests/test-mc-init.sh
-
-  s3-cleaner-test:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v5
-      - run: |
-          scripts/tests/test-s3-cleaner.sh
+          uv run --with pytest --with testcontainers pytest -vv scripts/tests
 
   ci:
     runs-on: ubuntu-24.04
