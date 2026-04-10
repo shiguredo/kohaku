@@ -30,7 +30,8 @@ BROKEN_DB_ERROR_PATTERNS = (
 
 # Sora のログテーブル名兼 DuckDB のテーブル名
 LOG_TARGETS = (
-#    "connection",
+    # 現行のダッシュボードでは connection を使用していないため、使用したい場合にはコメントアウトを外します
+    # "connection",
     "rtc_stats",
     "session_webhook",
 )
