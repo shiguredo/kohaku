@@ -7,6 +7,7 @@ from pathlib import Path
 import duckdb
 import minio
 import pytest
+from jinja2 import Template
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.network import Network
 
@@ -17,6 +18,61 @@ PREFIX = "log"
 RUSTFS_PORT = 9000
 RUSTFS_IMAGE = "rustfs/rustfs:1.0.0-alpha.89"
 FLUENT_BIT_IMAGE = "fluent/fluent-bit"
+FLUENT_BIT_S3_ENDPOINT = f"http://rustfs:{RUSTFS_PORT}"
+FLUENT_BIT_SORA_LOG_PATH = "/log"
+
+FLUENT_BIT_CONFIG_TEMPLATE = """
+env:
+  S3_ENDPOINT: {{ s3_endpoint }}
+  S3_BUCKET: {{ s3_bucket }}
+  S3_PREFIX: {{ s3_prefix }}
+  SORA_LOG_PATH: {{ sora_log_path }}
+
+service:
+  flush:        1
+  daemon:       Off
+  log_level:    info
+  http_server: Off
+
+pipeline:
+  inputs:
+    - name: tail
+      path: ${SORA_LOG_PATH}/rtc_stats.jsonl
+      parser: json
+      read_from_head: true
+      db: /state/rtc_stats.db
+      tag: rtc_stats
+    - name: tail
+      path: ${SORA_LOG_PATH}/session_webhook.jsonl
+      parser: json
+      read_from_head: true
+      db: /state/session_webhook.db
+      tag: session_webhook
+  outputs:
+    - name: s3
+      match: 'rtc_stats'
+      bucket: ${S3_BUCKET}
+      endpoint: ${S3_ENDPOINT}
+      compression: gzip
+      s3_key_format: /${S3_PREFIX}/$TAG/%Y/%m/%d/$UUID.gz
+      upload_timeout: 10s
+      json_date_key: off
+    - name: s3
+      match: 'session_webhook'
+      bucket: ${S3_BUCKET}
+      endpoint: ${S3_ENDPOINT}
+      compression: gzip
+      s3_key_format: /${S3_PREFIX}/$TAG/%Y/%m/%d/$UUID.gz
+      upload_timeout: 10s
+      json_date_key: off
+
+parsers:
+  - name: json
+    format: json
+    time_key: timestamp
+    time_format: '%Y-%m-%dT%H:%M:%S.%L%z'
+    time_keep: on
+""".lstrip()
 
 
 class WaitTimeoutError(Exception):
@@ -80,61 +136,22 @@ def create_test_log_dir(tmp_path, source_log_dir):
     return log_dir
 
 
-def create_fluent_bit_config(config_path):
-    # RustFS への転送設定を含む fluent-bit 設定を都度生成する
+def create_fluent_bit_config(
+    config_path,
+    s3_endpoint=FLUENT_BIT_S3_ENDPOINT,
+    s3_bucket=BUCKET,
+    s3_prefix=PREFIX,
+    sora_log_path=FLUENT_BIT_SORA_LOG_PATH,
+):
+    # fluent-bit 設定テンプレートを描画して構成ファイルを生成する
+    config_text = Template(FLUENT_BIT_CONFIG_TEMPLATE).render(
+        s3_endpoint=s3_endpoint,
+        s3_bucket=s3_bucket,
+        s3_prefix=s3_prefix,
+        sora_log_path=sora_log_path,
+    )
     config_path.write_text(
-        """
-env:
-  S3_ENDPOINT: http://rustfs:9000
-  S3_BUCKET: kohaku
-  S3_PREFIX: log
-  SORA_LOG_PATH: /log
-
-service:
-  flush:        1
-  daemon:       Off
-  log_level:    info
-  http_server: Off
-
-pipeline:
-  inputs:
-    - name: tail
-      path: ${SORA_LOG_PATH}/rtc_stats.jsonl
-      parser: json
-      read_from_head: true
-      db: /state/rtc_stats.db
-      tag: rtc_stats
-    - name: tail
-      path: ${SORA_LOG_PATH}/session_webhook.jsonl
-      parser: json
-      read_from_head: true
-      db: /state/session_webhook.db
-      tag: session_webhook
-  outputs:
-    - name: s3
-      match: 'rtc_stats'
-      bucket: ${S3_BUCKET}
-      endpoint: ${S3_ENDPOINT}
-      compression: gzip
-      s3_key_format: /${S3_PREFIX}/$TAG/%Y/%m/%d/$UUID.gz
-      upload_timeout: 10s
-      json_date_key: off
-    - name: s3
-      match: 'session_webhook'
-      bucket: ${S3_BUCKET}
-      endpoint: ${S3_ENDPOINT}
-      compression: gzip
-      s3_key_format: /${S3_PREFIX}/$TAG/%Y/%m/%d/$UUID.gz
-      upload_timeout: 10s
-      json_date_key: off
-
-parsers:
-  - name: json
-    format: json
-    time_key: timestamp
-    time_format: '%Y-%m-%dT%H:%M:%S.%L%z'
-    time_keep: on
-""".lstrip(),
+        config_text,
         encoding="utf-8",
     )
 
