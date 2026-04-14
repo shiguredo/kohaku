@@ -116,11 +116,12 @@ def decode_logs(logs):
     return str(logs)
 
 
-def create_test_log_dir(tmp_path, source_log_dir):
+def create_test_log_dir(tmp_path, source_log_dir, include_session_webhook=True):
     """
     テスト用ログディレクトリを作成し、入力ログファイルを配置する。
     :param tmp_path: pytest が提供する一時ディレクトリ
     :param source_log_dir: 元となるログファイルを保持するディレクトリ
+    :param include_session_webhook: session_webhook の入力ファイルを生成するかどうか
     :return: 生成したログディレクトリの Path オブジェクト
     """
     # fluent-bit 入力用のログディレクトリをテスト毎に作成する
@@ -128,35 +129,37 @@ def create_test_log_dir(tmp_path, source_log_dir):
     log_dir.mkdir()
     shutil.copyfile(source_log_dir / "rtc_stats.jsonl", log_dir / "rtc_stats.jsonl")
 
-    session_webhook_path = log_dir / "session_webhook.jsonl"
-    session_webhook_path.write_text(
-        "\n".join(
-            [
-                json.dumps(
-                    {
-                        "id": "session-webhook-1",
-                        "timestamp": "2025-07-25T06:06:51.592776Z",
-                        "req": {
-                            "event_type": "connection.created",
-                            "connection_id": "JXW8K4FG6H7TZ2F63T38ZHSJQG",
-                        },
-                    }
-                ),
-                json.dumps(
-                    {
-                        "id": "session-webhook-2",
-                        "timestamp": "2025-07-25T06:07:51.592776Z",
-                        "req": {
-                            "event_type": "connection.destroyed",
-                            "connection_id": "JXW8K4FG6H7TZ2F63T38ZHSJQG",
-                        },
-                    }
-                ),
-            ]
+    # 対象ログ欠損ケースを作るため、session_webhook は必要なときだけ生成する
+    if include_session_webhook:
+        session_webhook_path = log_dir / "session_webhook.jsonl"
+        session_webhook_path.write_text(
+            "\n".join(
+                [
+                    json.dumps(
+                        {
+                            "id": "session-webhook-1",
+                            "timestamp": "2025-07-25T06:06:51.592776Z",
+                            "req": {
+                                "event_type": "connection.created",
+                                "connection_id": "JXW8K4FG6H7TZ2F63T38ZHSJQG",
+                            },
+                        }
+                    ),
+                    json.dumps(
+                        {
+                            "id": "session-webhook-2",
+                            "timestamp": "2025-07-25T06:07:51.592776Z",
+                            "req": {
+                                "event_type": "connection.destroyed",
+                                "connection_id": "JXW8K4FG6H7TZ2F63T38ZHSJQG",
+                            },
+                        }
+                    ),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
         )
-        + "\n",
-        encoding="utf-8",
-    )
     return log_dir
 
 
@@ -357,6 +360,77 @@ def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path):
             assert session_webhook_count > 0
             # LOG_TARGETS が 2 種類のため、カーソルテーブルも 2 行になる
             assert s3_objects_count == 2
+
+
+def test_runpy_init_skips_missing_target_without_invalid_input_exception(tmp_path):
+    """session_webhook が存在しない場合でも init が成功し、InvalidInputException を出力しないことを確認する。"""
+    repo_root = Path(__file__).resolve().parents[2]
+    ingester_dir = repo_root / "ingester"
+    source_log_dir = ingester_dir / "tests" / "log"
+    # rtc_stats のみを投入し、session_webhook は意図的に欠損させる
+    log_dir = create_test_log_dir(tmp_path, source_log_dir, include_session_webhook=False)
+
+    state_dir = tmp_path / "state"
+    state_dir.mkdir()
+    config_path = tmp_path / "fluent-bit.yml"
+    create_fluent_bit_config(config_path)
+    duckdb_path = tmp_path / "duck.db"
+
+    with Network() as network:
+        with (
+            DockerContainer(RUSTFS_IMAGE)
+            .with_env("RUSTFS_ACCESS_KEY", ACCESS_KEY)
+            .with_env("RUSTFS_SECRET_KEY", SECRET_KEY)
+            .with_network(network)
+            .with_network_aliases("rustfs")
+            .with_exposed_ports(RUSTFS_PORT) as rustfs
+        ):
+            endpoint = f"{rustfs.get_container_host_ip()}:{rustfs.get_exposed_port(RUSTFS_PORT)}"
+            client = minio.Minio(
+                endpoint,
+                access_key=ACCESS_KEY,
+                secret_key=SECRET_KEY,
+                secure=False,
+            )
+
+            wait_until(lambda: client.list_buckets() is not None)
+            client.make_bucket(BUCKET)
+
+            run_fluent_bit_and_wait(
+                network,
+                log_dir,
+                config_path,
+                state_dir,
+                client,
+                {
+                    # rtc_stats だけが RustFS に保存されることを待機条件にする
+                    f"{PREFIX}/rtc_stats/": 1,
+                },
+            )
+
+            run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
+            # 欠損ターゲットがあっても init 全体は成功すること
+            assert run.returncode == 0, run.stderr
+            # 旧挙動で出ていた InvalidInputException が消えていること
+            assert "InvalidInputException" not in run.stdout
+            assert "InvalidInputException" not in run.stderr
+
+            con = duckdb.connect(str(duckdb_path))
+            try:
+                rtc_stats_count = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
+                session_webhook_table_count = con.execute(
+                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='session_webhook'"
+                ).fetchone()[0]
+                s3_objects_count = con.execute("SELECT COUNT(*) FROM s3_objects").fetchone()[0]
+            finally:
+                con.close()
+
+            # rtc_stats は通常どおり取り込まれること
+            assert rtc_stats_count > 0
+            # 欠損している session_webhook テーブルは作成されないこと
+            assert session_webhook_table_count == 0
+            # rtc_stats のみ取り込まれるため、カーソルテーブルも 1 行になる
+            assert s3_objects_count == 1
 
 
 def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
