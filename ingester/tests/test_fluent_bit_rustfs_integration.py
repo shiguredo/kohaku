@@ -80,6 +80,13 @@ class WaitTimeoutError(Exception):
 
 
 def wait_until(condition, timeout_sec=120, interval_sec=1):
+    """
+    条件関数が真になるまで一定間隔で待機する。
+    :param condition: 真偽値を返す呼び出し可能オブジェクト
+    :param timeout_sec: 待機の上限秒数
+    :param interval_sec: 条件判定の間隔秒数
+    :return: なし。制限時間内に条件が満たされない場合は WaitTimeoutError を送出する
+    """
     deadline = time.time() + timeout_sec
     while time.time() < deadline:
         if condition():
@@ -89,16 +96,33 @@ def wait_until(condition, timeout_sec=120, interval_sec=1):
 
 
 def count_objects(client, prefix):
+    """
+    指定プレフィックス配下のオブジェクト件数を取得する。
+    :param client: MinIO 互換クライアント
+    :param prefix: 件数集計対象のプレフィックス
+    :return: オブジェクト件数を表す整数
+    """
     return len(list(client.list_objects(BUCKET, prefix=prefix, recursive=True)))
 
 
 def decode_logs(logs):
+    """
+    ログ出力を文字列へ正規化する。
+    :param logs: bytes または文字列化可能なログデータ
+    :return: UTF-8 で復号した、または文字列化したログ文字列
+    """
     if isinstance(logs, bytes):
         return logs.decode("utf-8", errors="replace")
     return str(logs)
 
 
 def create_test_log_dir(tmp_path, source_log_dir):
+    """
+    テスト用ログディレクトリを作成し、入力ログファイルを配置する。
+    :param tmp_path: pytest が提供する一時ディレクトリ
+    :param source_log_dir: 元となるログファイルを保持するディレクトリ
+    :return: 生成したログディレクトリの Path オブジェクト
+    """
     # fluent-bit 入力用のログディレクトリをテスト毎に作成する
     log_dir = tmp_path / "log"
     log_dir.mkdir()
@@ -143,6 +167,15 @@ def create_fluent_bit_config(
     s3_prefix=PREFIX,
     sora_log_path=FLUENT_BIT_SORA_LOG_PATH,
 ):
+    """
+    fluent-bit 設定テンプレートを描画して設定ファイルを書き出す。
+    :param config_path: 出力先設定ファイルの Path
+    :param s3_endpoint: fluent-bit が接続する S3 エンドポイント
+    :param s3_bucket: 出力先バケット名
+    :param s3_prefix: 出力オブジェクトのプレフィックス
+    :param sora_log_path: fluent-bit が参照するログディレクトリパス
+    :return: なし
+    """
     # fluent-bit 設定テンプレートを描画して構成ファイルを生成する
     config_text = Template(FLUENT_BIT_CONFIG_TEMPLATE).render(
         s3_endpoint=s3_endpoint,
@@ -157,6 +190,16 @@ def create_fluent_bit_config(
 
 
 def run_fluent_bit_and_wait(network, log_dir, config_path, state_dir, client, expected_prefix_counts):
+    """
+    fluent-bit コンテナを起動し、期待件数に到達するまで待機する。
+    :param network: テスト用 Docker ネットワーク
+    :param log_dir: fluent-bit 入力ログのマウント元ディレクトリ
+    :param config_path: fluent-bit 設定ファイルの Path
+    :param state_dir: fluent-bit 状態ファイルのマウント元ディレクトリ
+    :param client: オブジェクトストレージクライアント
+    :param expected_prefix_counts: プレフィックスごとの期待最小件数を持つ辞書
+    :return: なし。待機がタイムアウトした場合は pytest.fail を呼び出す
+    """
     # fluent-bit を起動し、期待オブジェクト数に達するまで待機する
     with (
         DockerContainer(FLUENT_BIT_IMAGE)
@@ -180,6 +223,15 @@ def run_fluent_bit_and_wait(network, log_dir, config_path, state_dir, client, ex
 
 
 def run_ingester_cli(ingester_dir, db_path, endpoint, command, initial_maximum_load=1000):
+    """
+    ingester の run.py を CLI として実行する。
+    :param ingester_dir: run.py 実行時の作業ディレクトリ
+    :param db_path: DuckDB ファイルパス
+    :param endpoint: 接続先 S3 エンドポイント
+    :param command: 実行するサブコマンド
+    :param initial_maximum_load: init 時の初期読み込み上限件数
+    :return: subprocess.run が返す CompletedProcess オブジェクト
+    """
     # run.py を CLI 経由で実行し、stdout/stderr を呼び出し元で検証できるようにする
     cmd = [
         "uv",
@@ -212,6 +264,11 @@ def run_ingester_cli(ingester_dir, db_path, endpoint, command, initial_maximum_l
 
 
 def append_rtc_stats_log(log_dir):
+    """
+    rtc_stats ログに 1 行追加し、新規オブジェクト送信の契機を作る。
+    :param log_dir: rtc_stats.jsonl を含むログディレクトリ
+    :return: なし
+    """
     # 既存ログ 1 行を複製して識別子だけ変え、新規オブジェクト送信を発生させる
     rtc_stats_path = log_dir / "rtc_stats.jsonl"
     first_line = rtc_stats_path.read_text(encoding="utf-8").splitlines()[0]
@@ -226,6 +283,12 @@ def append_rtc_stats_log(log_dir):
 
 
 def get_s3_cursor(con, log_type):
+    """
+    指定ログ種別の S3 カーソル情報を取得する。
+    :param con: DuckDB 接続オブジェクト
+    :param log_type: s3_objects テーブルの type 列に対応するログ種別
+    :return: object_name と last_modified のタプル。未登録時は None
+    """
     return con.execute(
         "SELECT object_name, last_modified FROM s3_objects WHERE type=?",
         (log_type,),
