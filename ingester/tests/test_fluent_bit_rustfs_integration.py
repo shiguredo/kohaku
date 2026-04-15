@@ -521,9 +521,76 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
             con = duckdb.connect(str(duckdb_path))
             try:
                 final_count = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
+                final_cursor = get_s3_cursor(con, "rtc_stats")
             finally:
                 con.close()
             assert final_count == after_count
+            # 新規ログがない update では cursor も進まない
+            assert final_cursor == after_cursor
+
+
+def test_runpy_update_skips_missing_target_without_error(tmp_path):
+    """update 実行時に未作成ターゲットのログがなくても成功し、既存ターゲットだけ維持されることを確認する。"""
+    repo_root = Path(__file__).resolve().parents[2]
+    ingester_dir = repo_root / "ingester"
+    source_log_dir = ingester_dir / "tests" / "log"
+    # rtc_stats のみを投入し、session_webhook は意図的に欠損させる
+    log_dir = create_test_log_dir(tmp_path, source_log_dir, include_session_webhook=False)
+
+    state_dir = tmp_path / "state"
+    state_dir.mkdir()
+    config_path = tmp_path / "fluent-bit.yml"
+    create_fluent_bit_config(config_path)
+    duckdb_path = tmp_path / "duck.db"
+
+    with Network() as network:
+        with (
+            DockerContainer(RUSTFS_IMAGE)
+            .with_env("RUSTFS_ACCESS_KEY", ACCESS_KEY)
+            .with_env("RUSTFS_SECRET_KEY", SECRET_KEY)
+            .with_network(network)
+            .with_network_aliases("rustfs")
+            .with_exposed_ports(RUSTFS_PORT) as rustfs
+        ):
+            endpoint = f"{rustfs.get_container_host_ip()}:{rustfs.get_exposed_port(RUSTFS_PORT)}"
+            client = minio.Minio(
+                endpoint,
+                access_key=ACCESS_KEY,
+                secret_key=SECRET_KEY,
+                secure=False,
+            )
+
+            wait_until(lambda: client.list_buckets() is not None)
+            client.make_bucket(BUCKET)
+
+            run_fluent_bit_and_wait(
+                network,
+                log_dir,
+                config_path,
+                state_dir,
+                client,
+                {f"{PREFIX}/rtc_stats/": 1},
+            )
+
+            init_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
+            assert init_run.returncode == 0, init_run.stderr
+
+            update_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
+            assert update_run.returncode == 0, update_run.stderr
+
+            con = duckdb.connect(str(duckdb_path))
+            try:
+                rtc_stats_count = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
+                session_webhook_table_count = con.execute(
+                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='session_webhook'"
+                ).fetchone()[0]
+                s3_objects_count = con.execute("SELECT COUNT(*) FROM s3_objects").fetchone()[0]
+            finally:
+                con.close()
+
+            assert rtc_stats_count > 0
+            assert session_webhook_table_count == 0
+            assert s3_objects_count == 1
 
 
 def test_runpy_init_fails_when_bucket_not_found(tmp_path):
