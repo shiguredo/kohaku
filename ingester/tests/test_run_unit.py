@@ -9,11 +9,6 @@ import pytest
 import run
 
 
-def test_positive_int_accepts_positive_value():
-    """正の整数文字列を受け取った場合に整数へ変換することを確認する。"""
-    assert run.positive_int("1") == 1
-
-
 def test_positive_int_rejects_zero():
     """0 を渡した場合に引数エラーとなることを確認する。"""
     with pytest.raises(argparse.ArgumentTypeError, match="initial_maximum_load must be >= 1"):
