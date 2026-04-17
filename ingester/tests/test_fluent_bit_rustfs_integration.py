@@ -21,6 +21,7 @@ FLUENT_BIT_IMAGE = "fluent/fluent-bit"
 FLUENT_BIT_S3_ENDPOINT = f"http://rustfs:{RUSTFS_PORT}"
 FLUENT_BIT_SORA_LOG_PATH = "/log"
 
+# fluent-bit の設定テンプレート。テスト毎に描画して config_path に書き出す。
 FLUENT_BIT_CONFIG_TEMPLATE = """
 env:
   S3_ENDPOINT: {{ s3_endpoint }}
@@ -74,6 +75,31 @@ parsers:
     time_keep: on
 """.lstrip()
 
+# session_webhook のテスト用ログ。JSONL 形式で、テスト毎に session_webhook.jsonl として書き出す。
+SESSION_WEBHOOK_LOG_TEXT = "\n".join(
+    [
+        json.dumps(
+            {
+                "id": "session-webhook-1",
+                "timestamp": "2025-07-25T06:06:51.592776Z",
+                "req": {
+                    "event_type": "connection.created",
+                    "connection_id": "JXW8K4FG6H7TZ2F63T38ZHSJQG",
+                },
+            }
+        ),
+        json.dumps(
+            {
+                "id": "session-webhook-2",
+                "timestamp": "2025-07-25T06:07:51.592776Z",
+                "req": {
+                    "event_type": "connection.destroyed",
+                    "connection_id": "JXW8K4FG6H7TZ2F63T38ZHSJQG",
+                },
+            }
+        ),
+    ]
+) + "\n"
 
 class WaitTimeoutError(Exception):
     pass
@@ -132,34 +158,7 @@ def create_test_log_dir(tmp_path, source_log_dir, include_session_webhook=True):
     # 対象ログ欠損ケースを作るため、session_webhook は必要なときだけ生成する
     if include_session_webhook:
         session_webhook_path = log_dir / "session_webhook.jsonl"
-        session_webhook_path.write_text(
-            "\n".join(
-                [
-                    json.dumps(
-                        {
-                            "id": "session-webhook-1",
-                            "timestamp": "2025-07-25T06:06:51.592776Z",
-                            "req": {
-                                "event_type": "connection.created",
-                                "connection_id": "JXW8K4FG6H7TZ2F63T38ZHSJQG",
-                            },
-                        }
-                    ),
-                    json.dumps(
-                        {
-                            "id": "session-webhook-2",
-                            "timestamp": "2025-07-25T06:07:51.592776Z",
-                            "req": {
-                                "event_type": "connection.destroyed",
-                                "connection_id": "JXW8K4FG6H7TZ2F63T38ZHSJQG",
-                            },
-                        }
-                    ),
-                ]
-            )
-            + "\n",
-            encoding="utf-8",
-        )
+        session_webhook_path.write_text(SESSION_WEBHOOK_LOG_TEXT, encoding="utf-8")
     return log_dir
 
 
