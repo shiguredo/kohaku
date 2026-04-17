@@ -22,7 +22,7 @@ def test_sync_logs_raises_for_unknown_mode():
 
 
 def test_delete_returns_without_copy_when_no_rows_deleted(tmp_path):
-    """削除件数が 0 件の場合に DB コピー処理へ進まず元 DB が変化しないことを確認する。"""
+    """削除件数が 0 件の場合に DB コピー処理へ進まず、元 DB も変化しないことを確認する。"""
     db_path = tmp_path / "delete_no_rows.db"
     with duckdb.connect(str(db_path)) as con:
         con.execute("CREATE TABLE rtc_stats (timestamp TIMESTAMPTZ)")
@@ -37,6 +37,7 @@ def test_delete_returns_without_copy_when_no_rows_deleted(tmp_path):
     after_stat = db_path.stat()
     after_hash = hashlib.sha256(db_path.read_bytes()).hexdigest()
 
+    # DB ファイルが存在し、inode が変わらず、内容も変わっていないことを確認する。
     assert db_path.exists()
     assert after_stat.st_ino == before_stat.st_ino
     assert after_hash == before_hash
