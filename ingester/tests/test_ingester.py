@@ -46,15 +46,16 @@ def data_path(s3_prefix, tag, directory):
     filename = f"{uuid.uuid4()}.gz"
     return f"{s3_prefix}/{tag}/{directory}/{filename}"
 
-def list_objects(minio_client, bucket_name):
+def list_objects(minio_client, bucket_name, prefix=None):
     """
     指定されたバケット内のオブジェクトをリストする関数
     :param minio_client: MinIO クライアント
     :param bucket_name: バケット名
+    :param prefix: 取得対象のプレフィックス。指定しない場合は全件を取得する
     :return: オブジェクトのリスト
     """
 
-    objects = minio_client.list_objects(bucket_name, recursive=True)
+    objects = minio_client.list_objects(bucket_name, prefix=prefix, recursive=True)
     return [obj.object_name for obj in objects]
 
 def remove_objects(minio_client, bucket_name):
@@ -209,7 +210,7 @@ def test_init(request, minio_client, minio_container):
 
     # DB に保存したデータ数を確認する
     duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(minio_client, BUCKET)
+    objects = list_objects(minio_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
     result = duckdb_connection.fetchone()
 
@@ -265,7 +266,7 @@ def test_re_init(request, minio_client, minio_container):
 
     # DB に保存したデータ数を確認する
     duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(minio_client, BUCKET)
+    objects = list_objects(minio_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
     result = duckdb_connection.fetchone()
     # 取得したデータ数が正しいことを確認する
@@ -337,7 +338,7 @@ def test_file_count_limit_for_init(request, minio_client, minio_container):
 
     # DB に保存したデータ数を確認する
     duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(minio_client, BUCKET)
+    objects = list_objects(minio_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
     result = duckdb_connection.fetchone()
 
@@ -394,7 +395,7 @@ def test_update(request, minio_client, minio_container):
 
     # DB に保存したデータ数を確認する
     duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(minio_client, BUCKET)
+    objects = list_objects(minio_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
     result = duckdb_connection.fetchone()
     # 取得したデータ数が正しいことを確認する
@@ -440,7 +441,7 @@ def test_update(request, minio_client, minio_container):
     assert result[0] > len(objects)
 
     # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
-    objects = list_objects(minio_client, BUCKET)
+    objects = list_objects(minio_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     assert result[0] == len(objects)
 
     # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
@@ -485,7 +486,7 @@ def test_all_delete(request, minio_client, minio_container):
 
     # DB に保存したデータ数を確認する
     duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(minio_client, BUCKET)
+    objects = list_objects(minio_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
     result = duckdb_connection.fetchone()
     # 取得したデータ数が正しいことを確認する
@@ -553,7 +554,7 @@ def test_delete(request, minio_client, minio_container):
 
     # DB に保存したデータ数を確認する
     duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(minio_client, BUCKET)
+    objects = list_objects(minio_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
     result = duckdb_connection.fetchone()
     # 取得したデータ数が正しいことを確認する
@@ -626,7 +627,7 @@ def test_delete_within_retention_period(request, minio_client, minio_container):
 
     # DB に保存したデータ数を確認する
     duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(minio_client, BUCKET)
+    objects = list_objects(minio_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
     result = duckdb_connection.fetchone()
     # 取得したデータ数が正しいことを確認する
