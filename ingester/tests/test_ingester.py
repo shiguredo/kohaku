@@ -46,38 +46,38 @@ def data_path(s3_prefix, tag, directory):
     filename = f"{uuid.uuid4()}.gz"
     return f"{s3_prefix}/{tag}/{directory}/{filename}"
 
-def list_objects(minio_client, bucket_name, prefix=None):
+def list_objects(s3_client, bucket_name, prefix=None):
     """
     指定されたバケット内のオブジェクトをリストする関数
-    :param minio_client: MinIO クライアント
+    :param s3_client: S3 クライアント
     :param bucket_name: バケット名
     :param prefix: 取得対象のプレフィックス。指定しない場合は全件を取得する
     :return: オブジェクトのリスト
     """
 
-    objects = minio_client.list_objects(bucket_name, prefix=prefix, recursive=True)
+    objects = s3_client.list_objects(bucket_name, prefix=prefix, recursive=True)
     return [obj.object_name for obj in objects]
 
-def remove_objects(minio_client, bucket_name):
+def remove_objects(s3_client, bucket_name):
     """
     指定されたバケット内のすべてのオブジェクトを削除する関数
-    :param minio_client: MinIO クライアント
+    :param s3_client: S3 クライアント
     :param bucket_name: バケット名
     """
 
-    objects = list_objects(minio_client, bucket_name)
+    objects = list_objects(s3_client, bucket_name)
     for obj in objects:
-        minio_client.remove_object(bucket_name, obj)
+        s3_client.remove_object(bucket_name, obj)
 
-def remove_bucket(minio_client, bucket_name):
+def remove_bucket(s3_client, bucket_name):
     """
     指定されたバケットを削除する関数
-    :param minio_client: MinIO クライアント
+    :param s3_client: S3 クライアント
     :param bucket_name: バケット名
     """
 
-    remove_objects(minio_client, bucket_name)
-    minio_client.remove_bucket(bucket_name)
+    remove_objects(s3_client, bucket_name)
+    s3_client.remove_bucket(bucket_name)
 
 # 指定した期間だけ過去に更新する関数
 def update_timestamp_for_rtc_stats(con, obj, period):
@@ -112,14 +112,14 @@ def update_timestamp_for_rtc_stats(con, obj, period):
     else:
         print(f"No record found for connection_id: {connection_id}, rtc_id: {rtc_id}, rtc_type: {rtc_type}, org_timestamp: {org_timestamp}")
 
-def get_latest_object(minio_client, bucket, prefix):
+def get_latest_object(s3_client, bucket, prefix):
     """
     オブジェクトストレージ上で処理対象の最新のオブジェクトを取得する関数
-    :param minio_client: MinIO クライアント
+    :param s3_client: S3 クライアント
     :return: 最新のオブジェクト
     """
 
-    objects = minio_client.list_objects(bucket, prefix=prefix, recursive=True)
+    objects = s3_client.list_objects(bucket, prefix=prefix, recursive=True)
     return max(objects, key=lambda obj: obj.last_modified)
 
 @pytest.fixture(scope="session")
@@ -128,7 +128,7 @@ def minio_container():
         yield minio
 
 @pytest.fixture
-def minio_client(minio_container):
+def s3_client(minio_container):
     # MinIO クライアントの作成
     client = minio_container.get_client()
     # バケットの作成
@@ -173,18 +173,18 @@ def duckdb_connection(filepath):
     yield con
     con.close()
 
-def test_init(request, minio_client, minio_container):
+def test_init(request, s3_client, minio_container):
     """init 実行でログを取り込み、DuckDB とオブジェクトカーソルが作成されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
     duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加する
-    request.addfinalizer(lambda: remove_bucket(minio_client, BUCKET))
+    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
     request.addfinalizer(lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None)
 
     # テスト開始時に BUCKET が存在することを確認
-    assert minio_client.bucket_exists(BUCKET)
+    assert s3_client.bucket_exists(BUCKET)
 
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
     config = minio_container.get_config()
@@ -210,7 +210,7 @@ def test_init(request, minio_client, minio_container):
 
     # DB に保存したデータ数を確認する
     duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(minio_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
     result = duckdb_connection.fetchone()
 
@@ -223,24 +223,24 @@ def test_init(request, minio_client, minio_container):
     assert result[0] == len(objects)
 
     # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
-    latest_object = get_latest_object(minio_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
+    latest_object = get_latest_object(s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
     duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified,))
     result = duckdb_connection.fetchone()
     assert result is not None
     assert result[0] == 1
 
-def test_re_init(request, minio_client, minio_container):
+def test_re_init(request, s3_client, minio_container):
     """init を再実行してもデータ件数とカーソル情報が変化しないことを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
     duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
-    request.addfinalizer(lambda: remove_bucket(minio_client, BUCKET))
+    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
     request.addfinalizer(lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None)
 
     # テスト開始時に BUCKET が存在することを確認
-    assert minio_client.bucket_exists(BUCKET)
+    assert s3_client.bucket_exists(BUCKET)
 
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
     config = minio_container.get_config()
@@ -266,7 +266,7 @@ def test_re_init(request, minio_client, minio_container):
 
     # DB に保存したデータ数を確認する
     duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(minio_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
     result = duckdb_connection.fetchone()
     # 取得したデータ数が正しいことを確認する
@@ -277,7 +277,7 @@ def test_re_init(request, minio_client, minio_container):
     assert result[0] == len(objects)
 
     # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
-    latest_object = get_latest_object(minio_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
+    latest_object = get_latest_object(s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
     duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified,))
     result = duckdb_connection.fetchone()
     assert result is not None
@@ -298,18 +298,18 @@ def test_re_init(request, minio_client, minio_container):
     assert result is not None
     assert result[0] == 1
 
-def test_file_count_limit_for_init(request, minio_client, minio_container):
+def test_file_count_limit_for_init(request, s3_client, minio_container):
     """init の初期読み込み上限で取り込み件数が制限されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
     duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加する
-    request.addfinalizer(lambda: remove_bucket(minio_client, BUCKET))
+    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
     request.addfinalizer(lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None)
 
     # テスト開始時に BUCKET が存在することを確認
-    assert minio_client.bucket_exists(BUCKET)
+    assert s3_client.bucket_exists(BUCKET)
 
     # 初期最大読み込み数を設定する
     initial_maximum_load = 50
@@ -338,7 +338,7 @@ def test_file_count_limit_for_init(request, minio_client, minio_container):
 
     # DB に保存したデータ数を確認する
     duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(minio_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
     result = duckdb_connection.fetchone()
 
@@ -352,24 +352,24 @@ def test_file_count_limit_for_init(request, minio_client, minio_container):
     assert result[0] == initial_maximum_load
 
     # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
-    latest_object = get_latest_object(minio_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
+    latest_object = get_latest_object(s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
     duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified))
     result = duckdb_connection.fetchone()
     assert result is not None
     assert result[0] == 1
 
-def test_update(request, minio_client, minio_container):
+def test_update(request, s3_client, minio_container):
     """update 実行時に差分ログのみが追加され、件数とカーソルが更新されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
     duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
-    request.addfinalizer(lambda: remove_bucket(minio_client, BUCKET))
+    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
     request.addfinalizer(lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None)
 
     # テスト開始時に BUCKET が存在することを確認
-    assert minio_client.bucket_exists(BUCKET)
+    assert s3_client.bucket_exists(BUCKET)
 
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
     config = minio_container.get_config()
@@ -395,7 +395,7 @@ def test_update(request, minio_client, minio_container):
 
     # DB に保存したデータ数を確認する
     duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(minio_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
     result = duckdb_connection.fetchone()
     # 取得したデータ数が正しいことを確認する
@@ -425,7 +425,7 @@ def test_update(request, minio_client, minio_container):
             directory = now.strftime("%Y/%m/%d")
             s3_path = data_path(PREFIX, "rtc_stats", directory)
             # アップロード
-            result = minio_client.put_object(
+            result = s3_client.put_object(
                 BUCKET,
                 s3_path,
                 io.BytesIO(compressed_log_data),
@@ -441,28 +441,28 @@ def test_update(request, minio_client, minio_container):
     assert result[0] > len(objects)
 
     # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
-    objects = list_objects(minio_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     assert result[0] == len(objects)
 
     # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
-    latest_object = get_latest_object(minio_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
+    latest_object = get_latest_object(s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
     duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified,))
     result = duckdb_connection.fetchone()
     assert result is not None
     assert result[0] == 1
 
-def test_all_delete(request, minio_client, minio_container):
+def test_all_delete(request, s3_client, minio_container):
     """保持期間外のデータだけで構成された場合に delete で全件削除されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
     duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
-    request.addfinalizer(lambda: remove_bucket(minio_client, BUCKET))
+    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
     request.addfinalizer(lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None)
     # テスト開始時に BUCKET が存在することを確認
 
-    assert minio_client.bucket_exists(BUCKET)
+    assert s3_client.bucket_exists(BUCKET)
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
     config = minio_container.get_config()
     endpoint = config["endpoint"]
@@ -486,7 +486,7 @@ def test_all_delete(request, minio_client, minio_container):
 
     # DB に保存したデータ数を確認する
     duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(minio_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
     result = duckdb_connection.fetchone()
     # 取得したデータ数が正しいことを確認する
@@ -519,18 +519,18 @@ def test_all_delete(request, minio_client, minio_container):
     # 全てのオブジェクトの timestamp を 2 日前に更新したため、全てのデータが削除される
     assert result[0] == 0
 
-def test_delete(request, minio_client, minio_container):
+def test_delete(request, s3_client, minio_container):
     """保持期間外と期間内が混在する場合に delete で期間外のみ削除されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
     duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
-    request.addfinalizer(lambda: remove_bucket(minio_client, BUCKET))
+    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
     request.addfinalizer(lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None)
     # テスト開始時に BUCKET が存在することを確認
 
-    assert minio_client.bucket_exists(BUCKET)
+    assert s3_client.bucket_exists(BUCKET)
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
     config = minio_container.get_config()
     endpoint = config["endpoint"]
@@ -554,7 +554,7 @@ def test_delete(request, minio_client, minio_container):
 
     # DB に保存したデータ数を確認する
     duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(minio_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
     result = duckdb_connection.fetchone()
     # 取得したデータ数が正しいことを確認する
@@ -592,18 +592,18 @@ def test_delete(request, minio_client, minio_container):
     # 偶数番目のオブジェクトの timestamp を 2 日前に更新したため、半分のデータが残る
     assert result[0] == len(objects) // 2
 
-def test_delete_within_retention_period(request, minio_client, minio_container):
+def test_delete_within_retention_period(request, s3_client, minio_container):
     """保持期間内のデータのみの場合に delete を実行しても削除されないことを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
     duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
-    request.addfinalizer(lambda: remove_bucket(minio_client, BUCKET))
+    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
     request.addfinalizer(lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None)
     # テスト開始時に BUCKET が存在することを確認
 
-    assert minio_client.bucket_exists(BUCKET)
+    assert s3_client.bucket_exists(BUCKET)
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
     config = minio_container.get_config()
     endpoint = config["endpoint"]
@@ -627,7 +627,7 @@ def test_delete_within_retention_period(request, minio_client, minio_container):
 
     # DB に保存したデータ数を確認する
     duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(minio_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
     result = duckdb_connection.fetchone()
     # 取得したデータ数が正しいことを確認する
