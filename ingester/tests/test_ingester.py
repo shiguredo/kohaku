@@ -233,7 +233,6 @@ def test_init(request, s3_client, rustfs_endpoint):
     duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
     result = duckdb_connection.fetchone()
 
-    # 取得したデータ数が正しいことを確認する
     # データが取得できていることを確認する
     assert result is not None
     # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
@@ -286,7 +285,7 @@ def test_re_init(request, s3_client, rustfs_endpoint):
     objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
     result = duckdb_connection.fetchone()
-    # 取得したデータ数が正しいことを確認する
+    # データが取得できていることを確認する
     assert result is not None
     # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
     assert result[0] > 0
@@ -700,7 +699,7 @@ def test_no_bucket(request, rustfs_endpoint):
         init(args)
 
 def test_prepare_db_for_init_renames_broken_db_file(tmp_path):
-    """壊れた DB を prepare_db_for_init が検出し、DB と WAL を退避リネームすることを確認する。"""
+    """壊れた DB を prepare_db_for_init が検出し、DB と WAL をリネームして退避したことを確認する。"""
     db_path = tmp_path / "broken.db"
     wal_path = tmp_path / "broken.db.wal"
     db_path.write_bytes(b"invalid db")
@@ -721,8 +720,8 @@ def test_prepare_db_for_init_renames_broken_db_file(tmp_path):
     assert renamed_wal_files[0].exists()
 
 
-def test_prepare_db_for_init_skips_permission_error(tmp_path):
-    """Permission denied 時は prepare_db_for_init がファイルをリネームせず終了することを確認する。"""
+def test_prepare_db_for_init_does_not_rename_on_permission_denied(tmp_path):
+    """Permission denied の場合は破損 DB ではないため、リネームしないことを確認する"""
     db_path = tmp_path / "permission.db"
     wal_path = tmp_path / "permission.db.wal"
     with duckdb.connect(str(db_path)) as con:
@@ -734,7 +733,7 @@ def test_prepare_db_for_init_skips_permission_error(tmp_path):
         prepare_db_for_init(str(db_path))
 
         renamed_files = list(tmp_path.glob("permission.db.broken.*"))
-        # Permission denied エラーの場合はファイルをリネームせずにスキップするため、リネームされたファイルが存在しないことを確認する
+        # Permission denied は破損 DB ではないため、リネームされないことを確認する
         assert len(renamed_files) == 0
         assert db_path.exists()
         assert wal_path.exists()
