@@ -2,9 +2,17 @@
 
 Ubuntu 24.04 上で動作を確認しています
 
-## 収集対象ログ
+## 収集対象のログ
 
-Kohaku では、Sora が出力するログのうち `rtc_stats.jsonl` と `session_webhook.jsonl` を収集対象とします。
+Kohaku では、Sora が出力するログのうち以下のログを収集対象とします。
+
+- `rtc_stats.jsonl`
+- `session_webhook.jsonl`
+
+収集対象のログの詳細は、以下の Fluent Bit の設定を参照してください。
+
+- [fluent-bit.yml.rustfs](../fluent-bit/fluent-bit.yml.rustfs) : RustFS 用
+- [fluent-bit.yml.s3](../fluent-bit/fluent-bit.yml.s3) : S3 用
 
 ## 環境
 
