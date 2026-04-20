@@ -29,7 +29,7 @@ Kohaku では、Sora が出力するログのうち以下のログを Fluent Bit
 - `rtc_stats.jsonl`
 - `session_webhook.jsonl`
 
-収集対象のログの詳細は、以下の Fluent Bit の設定を参照してください。
+収集対象のログの詳細は、以下の Fluent Bit の設定をご確認ください。
 
 - [fluent-bit.yml.rustfs](../fluent-bit/fluent-bit.yml.rustfs) : RustFS 用
 - [fluent-bit.yml.s3](../fluent-bit/fluent-bit.yml.s3) : S3 用
