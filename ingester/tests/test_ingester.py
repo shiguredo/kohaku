@@ -16,8 +16,8 @@ from .helpers import wait_until
 import duckdb
 
 BUCKET = "kohaku"
-ACCESS_KEY = "minioadmin"
-SECRET_KEY = "minioadmin"
+ACCESS_KEY = "kohakuadmin"
+SECRET_KEY = "kohakuadmin"
 PREFIX = "log"
 RUSTFS_PORT = 9000
 RUSTFS_IMAGE = "rustfs/rustfs:1.0.0-alpha.89"
