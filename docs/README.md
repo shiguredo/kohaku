@@ -2,6 +2,10 @@
 
 Ubuntu 24.04 上で動作を確認しています
 
+## 収集対象ログ
+
+Kohaku では、Sora が出力するログのうち `rtc_stats.jsonl` と `session_webhook.jsonl` を収集対象とします。
+
 ## 環境
 
 下記の 4 点で Kohaku 環境を構築します
