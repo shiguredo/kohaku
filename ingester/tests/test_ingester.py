@@ -7,8 +7,11 @@ import json
 from run import init, update, delete, prepare_db_for_init
 
 import uuid
+import minio
 import pytest
-from testcontainers.minio import MinioContainer
+from testcontainers.core.container import DockerContainer
+
+from .helpers import wait_until
 
 import duckdb
 
@@ -16,6 +19,8 @@ BUCKET = "kohaku"
 ACCESS_KEY = "minioadmin"
 SECRET_KEY = "minioadmin"
 PREFIX = "log"
+RUSTFS_PORT = 9000
+RUSTFS_IMAGE = "rustfs/rustfs:1.0.0-alpha.89"
 # 出力されたままのログファイルを保存するディレクトリ
 LOG_DIR = "./tests/log"
 DUCKDB_DIR_PATH = "."
@@ -123,14 +128,30 @@ def get_latest_object(s3_client, bucket, prefix):
     return max(objects, key=lambda obj: obj.last_modified)
 
 @pytest.fixture(scope="session")
-def minio_container():
-    with MinioContainer() as minio:
-        yield minio
+def rustfs_container():
+    with (
+        DockerContainer(RUSTFS_IMAGE)
+        .with_env("RUSTFS_ACCESS_KEY", ACCESS_KEY)
+        .with_env("RUSTFS_SECRET_KEY", SECRET_KEY)
+        .with_exposed_ports(RUSTFS_PORT) as rustfs
+    ):
+        yield rustfs
+
+@pytest.fixture(scope="session")
+def rustfs_endpoint(rustfs_container):
+    return f"{rustfs_container.get_container_host_ip()}:{rustfs_container.get_exposed_port(RUSTFS_PORT)}"
 
 @pytest.fixture
-def s3_client(minio_container):
-    # MinIO クライアントの作成
-    client = minio_container.get_client()
+def s3_client(rustfs_endpoint):
+    # RustFS に接続する MinIO クライアントを作成する
+    client = minio.Minio(
+        rustfs_endpoint,
+        access_key=ACCESS_KEY,
+        secret_key=SECRET_KEY,
+        secure=False,
+    )
+    # RustFS が利用可能になるまで待機する
+    wait_until(lambda: client.list_buckets() is not None)
     # バケットの作成
     found = client.bucket_exists(BUCKET)
     # バケットは常に存在しない
@@ -173,7 +194,7 @@ def duckdb_connection(filepath):
     yield con
     con.close()
 
-def test_init(request, s3_client, minio_container):
+def test_init(request, s3_client, rustfs_endpoint):
     """init 実行でログを取り込み、DuckDB とオブジェクトカーソルが作成されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
@@ -187,11 +208,9 @@ def test_init(request, s3_client, minio_container):
     assert s3_client.bucket_exists(BUCKET)
 
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
-    config = minio_container.get_config()
-    endpoint = config["endpoint"]
     args = Args(
         db=duckdb_filepath,
-        s3_endpoint=endpoint,
+        s3_endpoint=rustfs_endpoint,
         s3_access_key_id=ACCESS_KEY,
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
@@ -229,7 +248,7 @@ def test_init(request, s3_client, minio_container):
     assert result is not None
     assert result[0] == 1
 
-def test_re_init(request, s3_client, minio_container):
+def test_re_init(request, s3_client, rustfs_endpoint):
     """init を再実行してもデータ件数とカーソル情報が変化しないことを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
@@ -243,11 +262,9 @@ def test_re_init(request, s3_client, minio_container):
     assert s3_client.bucket_exists(BUCKET)
 
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
-    config = minio_container.get_config()
-    endpoint = config["endpoint"]
     args = Args(
         db=duckdb_filepath,
-        s3_endpoint=endpoint,
+        s3_endpoint=rustfs_endpoint,
         s3_access_key_id=ACCESS_KEY,
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
@@ -298,7 +315,7 @@ def test_re_init(request, s3_client, minio_container):
     assert result is not None
     assert result[0] == 1
 
-def test_file_count_limit_for_init(request, s3_client, minio_container):
+def test_file_count_limit_for_init(request, s3_client, rustfs_endpoint):
     """init の初期読み込み上限で取り込み件数が制限されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
@@ -315,11 +332,9 @@ def test_file_count_limit_for_init(request, s3_client, minio_container):
     initial_maximum_load = 50
 
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
-    config = minio_container.get_config()
-    endpoint = config["endpoint"]
     args = Args(
         db=duckdb_filepath,
-        s3_endpoint=endpoint,
+        s3_endpoint=rustfs_endpoint,
         s3_access_key_id=ACCESS_KEY,
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
@@ -358,7 +373,7 @@ def test_file_count_limit_for_init(request, s3_client, minio_container):
     assert result is not None
     assert result[0] == 1
 
-def test_update(request, s3_client, minio_container):
+def test_update(request, s3_client, rustfs_endpoint):
     """update 実行時に差分ログのみが追加され、件数とカーソルが更新されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
@@ -372,11 +387,9 @@ def test_update(request, s3_client, minio_container):
     assert s3_client.bucket_exists(BUCKET)
 
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
-    config = minio_container.get_config()
-    endpoint = config["endpoint"]
     args = Args(
         db=duckdb_filepath,
-        s3_endpoint=endpoint,
+        s3_endpoint=rustfs_endpoint,
         s3_access_key_id=ACCESS_KEY,
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
@@ -451,7 +464,7 @@ def test_update(request, s3_client, minio_container):
     assert result is not None
     assert result[0] == 1
 
-def test_all_delete(request, s3_client, minio_container):
+def test_all_delete(request, s3_client, rustfs_endpoint):
     """保持期間外のデータだけで構成された場合に delete で全件削除されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
@@ -464,11 +477,9 @@ def test_all_delete(request, s3_client, minio_container):
 
     assert s3_client.bucket_exists(BUCKET)
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
-    config = minio_container.get_config()
-    endpoint = config["endpoint"]
     args = Args(
         db=duckdb_filepath,
-        s3_endpoint=endpoint,
+        s3_endpoint=rustfs_endpoint,
         s3_access_key_id=ACCESS_KEY,
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
@@ -519,7 +530,7 @@ def test_all_delete(request, s3_client, minio_container):
     # 全てのオブジェクトの timestamp を 2 日前に更新したため、全てのデータが削除される
     assert result[0] == 0
 
-def test_delete(request, s3_client, minio_container):
+def test_delete(request, s3_client, rustfs_endpoint):
     """保持期間外と期間内が混在する場合に delete で期間外のみ削除されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
@@ -532,11 +543,9 @@ def test_delete(request, s3_client, minio_container):
 
     assert s3_client.bucket_exists(BUCKET)
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
-    config = minio_container.get_config()
-    endpoint = config["endpoint"]
     args = Args(
         db=duckdb_filepath,
-        s3_endpoint=endpoint,
+        s3_endpoint=rustfs_endpoint,
         s3_access_key_id=ACCESS_KEY,
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
@@ -592,7 +601,7 @@ def test_delete(request, s3_client, minio_container):
     # 偶数番目のオブジェクトの timestamp を 2 日前に更新したため、半分のデータが残る
     assert result[0] == len(objects) // 2
 
-def test_delete_within_retention_period(request, s3_client, minio_container):
+def test_delete_within_retention_period(request, s3_client, rustfs_endpoint):
     """保持期間内のデータのみの場合に delete を実行しても削除されないことを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
@@ -605,11 +614,9 @@ def test_delete_within_retention_period(request, s3_client, minio_container):
 
     assert s3_client.bucket_exists(BUCKET)
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
-    config = minio_container.get_config()
-    endpoint = config["endpoint"]
     args = Args(
         db=duckdb_filepath,
-        s3_endpoint=endpoint,
+        s3_endpoint=rustfs_endpoint,
         s3_access_key_id=ACCESS_KEY,
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
@@ -665,7 +672,7 @@ def test_delete_within_retention_period(request, s3_client, minio_container):
     # データの保持期間が 3 日のため、データは削除されない
     assert result[0] == len(objects)
 
-def test_no_bucket(request, minio_container):
+def test_no_bucket(request, rustfs_endpoint):
     """RustFS のバケットが存在しない場合に init が例外を送出することを確認する。"""
 
     with pytest.raises(Exception):
@@ -676,11 +683,9 @@ def test_no_bucket(request, minio_container):
         request.addfinalizer(lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None)
 
         # ingester/src/run.py の init 関数を呼び出すための引数を設定
-        config = minio_container.get_config()
-        endpoint = config["endpoint"]
         args = Args(
             db=duckdb_filepath,
-            s3_endpoint=endpoint,
+            s3_endpoint=rustfs_endpoint,
             s3_access_key_id=ACCESS_KEY,
             s3_secret_access_key=SECRET_KEY,
             s3_use_ssl=False,
