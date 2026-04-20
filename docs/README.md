@@ -22,18 +22,6 @@ Fluent Bit は Sora のログを読み込めるサーバ上に構築し、Kohaku
 
 RustFS または Amazon S3 は、構築した Fluent Bit、Kohaku からアクセスできるようにします
 
-## 収集対象のログ
-
-Kohaku では、Sora が出力するログのうち以下のログを Fluent Bit によって収集します。
-
-- `rtc_stats.jsonl`
-- `session_webhook.jsonl`
-
-収集対象のログの詳細は、以下の Fluent Bit の設定をご確認ください。
-
-- [fluent-bit.yml.rustfs](../fluent-bit/fluent-bit.yml.rustfs) : RustFS 用
-- [fluent-bit.yml.s3](../fluent-bit/fluent-bit.yml.s3) : S3 用
-
 ## Grafana の設定
 
 Grafana のインストール後にプラグインをインストールして使用する場合の設定手順です
@@ -124,6 +112,18 @@ make fluent-bit-yml
 ```bash
 make fluent-bit-yml-for-rustfs
 ```
+
+#### Fluent Bit による収集対象のログファイル
+
+Kohaku は、Fluent Bit を利用して、.env ファイルの SORA_LOG_PATH に指定したディレクトリ以下のログファイルを対象にログを収集します
+
+- rtc_stats.jsonl
+- session_webhook.jsonl
+
+ログ収集時の Fluent Bit の設定は、上記の make で生成された fluent-bit.yml でご確認ください
+
+また、既に Kohaku 以外の用途で Fluent Bit を使用している場合には、生成された fluent-bit.yml を参考にして、適宜、既存の Fluent Bit の設定に追加、または、変更して利用してください
+
 
 ### Kohaku ユーザの作成
 
