@@ -10,24 +10,30 @@ else
 	USER_GROUP=$(shell whoami):staff
 endif
 
+# 初期データを作成して権限を整える
 init: build
 	mkdir -p rustfs/data  rustfs/logs plugins
 	# rustfs コンテナ内のユーザー UID/GID に合わせる
 	# https://github.com/rustfs/rustfs/blob/1.0.0-alpha.76/Dockerfile#L69-L70
 	sudo chown -R $(USER_GROUP) rustfs/data rustfs/logs
 
+# 標準構成でコンテナを起動する
 up:
 	docker compose -f $(COMPOSE_RUSTFS) up -d --build
 
+# 外部 S3 構成でコンテナを起動する
 up-external-s3:
 	docker compose -f $(COMPOSE_EXTERNAL_S3) up -d --build
 
+# 標準構成のコンテナを停止する
 down:
 	docker compose -f $(COMPOSE_RUSTFS) down --rmi local
 
+# 外部 S3 構成のコンテナを停止する
 down-external-s3:
 	docker compose -f $(COMPOSE_EXTERNAL_S3) down --rmi local
 
+# 作業用ファイルとボリュームを削除する
 clean:
 	rm -rf ./plugins ./fluent-bit.yml
 	rm -rf init/dist
@@ -36,18 +42,21 @@ clean:
 	-docker network rm -f kohaku-network
 
 # 独自でビルドが必要になったとき用
+# init 配下をビルドしてプラグインを配置する
 build: download
 	make -C init
 	cp init/dist/* plugins/motherduck-duckdb-datasource/
 
 GRAFANA_DUCKDB_DATASOURCE_VERSION ?= 0.4.0
 
+# Grafana 用の DuckDB データソースを取得する
 download:
 	curl -LO https://github.com/motherduckdb/grafana-duckdb-datasource/releases/download/v${GRAFANA_DUCKDB_DATASOURCE_VERSION}/motherduck-duckdb-datasource-${GRAFANA_DUCKDB_DATASOURCE_VERSION}.zip
 	unzip motherduck-duckdb-datasource-${GRAFANA_DUCKDB_DATASOURCE_VERSION}.zip -d plugins/
 	rm motherduck-duckdb-datasource-${GRAFANA_DUCKDB_DATASOURCE_VERSION}.zip
 
 
+# 監視用設定をまとめて作成する
 setup: setup-fluent-bit setup-grafana setup-kohaku
 
 define ENV_FLUENT_BIT
@@ -92,28 +101,33 @@ export ENV_FLUENT_BIT
 export ENV_FLUENT_BIT_FOR_RUSTFS
 export SYSTEMD_FLUENT_BIT
 
+# fluent-bit の設定を反映する
 setup-fluent-bit: fluent-bit-yml
 	cp ./fluent-bit.yml /etc/fluent-bit/
 	mkdir -p /etc/systemd/system/fluent-bit.service.d
 	echo "$$SYSTEMD_FLUENT_BIT" | tee /etc/systemd/system/fluent-bit.service.d/override.conf 1>/dev/null
 	systemctl daemon-reload
 
+# fluent-bit の標準設定ファイルを生成する
 fluent-bit-yml:
 	echo "$$ENV_FLUENT_BIT" | tee fluent-bit.yml 1>/dev/null
 	cat ./fluent-bit/fluent-bit.yml.s3 | tee -a fluent-bit.yml 1>/dev/null
 
+# rustfs 向けの fluent-bit を設定する
 setup-fluent-bit-for-rustfs: fluent-bit-yml-for-rustfs
 	cp ./fluent-bit.yml /etc/fluent-bit/
 	mkdir -p /etc/systemd/system/fluent-bit.service.d
 	echo "$$SYSTEMD_FLUENT_BIT" | tee /etc/systemd/system/fluent-bit.service.d/override.conf 1>/dev/null
 	systemctl daemon-reload
 
+# rustfs 向けの fluent-bit 設定ファイルを生成する
 fluent-bit-yml-for-rustfs:
 	echo "$$ENV_FLUENT_BIT_FOR_RUSTFS" | tee fluent-bit.yml 1>/dev/null
 	cat ./fluent-bit/fluent-bit.yml.rustfs | tee -a fluent-bit.yml 1>/dev/null
 
 include .env
 
+# Grafana のプロビジョニング設定を反映する
 setup-grafana:
 	grep GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS /etc/default/grafana-server >/dev/null 2>&1 || echo 'GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=motherduck-duckdb-datasource' | tee -a /etc/default/grafana-server
 	grep GF_PATHS_DATA /etc/default/grafana-server >/dev/null 2>&1 || echo 'GF_PATHS_DATA=/var/lib/grafana' | tee -a /etc/default/grafana-server
@@ -125,6 +139,7 @@ setup-grafana:
 	cp -r grafana/dashboards/kohaku/. /var/lib/grafana/dashboards/kohaku/
 	sudo chown -R grafana:grafana /var/lib/grafana/dashboards/kohaku/
 
+# Kohaku の保存領域と権限を準備する
 setup-kohaku:
 	mkdir -p /var/lib/kohaku/duckdb
 	chown -R kohaku:kohaku /var/lib/kohaku
