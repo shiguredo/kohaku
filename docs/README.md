@@ -82,9 +82,13 @@ sudo make setup-grafana
 
 ### Fluent Bit の準備
 
+#### Fluent Bit のインストールから進める場合
+
 https://docs.fluentbit.io/manual/installation/getting-started-with-fluent-bit の手順で Fluent Bit をインストールします
 
 下記のいずれかのコマンドで Fluent Bit の設定をおこないます
+
+これらは、Kohaku 設定時の fluent-bit.yml の設定、および、systemd の設定を合わせておこないます
 
 - Amazon S3 の場合
 
@@ -98,8 +102,9 @@ sudo make setup-fluent-bit
 sudo make setup-fluent-bit-for-rustfs
 ```
 
-これらは、Kohaku 設定時の fluent-bit.yml の設定および、systemd の設定を合わせておこないますので、
-他の用途で Fluent Bit を使用する場合は、下記のコマンドで作成される fluent-bit.yml を参考にして組み込むようにしてください
+#### 既に Kohaku 以外の用途で Fluent Bit を利用している場合
+
+他の用途で Fluent Bit を利用している場合は、下記のコマンドで作成される fluent-bit.yml を参考にして、適宜、既存の Fluent Bit の設定に追加、または、変更して利用してください
 
 - Amazon S3 の場合
 
@@ -112,6 +117,15 @@ make fluent-bit-yml
 ```bash
 make fluent-bit-yml-for-rustfs
 ```
+
+#### Fluent Bit による収集対象のログファイル
+
+Kohaku は、Fluent Bit を利用して、.env ファイルの SORA_LOG_PATH に指定したディレクトリ以下のログファイルを対象にログを収集します
+
+- rtc_stats.jsonl
+- session_webhook.jsonl
+
+ログ収集時の Fluent Bit の設定は、上記の make で生成された fluent-bit.yml でご確認ください
 
 ### Kohaku ユーザの作成
 
