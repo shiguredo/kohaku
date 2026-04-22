@@ -104,8 +104,8 @@ COMPOSE_PROFILES=cleanup make up-external-s3
 ### Grafana の設定
 
 - ログイン
-  - ブラウザから make up で構築された Grafana (http://192.0.2.0:3000/) にアクセスします
-    - アクセスするブラウザと docker ホストが同じ端末上の場合は http://localhost:3000/ でアクセスできます
+  - ブラウザから make up で構築された Grafana (http://192.0.2.0:13000/) にアクセスします
+    - アクセスするブラウザと docker ホストが同じ端末上の場合は http://localhost:13000/ でアクセスできます
 
   - .env の GF_SECURITY_ADMIN_USER、GF_SECURITY_ADMIN_PASSWORD に設定したアカウントでログインします
 
@@ -139,4 +139,4 @@ make clean
 
 ### 注意点
 
-- Docker Compose で起動した Grafana はポート番号 3000, RustFS はポート番号 9000 と 9001 が公開されますので、外部に公開されるサーバ上で起動させる場合には、適宜 Firewall などで、アクセスを制限するようにしてください
+- Docker Compose で起動した Grafana はポート番号 13000, RustFS はポート番号 9000 と 9001 が公開されますので、外部に公開されるサーバ上で起動させる場合には、適宜 Firewall などで、アクセスを制限するようにしてください
