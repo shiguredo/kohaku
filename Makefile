@@ -3,19 +3,11 @@
 COMPOSE_RUSTFS := compose.yml
 COMPOSE_EXTERNAL_S3 := compose.external-s3.yml
 
-OS := $(shell uname -s)
-ifeq ($(OS),Linux)
-	USER_GROUP=10001:10001
-else
-	USER_GROUP=$(shell whoami):staff
-endif
-
 # 初期データを作成して権限を整える
 init: build
 	mkdir -p rustfs/data  rustfs/logs plugins
-	# rustfs コンテナ内のユーザー UID/GID に合わせる
-	# https://github.com/rustfs/rustfs/blob/1.0.0-alpha.76/Dockerfile#L69-L70
-	sudo chown -R $(USER_GROUP) rustfs/data rustfs/logs
+	# rustfs コンテナが書き込めるようにホスト側の権限を広げる
+	chmod -R a+rwX rustfs/data rustfs/logs
 
 # 標準構成でコンテナを起動する
 up:
@@ -38,7 +30,7 @@ clean:
 	rm -rf ./plugins ./fluent-bit.yml
 	rm -rf init/dist
 	docker volume rm kohaku-volume
-	sudo rm -rf ./rustfs/data ./rustfs/logs
+	rm -rf ./rustfs/data ./rustfs/logs
 	-docker network rm -f kohaku-network
 
 # 独自でビルドが必要になったとき用
@@ -51,6 +43,8 @@ GRAFANA_DUCKDB_DATASOURCE_VERSION ?= 0.4.0
 
 # Grafana 用の DuckDB データソースを取得する
 download:
+	rm -rf plugins/motherduck-duckdb-datasource
+	rm -f motherduck-duckdb-datasource-${GRAFANA_DUCKDB_DATASOURCE_VERSION}.zip
 	curl -LO https://github.com/motherduckdb/grafana-duckdb-datasource/releases/download/v${GRAFANA_DUCKDB_DATASOURCE_VERSION}/motherduck-duckdb-datasource-${GRAFANA_DUCKDB_DATASOURCE_VERSION}.zip
 	unzip motherduck-duckdb-datasource-${GRAFANA_DUCKDB_DATASOURCE_VERSION}.zip -d plugins/
 	rm motherduck-duckdb-datasource-${GRAFANA_DUCKDB_DATASOURCE_VERSION}.zip
