@@ -5,7 +5,7 @@ COMPOSE_EXTERNAL_S3 := compose.external-s3.yml
 
 # 初期データを作成して権限を整える
 init: build
-	mkdir -p rustfs/data  rustfs/logs plugins
+	mkdir -p rustfs/data  rustfs/logs
 	# rustfs コンテナが書き込めるようにホスト側の権限を広げる
 	chmod -R a+rwX rustfs/data rustfs/logs
 
@@ -37,6 +37,7 @@ clean:
 # init 配下をビルドしてプラグインを配置する
 build: download
 	make -C init
+	mkdir -p plugins
 	cp init/dist/* plugins/motherduck-duckdb-datasource/
 
 GRAFANA_DUCKDB_DATASOURCE_VERSION ?= 0.4.0
