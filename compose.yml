@@ -80,7 +80,7 @@ services:
     image: grafana/grafana:12.4.3-ubuntu
     container_name: grafana
     ports:
-      - 3000:3000
+      - 13000:3000
     networks:
       - kohaku
     environment:
