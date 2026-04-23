@@ -38,6 +38,40 @@ def run_and_assert_success(container: DockerContainer) -> None:
         raise AssertionError(f"コンテナ実行に失敗しました (status={status_code})")
 
 
+def build_probe_container(network: Network) -> DockerContainer:
+    # 対象オブジェクトの存在を mc stat で確認する一時コンテナを生成する。
+    return (
+        DockerContainer(
+            MC_IMAGE,
+            command=[
+                "-ceu",
+                'mc alias set storage "http://${S3_ENDPOINT}" "${AWS_ACCESS_KEY_ID}" '
+                '"${AWS_SECRET_ACCESS_KEY}" >/dev/null\n'
+                'mc stat "storage/${S3_BUCKET}/${S3_PREFIX}/old.log" >/dev/null 2>&1',
+            ],
+        )
+        .with_network(network)
+        .with_kwargs(entrypoint="/bin/sh")
+        .with_env("AWS_ACCESS_KEY_ID", AWS_ACCESS_KEY_ID)
+        .with_env("AWS_SECRET_ACCESS_KEY", AWS_SECRET_ACCESS_KEY)
+        .with_env("S3_ENDPOINT", S3_ENDPOINT)
+        .with_env("S3_BUCKET", S3_BUCKET)
+        .with_env("S3_PREFIX", S3_PREFIX)
+    )
+
+
+def wait_for_object_deletion(network: Network, timeout_sec: int = 30, interval_sec: int = 2) -> bool:
+    # 対象オブジェクトが削除されるまで一定間隔でポーリングする。
+    # mc stat が非ゼロを返せばオブジェクト削除済みと判断する。
+    deadline = time.time() + timeout_sec
+    while time.time() < deadline:
+        status_code = run_container_and_get_status(build_probe_container(network))
+        if status_code != 0:
+            return True
+        time.sleep(interval_sec)
+    return False
+
+
 @pytest.fixture
 def rustfs_env() -> dict[str, object]:
     run_id = os.getenv("GITHUB_RUN_ID", "local")
@@ -104,9 +138,7 @@ def test_s3_cleaner_removes_old_object(rustfs_env: dict[str, object]) -> None:
     )
     run_and_assert_success(setup_object)
 
-    time.sleep(2)
-
-    # cleaner を短時間だけ起動し、1 回以上の削除処理を走らせる。
+    # cleaner を起動し、対象オブジェクトが削除されるまでポーリングして確認する。
     cleaner = (
         DockerContainer(MC_IMAGE, command="/scripts/s3-cleaner.sh")
         .with_name(rustfs_env["cleaner_container"])
@@ -123,27 +155,9 @@ def test_s3_cleaner_removes_old_object(rustfs_env: dict[str, object]) -> None:
         .with_env("CLEANUP_INTERVAL", "1")
     )
     cleaner.start()
-    time.sleep(4)
-    cleaner.stop()
+    try:
+        deleted = wait_for_object_deletion(rustfs_env["network"])
+    finally:
+        cleaner.stop()
 
-    # 対象オブジェクトが消えていることを終了コードで検証する。
-    probe_deleted = (
-        DockerContainer(
-            MC_IMAGE,
-            command=[
-                "-ceu",
-                'mc alias set storage "http://${S3_ENDPOINT}" "${AWS_ACCESS_KEY_ID}" '
-                '"${AWS_SECRET_ACCESS_KEY}" >/dev/null\n'
-                'mc stat "storage/${S3_BUCKET}/${S3_PREFIX}/old.log" >/dev/null 2>&1',
-            ],
-        )
-        .with_network(rustfs_env["network"])
-        .with_kwargs(entrypoint="/bin/sh")
-        .with_env("AWS_ACCESS_KEY_ID", AWS_ACCESS_KEY_ID)
-        .with_env("AWS_SECRET_ACCESS_KEY", AWS_SECRET_ACCESS_KEY)
-        .with_env("S3_ENDPOINT", S3_ENDPOINT)
-        .with_env("S3_BUCKET", S3_BUCKET)
-        .with_env("S3_PREFIX", S3_PREFIX)
-    )
-    status_code = run_container_and_get_status(probe_deleted)
-    assert status_code != 0, "s3-cleaner が対象オブジェクトを削除できていません"
+    assert deleted, "s3-cleaner が対象オブジェクトを削除できていません"
