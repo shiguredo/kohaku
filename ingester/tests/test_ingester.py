@@ -184,16 +184,6 @@ def s3_client(rustfs_endpoint):
 
     return client
 
-@pytest.fixture
-def duckdb_connection(filepath):
-    """
-    DuckDBの接続を提供するフィクスチャ
-    :return: DuckDBの接続オブジェクト
-    """
-    con = duckdb.connect(filepath)
-    yield con
-    con.close()
-
 def test_init(request, s3_client, rustfs_endpoint):
     """init 実行でログを取り込み、DuckDB とオブジェクトカーソルが作成されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
