@@ -1,7 +1,6 @@
 import json
 import shutil
 import subprocess
-import time
 from pathlib import Path
 
 import duckdb
@@ -11,6 +10,7 @@ from testcontainers.core.container import DockerContainer
 from testcontainers.core.network import Network
 
 from .fluent_bit_helper import create_fluent_bit_config
+from .helpers import WaitTimeoutError, wait_until
 
 ACCESS_KEY = "kohakuadmin"
 SECRET_KEY = "kohakuadmin"
@@ -19,25 +19,6 @@ PREFIX = "log"
 RUSTFS_PORT = 9000
 RUSTFS_IMAGE = "rustfs/rustfs:1.0.0-alpha.89"
 FLUENT_BIT_IMAGE = "fluent/fluent-bit"
-
-class WaitTimeoutError(Exception):
-    pass
-
-
-def wait_until(condition, timeout_sec=120, interval_sec=1):
-    """
-    条件関数が真になるまで一定間隔で待機する。
-    :param condition: 真偽値を返す呼び出し可能オブジェクト
-    :param timeout_sec: 待機の上限秒数
-    :param interval_sec: 条件判定の間隔秒数
-    :return: なし。制限時間内に条件が満たされない場合は WaitTimeoutError を送出する
-    """
-    deadline = time.time() + timeout_sec
-    while time.time() < deadline:
-        if condition():
-            return
-        time.sleep(interval_sec)
-    raise WaitTimeoutError(f"condition was not met within {timeout_sec} seconds")
 
 
 def count_objects(client, prefix):
