@@ -106,7 +106,11 @@ def create_duckdb_readonly_copy(base_dir: Path) -> Path:
 
     readonly_path = duckdb_dir / "duck.db.readonly"
     shutil.copyfile(db_path, readonly_path)
+    # コンテナ内の grafana ユーザーがファイルを読み取れるようにする。
     os.chmod(readonly_path, 0o666)
+    # pytest が tmp_path を 0o700 で作成するため、コンテナユーザーがディレクトリを辿れるよう 0o755 に変更する。
+    os.chmod(duckdb_dir, 0o755)
+    os.chmod(base_dir, 0o755)
     return duckdb_dir
 
 
