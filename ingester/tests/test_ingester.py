@@ -427,7 +427,7 @@ def test_update(request, s3_client, rustfs_endpoint):
             directory = now.strftime("%Y/%m/%d")
             s3_path = data_path(PREFIX, "rtc_stats", directory)
             # アップロード
-            result = s3_client.put_object(
+            s3_client.put_object(
                 BUCKET,
                 s3_path,
                 io.BytesIO(compressed_log_data),
