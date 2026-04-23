@@ -6,12 +6,10 @@ COMPOSE_EXTERNAL_S3 := compose.external-s3.yml
 # 初期データを作成して権限を整える
 init: build
 	mkdir -p rustfs/data  rustfs/logs
-	# rustfs コンテナが書き込めるようにホスト側の権限を広げる
-	chmod -R a+rwX rustfs/data rustfs/logs
 
 # 標準構成でコンテナを起動する
 up:
-	docker compose -f $(COMPOSE_RUSTFS) up -d --build
+	USER_ID=`id -u` GROUP_ID=`id -g` docker compose -f $(COMPOSE_RUSTFS) up -d --build
 
 # 外部 S3 構成でコンテナを起動する
 up-external-s3:
@@ -19,7 +17,7 @@ up-external-s3:
 
 # 標準構成のコンテナを停止する
 down:
-	docker compose -f $(COMPOSE_RUSTFS) down --rmi local
+	USER_ID=`id -u` GROUP_ID=`id -g` docker compose -f $(COMPOSE_RUSTFS) down --rmi local
 
 # 外部 S3 構成のコンテナを停止する
 down-external-s3:
