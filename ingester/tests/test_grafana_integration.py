@@ -86,8 +86,7 @@ def create_duckdb_readonly_copy(base_dir: Path) -> Path:
 
     # Grafana からの読み取り確認に必要な最小限のテーブルだけを作る。
     db_path = duckdb_dir / "duck.db"
-    con = duckdb.connect(str(db_path))
-    try:
+    with duckdb.connect(str(db_path)) as con:
         con.execute(
             """
             CREATE TABLE rtc_stats (
@@ -101,8 +100,6 @@ def create_duckdb_readonly_copy(base_dir: Path) -> Path:
             "INSERT INTO rtc_stats VALUES (?, ?, ?)",
             ("2025-07-25 06:06:51", "connection-1", 1),
         )
-    finally:
-        con.close()
 
     readonly_path = duckdb_dir / "duck.db.readonly"
     shutil.copyfile(db_path, readonly_path)

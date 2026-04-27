@@ -218,24 +218,23 @@ def test_init(request, s3_client, rustfs_endpoint):
     assert os.path.exists(duckdb_filepath)
 
     # DB に保存したデータ数を確認する
-    duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
-    duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
-    result = duckdb_connection.fetchone()
+    with duckdb.connect(duckdb_filepath) as duckdb_connection:
+        objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+        duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = duckdb_connection.fetchone()
+        # データが取得できていることを確認する
+        assert result is not None
+        # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
+        assert result[0] > 0
+        # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
+        assert result[0] == len(objects)
 
-    # データが取得できていることを確認する
-    assert result is not None
-    # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
-    assert result[0] > 0
-    # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
-    assert result[0] == len(objects)
-
-    # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
-    latest_object = get_latest_object(s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
-    duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified,))
-    result = duckdb_connection.fetchone()
-    assert result is not None
-    assert result[0] == 1
+        # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
+        latest_object = get_latest_object(s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
+        duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified,))
+        result = duckdb_connection.fetchone()
+        assert result is not None
+        assert result[0] == 1
 
 def test_re_init(request, s3_client, rustfs_endpoint):
     """init を再実行してもデータ件数とカーソル情報が変化しないことを確認する。"""
@@ -271,38 +270,38 @@ def test_re_init(request, s3_client, rustfs_endpoint):
     assert os.path.exists(duckdb_filepath)
 
     # DB に保存したデータ数を確認する
-    duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
-    duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
-    result = duckdb_connection.fetchone()
-    # データが取得できていることを確認する
-    assert result is not None
-    # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
-    assert result[0] > 0
-    # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
-    assert result[0] == len(objects)
+    with duckdb.connect(duckdb_filepath) as duckdb_connection:
+        objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+        duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = duckdb_connection.fetchone()
+        # データが取得できていることを確認する
+        assert result is not None
+        # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
+        assert result[0] > 0
+        # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
+        assert result[0] == len(objects)
 
-    # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
-    latest_object = get_latest_object(s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
-    duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified,))
-    result = duckdb_connection.fetchone()
-    assert result is not None
-    assert result[0] == 1
+        # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
+        latest_object = get_latest_object(s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
+        duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified,))
+        result = duckdb_connection.fetchone()
+        assert result is not None
+        assert result[0] == 1
 
-    # 再度 init を呼び出しても、内容が変わらないことを確認する
-    init(args)
-    duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
-    result = duckdb_connection.fetchone()
-    # 取得したデータ数が最初の init 実行後から変わらないことを確認する
-    assert result is not None
-    assert result[0] == len(objects)
+        # 再度 init を呼び出しても、内容が変わらないことを確認する
+        init(args)
+        duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = duckdb_connection.fetchone()
+        # 取得したデータ数が最初の init 実行後から変わらないことを確認する
+        assert result is not None
+        assert result[0] == len(objects)
 
-    # 再実行後も、s3_objects の last_modified が変わらないことを確認する
-    # 前回の実行時に取得した latest_object をそのまま利用する
-    duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified,))
-    result = duckdb_connection.fetchone()
-    assert result is not None
-    assert result[0] == 1
+        # 再実行後も、s3_objects の last_modified が変わらないことを確認する
+        # 前回の実行時に取得した latest_object をそのまま利用する
+        duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified,))
+        result = duckdb_connection.fetchone()
+        assert result is not None
+        assert result[0] == 1
 
 def test_file_count_limit_for_init(request, s3_client, rustfs_endpoint):
     """init の初期読み込み上限で取り込み件数が制限されることを確認する。"""
@@ -341,26 +340,25 @@ def test_file_count_limit_for_init(request, s3_client, rustfs_endpoint):
     assert os.path.exists(duckdb_filepath)
 
     # DB に保存したデータ数を確認する
-    duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
-    duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
-    result = duckdb_connection.fetchone()
+    with duckdb.connect(duckdb_filepath) as duckdb_connection:
+        objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+        duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = duckdb_connection.fetchone()
+        # 取得したデータ数が正しいことを確認する
+        # データが取得できていることを確認する
+        assert result is not None
+        # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
+        assert result[0] > 0
+        # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数より少ないことを確認する
+        assert result[0] < len(objects)
+        assert result[0] == initial_maximum_load
 
-    # 取得したデータ数が正しいことを確認する
-    # データが取得できていることを確認する
-    assert result is not None
-    # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
-    assert result[0] > 0
-    # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数より少ないことを確認する
-    assert result[0] < len(objects)
-    assert result[0] == initial_maximum_load
-
-    # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
-    latest_object = get_latest_object(s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
-    duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified))
-    result = duckdb_connection.fetchone()
-    assert result is not None
-    assert result[0] == 1
+        # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
+        latest_object = get_latest_object(s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
+        duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified))
+        result = duckdb_connection.fetchone()
+        assert result is not None
+        assert result[0] == 1
 
 def test_update(request, s3_client, rustfs_endpoint):
     """update 実行時に差分ログのみが追加され、件数とカーソルが更新されることを確認する。"""
@@ -396,62 +394,62 @@ def test_update(request, s3_client, rustfs_endpoint):
     assert os.path.exists(duckdb_filepath)
 
     # DB に保存したデータ数を確認する
-    duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
-    duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
-    result = duckdb_connection.fetchone()
-    # 取得したデータ数が正しいことを確認する
-    assert result is not None
-    # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
-    assert result[0] > 0
-    # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
-    assert result[0] == len(objects)
+    with duckdb.connect(duckdb_filepath) as duckdb_connection:
+        objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+        duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = duckdb_connection.fetchone()
+        # 取得したデータ数が正しいことを確認する
+        assert result is not None
+        # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
+        assert result[0] > 0
+        # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
+        assert result[0] == len(objects)
 
-    # log データに変化がないため、update を呼び出してもデータ数が変わらないことを確認する
-    update(args)
-    duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
-    result = duckdb_connection.fetchone()
-    # 取得したデータ数が変わらないことを確認する
-    assert result is not None
-    assert result[0] == len(objects)
+        # log データに変化がないため、update を呼び出してもデータ数が変わらないことを確認する
+        update(args)
+        duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = duckdb_connection.fetchone()
+        # 取得したデータ数が変わらないことを確認する
+        assert result is not None
+        assert result[0] == len(objects)
 
-    # 新規の log データを RustFS に追加した後に update を呼び出して、データ数が増えることを確認する
-    new_log_file = os.path.join(LOG_DIR, "rtc_stats.jsonl")
-    with open(new_log_file, 'rb') as data:
-        for line in data:
-            parsed_log = json.loads(line)
-            now = datetime.datetime.now(datetime.timezone.utc)
-            log_data = json.dumps(parsed_log).encode('utf-8')
-            compressed_log_data = gzip.compress(log_data)
+        # 新規の log データを RustFS に追加した後に update を呼び出して、データ数が増えることを確認する
+        new_log_file = os.path.join(LOG_DIR, "rtc_stats.jsonl")
+        with open(new_log_file, 'rb') as data:
+            for line in data:
+                parsed_log = json.loads(line)
+                now = datetime.datetime.now(datetime.timezone.utc)
+                log_data = json.dumps(parsed_log).encode('utf-8')
+                compressed_log_data = gzip.compress(log_data)
 
-            directory = now.strftime("%Y/%m/%d")
-            s3_path = data_path(PREFIX, "rtc_stats", directory)
-            # アップロード
-            s3_client.put_object(
-                BUCKET,
-                s3_path,
-                io.BytesIO(compressed_log_data),
-                length=len(compressed_log_data),
-            )
+                directory = now.strftime("%Y/%m/%d")
+                s3_path = data_path(PREFIX, "rtc_stats", directory)
+                # アップロード
+                s3_client.put_object(
+                    BUCKET,
+                    s3_path,
+                    io.BytesIO(compressed_log_data),
+                    length=len(compressed_log_data),
+                )
 
-    # update を呼び出して、データ数が増えることを確認する
-    update(args)
-    duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
-    result = duckdb_connection.fetchone()
-    # 取得したデータ数が増えていることを確認する
-    assert result is not None
-    assert result[0] > len(objects)
+        # update を呼び出して、データ数が増えることを確認する
+        update(args)
+        duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = duckdb_connection.fetchone()
+        # 取得したデータ数が増えていることを確認する
+        assert result is not None
+        assert result[0] > len(objects)
 
-    # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
-    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
-    assert result[0] == len(objects)
+        # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
+        objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+        assert result[0] == len(objects)
 
-    # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
-    latest_object = get_latest_object(s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
-    duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified,))
-    result = duckdb_connection.fetchone()
-    assert result is not None
-    assert result[0] == 1
+        # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
+        latest_object = get_latest_object(s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
+        duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified,))
+        result = duckdb_connection.fetchone()
+        assert result is not None
+        assert result[0] == 1
 
 def test_all_delete(request, s3_client, rustfs_endpoint):
     """保持期間外のデータだけで構成された場合に delete で全件削除されることを確認する。"""
@@ -485,39 +483,39 @@ def test_all_delete(request, s3_client, rustfs_endpoint):
     assert os.path.exists(duckdb_filepath)
 
     # DB に保存したデータ数を確認する
-    duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
-    duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
-    result = duckdb_connection.fetchone()
-    # 取得したデータ数が正しいことを確認する
-    assert result is not None
-    # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
-    assert result[0] > 0
-    # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
-    assert result[0] == len(objects)
+    with duckdb.connect(duckdb_filepath) as duckdb_connection:
+        objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+        duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = duckdb_connection.fetchone()
+        # 取得したデータ数が正しいことを確認する
+        assert result is not None
+        # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
+        assert result[0] > 0
+        # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
+        assert result[0] == len(objects)
 
 
-    # DuckDB のオブジェクトを取得する
-    duckdb_connection.execute("SELECT timestamp, connection_id, rtc_id, rtc_type FROM rtc_stats")
-    objects = duckdb_connection.fetchall()
-    # すべてのオブジェクトの timestamp を 2 日前に更新する
-    for _, obj in enumerate(objects):
-        update_timestamp_for_rtc_stats(duckdb_connection, obj, 2)
+        # DuckDB のオブジェクトを取得する
+        duckdb_connection.execute("SELECT timestamp, connection_id, rtc_id, rtc_type FROM rtc_stats")
+        objects = duckdb_connection.fetchall()
+        # すべてのオブジェクトの timestamp を 2 日前に更新する
+        for _, obj in enumerate(objects):
+            update_timestamp_for_rtc_stats(duckdb_connection, obj, 2)
 
-    # delete 関数を呼び出すための引数を設定
-    # retention_period を 1 日に設定して、2 日前のデータが削除されることを確認する
-    # delete 関数を呼び出すための引数を設定
-    args = Args(
-        db=duckdb_filepath,
-        retention_period=1,
-    )
-    # delete 関数を呼び出して、データが削除されることを確認する
-    delete(args)
-    duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
-    result = duckdb_connection.fetchone()
-    assert result is not None
-    # 全てのオブジェクトの timestamp を 2 日前に更新したため、全てのデータが削除される
-    assert result[0] == 0
+        # delete 関数を呼び出すための引数を設定
+        # retention_period を 1 日に設定して、2 日前のデータが削除されることを確認する
+        # delete 関数を呼び出すための引数を設定
+        args = Args(
+            db=duckdb_filepath,
+            retention_period=1,
+        )
+        # delete 関数を呼び出して、データが削除されることを確認する
+        delete(args)
+        duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = duckdb_connection.fetchone()
+        assert result is not None
+        # 全てのオブジェクトの timestamp を 2 日前に更新したため、全てのデータが削除される
+        assert result[0] == 0
 
 def test_delete(request, s3_client, rustfs_endpoint):
     """保持期間外と期間内が混在する場合に delete で期間外のみ削除されることを確認する。"""
@@ -551,44 +549,44 @@ def test_delete(request, s3_client, rustfs_endpoint):
     assert os.path.exists(duckdb_filepath)
 
     # DB に保存したデータ数を確認する
-    duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
-    duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
-    result = duckdb_connection.fetchone()
-    # 取得したデータ数が正しいことを確認する
-    assert result is not None
-    # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
-    assert result[0] > 0
-    # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
-    assert result[0] == len(objects)
+    with duckdb.connect(duckdb_filepath) as duckdb_connection:
+        objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+        duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = duckdb_connection.fetchone()
+        # 取得したデータ数が正しいことを確認する
+        assert result is not None
+        # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
+        assert result[0] > 0
+        # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
+        assert result[0] == len(objects)
 
 
-    # DuckDB のオブジェクトを取得する
-    duckdb_connection.execute("SELECT timestamp, connection_id, rtc_id, rtc_type FROM rtc_stats")
-    objects = duckdb_connection.fetchall()
-    # オブジェクトの半数の timestamp を 2 日前に更新する
-    for i, obj in enumerate(objects):
-        if i % 2 == 0:
-            # 偶数番目のオブジェクトは 2 日前に更新
-            update_timestamp_for_rtc_stats(duckdb_connection, obj, 2)
-        else:
-            # 奇数番目のオブジェクトは今の日時に更新
-            update_timestamp_for_rtc_stats(duckdb_connection, obj, 0)
+        # DuckDB のオブジェクトを取得する
+        duckdb_connection.execute("SELECT timestamp, connection_id, rtc_id, rtc_type FROM rtc_stats")
+        objects = duckdb_connection.fetchall()
+        # オブジェクトの半数の timestamp を 2 日前に更新する
+        for i, obj in enumerate(objects):
+            if i % 2 == 0:
+                # 偶数番目のオブジェクトは 2 日前に更新
+                update_timestamp_for_rtc_stats(duckdb_connection, obj, 2)
+            else:
+                # 奇数番目のオブジェクトは今の日時に更新
+                update_timestamp_for_rtc_stats(duckdb_connection, obj, 0)
 
-    # delete 関数を呼び出すための引数を設定
-    # retention_period を 1 日に設定して、2 日前のデータが削除されることを確認する
-    # delete 関数を呼び出すための引数を設定
-    args = Args(
-        db=duckdb_filepath,
-        retention_period=1,
-    )
-    # delete 関数を呼び出して、データが削除されることを確認する
-    delete(args)
-    duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
-    result = duckdb_connection.fetchone()
-    assert result is not None
-    # 偶数番目のオブジェクトの timestamp を 2 日前に更新したため、半分のデータが残る
-    assert result[0] == len(objects) // 2
+        # delete 関数を呼び出すための引数を設定
+        # retention_period を 1 日に設定して、2 日前のデータが削除されることを確認する
+        # delete 関数を呼び出すための引数を設定
+        args = Args(
+            db=duckdb_filepath,
+            retention_period=1,
+        )
+        # delete 関数を呼び出して、データが削除されることを確認する
+        delete(args)
+        duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = duckdb_connection.fetchone()
+        assert result is not None
+        # 偶数番目のオブジェクトの timestamp を 2 日前に更新したため、半分のデータが残る
+        assert result[0] == len(objects) // 2
 
 def test_delete_within_retention_period(request, s3_client, rustfs_endpoint):
     """保持期間内のデータのみの場合に delete を実行しても削除されないことを確認する。"""
@@ -622,44 +620,43 @@ def test_delete_within_retention_period(request, s3_client, rustfs_endpoint):
     assert os.path.exists(duckdb_filepath)
 
     # DB に保存したデータ数を確認する
-    duckdb_connection = duckdb.connect(duckdb_filepath)
-    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
-    duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
-    result = duckdb_connection.fetchone()
-    # 取得したデータ数が正しいことを確認する
-    assert result is not None
-    # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
-    assert result[0] > 0
-    # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
-    assert result[0] == len(objects)
+    with duckdb.connect(duckdb_filepath) as duckdb_connection:
+        objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+        duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = duckdb_connection.fetchone()
+        # 取得したデータ数が正しいことを確認する
+        assert result is not None
+        # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
+        assert result[0] > 0
+        # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
+        assert result[0] == len(objects)
 
+        # DuckDB のオブジェクトを取得する
+        duckdb_connection.execute("SELECT timestamp, connection_id, rtc_id, rtc_type FROM rtc_stats")
+        objects = duckdb_connection.fetchall()
+        # オブジェクトの半数の timestamp を 2 日前に更新する
+        for i, obj in enumerate(objects):
+            if i % 2 == 0:
+                # 偶数番目のオブジェクトは 2 日前に更新
+                update_timestamp_for_rtc_stats(duckdb_connection, obj, 2)
+            else:
+                # 奇数番目のオブジェクトは今の日時に更新
+                update_timestamp_for_rtc_stats(duckdb_connection, obj, 0)
 
-    # DuckDB のオブジェクトを取得する
-    duckdb_connection.execute("SELECT timestamp, connection_id, rtc_id, rtc_type FROM rtc_stats")
-    objects = duckdb_connection.fetchall()
-    # オブジェクトの半数の timestamp を 2 日前に更新する
-    for i, obj in enumerate(objects):
-        if i % 2 == 0:
-            # 偶数番目のオブジェクトは 2 日前に更新
-            update_timestamp_for_rtc_stats(duckdb_connection, obj, 2)
-        else:
-            # 奇数番目のオブジェクトは今の日時に更新
-            update_timestamp_for_rtc_stats(duckdb_connection, obj, 0)
-
-    # delete 関数を呼び出すための引数を設定
-    # retention_period を 3 日に設定して、対象のオブジェクトがないため、データが削除されないことを確認する
-    # delete 関数を呼び出すための引数を設定
-    args = Args(
-        db=duckdb_filepath,
-        retention_period=3,
-    )
-    # delete 関数を呼び出して、データが削除されることを確認する
-    delete(args)
-    duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
-    result = duckdb_connection.fetchone()
-    assert result is not None
-    # データの保持期間が 3 日のため、データは削除されない
-    assert result[0] == len(objects)
+        # delete 関数を呼び出すための引数を設定
+        # retention_period を 3 日に設定して、対象のオブジェクトがないため、データが削除されないことを確認する
+        # delete 関数を呼び出すための引数を設定
+        args = Args(
+            db=duckdb_filepath,
+            retention_period=3,
+        )
+        # delete 関数を呼び出して、データが削除されることを確認する
+        delete(args)
+        duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = duckdb_connection.fetchone()
+        assert result is not None
+        # データの保持期間が 3 日のため、データは削除されない
+        assert result[0] == len(objects)
 
 def test_no_bucket(request, rustfs_endpoint):
     """RustFS のバケットが存在しない場合に init が例外を送出することを確認する。"""

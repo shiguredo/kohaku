@@ -222,13 +222,10 @@ def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path):
             assert run.returncode == 0, run.stderr
             assert duckdb_path.exists()
 
-            con = duckdb.connect(str(duckdb_path))
-            try:
+            with duckdb.connect(str(duckdb_path)) as con:
                 rtc_stats_count = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
                 session_webhook_count = con.execute("SELECT COUNT(*) FROM session_webhook").fetchone()[0]
                 s3_objects_count = con.execute("SELECT COUNT(*) FROM s3_objects").fetchone()[0]
-            finally:
-                con.close()
 
             assert rtc_stats_count > 0
             assert session_webhook_count > 0
@@ -289,15 +286,12 @@ def test_runpy_init_skips_missing_target_without_invalid_input_exception(tmp_pat
             assert "InvalidInputException" not in run.stdout
             assert "InvalidInputException" not in run.stderr
 
-            con = duckdb.connect(str(duckdb_path))
-            try:
+            with duckdb.connect(str(duckdb_path)) as con:
                 rtc_stats_count = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
                 session_webhook_table_count = con.execute(
                     "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='session_webhook'"
                 ).fetchone()[0]
                 s3_objects_count = con.execute("SELECT COUNT(*) FROM s3_objects").fetchone()[0]
-            finally:
-                con.close()
 
             # rtc_stats は通常どおり取り込まれること
             assert rtc_stats_count > 0
@@ -310,15 +304,12 @@ def test_runpy_init_skips_missing_target_without_invalid_input_exception(tmp_pat
             update_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
             assert update_run.returncode == 0, update_run.stderr
 
-            con = duckdb.connect(str(duckdb_path))
-            try:
+            with duckdb.connect(str(duckdb_path)) as con:
                 rtc_stats_count_after_update = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
                 session_webhook_table_count_after_update = con.execute(
                     "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='session_webhook'"
                 ).fetchone()[0]
                 s3_objects_count_after_update = con.execute("SELECT COUNT(*) FROM s3_objects").fetchone()[0]
-            finally:
-                con.close()
 
             assert rtc_stats_count_after_update == rtc_stats_count
             assert session_webhook_table_count_after_update == 0
@@ -372,12 +363,9 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
             init_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
             assert init_run.returncode == 0, init_run.stderr
 
-            con = duckdb.connect(str(duckdb_path))
-            try:
+            with duckdb.connect(str(duckdb_path)) as con:
                 before_count = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
                 before_cursor = get_s3_cursor(con, "rtc_stats")
-            finally:
-                con.close()
 
             append_rtc_stats_log(log_dir)
             rtc_stats_object_count_before = count_objects(client, f"{PREFIX}/rtc_stats/")
@@ -393,12 +381,9 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
             update_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
             assert update_run.returncode == 0, update_run.stderr
 
-            con = duckdb.connect(str(duckdb_path))
-            try:
+            with duckdb.connect(str(duckdb_path)) as con:
                 after_count = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
                 after_cursor = get_s3_cursor(con, "rtc_stats")
-            finally:
-                con.close()
 
             assert after_count > before_count
             assert after_cursor is not None
@@ -410,12 +395,9 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
             update_run_again = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
             assert update_run_again.returncode == 0, update_run_again.stderr
 
-            con = duckdb.connect(str(duckdb_path))
-            try:
+            with duckdb.connect(str(duckdb_path)) as con:
                 final_count = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
                 final_cursor = get_s3_cursor(con, "rtc_stats")
-            finally:
-                con.close()
             assert final_count == after_count
             # 新規ログがない update では cursor も進まない
             assert final_cursor == after_cursor
