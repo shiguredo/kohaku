@@ -184,6 +184,43 @@ def s3_client(rustfs_endpoint):
 
     return client
 
+@pytest.fixture
+def s3_client_without_session_webhook(rustfs_endpoint):
+    # session_webhook を意図的に除外し、ログ種別が欠損した状態を再現する S3 クライアントを作成する
+    # RustFS に接続する MinIO クライアントを作成する
+    client = minio.Minio(
+        rustfs_endpoint,
+        access_key=ACCESS_KEY,
+        secret_key=SECRET_KEY,
+        secure=False,
+    )
+    # RustFS が利用可能になるまで待機する
+    wait_until(lambda: client.list_buckets() is not None)
+    # バケットの作成
+    found = client.bucket_exists(BUCKET)
+    # バケットは常に存在しない
+    assert found is False
+    client.make_bucket(BUCKET)
+
+    # rtc_stats のみアップロードし、session_webhook はアップロードしない
+    now = datetime.datetime.now(datetime.timezone.utc)
+    log_file_path = os.path.join(LOG_DIR, "rtc_stats.jsonl")
+    with open(log_file_path, 'rb') as data:
+        for line in data:
+            directory = now.strftime("%Y/%m/%d")
+            s3_path = data_path(PREFIX, "rtc_stats", directory)
+            # gzip 圧縮
+            compressed_log_data = gzip.compress(line)
+            # アップロード
+            client.put_object(
+                BUCKET,
+                s3_path,
+                io.BytesIO(compressed_log_data),
+                length=len(compressed_log_data),
+            )
+
+    return client
+
 def test_init(request, s3_client, rustfs_endpoint):
     """init 実行でログを取り込み、DuckDB とオブジェクトカーソルが作成されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
@@ -684,6 +721,60 @@ def test_no_bucket(request, rustfs_endpoint):
         )
 
         init(args)
+
+def test_init_skips_missing_session_webhook(request, s3_client_without_session_webhook, rustfs_endpoint):
+    """session_webhook が S3 に存在しない場合でも init が成功し、rtc_stats のみ取り込まれることを確認する。"""
+    # node.name を使用して DuckDB のファイル名を生成する
+    duckdb_filename = f"{request.node.name}.db"
+    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+
+    # テスト後に BUCKET を削除するためのクリーンアップ処理を追加する
+    request.addfinalizer(lambda: remove_bucket(s3_client_without_session_webhook, BUCKET))
+    request.addfinalizer(lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None)
+
+    # テスト開始時に BUCKET が存在することを確認
+    assert s3_client_without_session_webhook.bucket_exists(BUCKET)
+
+    # ingester/src/run.py の init 関数を呼び出すための引数を設定
+    args = Args(
+        db=duckdb_filepath,
+        s3_endpoint=rustfs_endpoint,
+        s3_access_key_id=ACCESS_KEY,
+        s3_secret_access_key=SECRET_KEY,
+        s3_use_ssl=False,
+        s3_region="ap-northeast-1",
+        storage="rustfs",
+        s3_bucket=BUCKET,
+        s3_prefix=PREFIX,
+        initial_maximum_load=1000
+    )
+
+    # session_webhook が欠損していても init が例外を送出しないことを確認する
+    init(args)
+
+    # DB ファイルが存在することを確認する
+    assert os.path.exists(duckdb_filepath)
+
+    with duckdb.connect(duckdb_filepath) as duckdb_connection:
+        # rtc_stats は正常に取り込まれること
+        duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = duckdb_connection.fetchone()
+        assert result is not None
+        assert result[0] > 0
+
+        # S3 に存在しない session_webhook のテーブルは作成されないこと
+        duckdb_connection.execute(
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='session_webhook'"
+        )
+        table_count = duckdb_connection.fetchone()
+        assert table_count is not None
+        assert table_count[0] == 0
+
+        # rtc_stats のみ取り込まれるため、カーソルテーブルも 1 行のみであること
+        duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects")
+        cursor_count = duckdb_connection.fetchone()
+        assert cursor_count is not None
+        assert cursor_count[0] == 1
 
 def test_prepare_db_for_init_renames_broken_db_file(tmp_path):
     """壊れた DB を prepare_db_for_init が検出し、DB と WAL をリネームして退避したことを確認する。"""
