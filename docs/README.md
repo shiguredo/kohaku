@@ -30,6 +30,12 @@ Grafana のインストール後にプラグインをインストールして使
 
 https://grafana.com/docs/grafana/latest/setup-grafana/installation/ の手順で Grafana をインストールします
 
+インストールする Grafana のバージョンは、12.4.x を指定してインストールしてください
+
+```bash
+apt-get install grafana=12.4.3
+```
+
 ### kohaku リポジトリをクローン
 
 任意のディレクトリで kohaku を取得します
