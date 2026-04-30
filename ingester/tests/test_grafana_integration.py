@@ -28,6 +28,7 @@ DATA_SOURCE_NAME = "motherduck-duckdb-datasource"
 def init_grafana_plugin():
     """
     Grafana の integration test に必要な plugin を事前に作成する。
+    :return: なし
     """
     # pytest 開始時に 1 回だけ init を実行し、plugins 配下をテスト前提の状態にする。
     repo_root = Path(__file__).resolve().parents[2]

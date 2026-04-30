@@ -68,6 +68,7 @@ def remove_objects(s3_client, bucket_name):
     指定されたバケット内のすべてのオブジェクトを削除する関数
     :param s3_client: S3 クライアント
     :param bucket_name: バケット名
+    :return: なし
     """
 
     objects = list_objects(s3_client, bucket_name)
@@ -79,6 +80,7 @@ def remove_bucket(s3_client, bucket_name):
     指定されたバケットを削除する関数
     :param s3_client: S3 クライアント
     :param bucket_name: バケット名
+    :return: なし
     """
 
     remove_objects(s3_client, bucket_name)
@@ -91,6 +93,7 @@ def update_timestamp_for_rtc_stats(con, obj, period):
     :param con: DuckDB の接続オブジェクト
     :param obj: 更新対象のオブジェクト
     :param period: timestamp を過去に設定する期間（日数）
+    :return: なし
     """
 
     org_timestamp = obj[0]
@@ -121,6 +124,8 @@ def get_latest_object(s3_client, bucket, prefix):
     """
     オブジェクトストレージ上で処理対象の最新のオブジェクトを取得する関数
     :param s3_client: S3 クライアント
+    :param bucket: 対象バケット名
+    :param prefix: 検索対象のプレフィックス
     :return: 最新のオブジェクト
     """
 
