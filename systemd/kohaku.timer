@@ -4,7 +4,6 @@ Description=Update DB
 [Timer]
 OnActiveSec=5min
 OnUnitInactiveSec=5min
-Persistent=true
 Unit=kohaku.service
 
 [Install]
