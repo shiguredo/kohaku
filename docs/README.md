@@ -50,6 +50,8 @@ git clone https://github.com/shiguredo/kohaku.git kohaku
 
 設定項目のテンプレートは .env.common.template に用意してありますので、これを利用して設定します
 
+Grafana の待受ポートは `.env` の `GRAFANA_HTTP_PORT` で設定します
+
 ```bash
 cd kohaku
 cp .env.common.template .env
@@ -81,6 +83,8 @@ sudo chown -R grafana:grafana /var/lib/grafana/plugins
 下記のコマンドでを実行して、 Grafana を設定します
 
 設定内容は .env の内容に従っておこないます
+
+`GRAFANA_HTTP_PORT` を変更した場合は、その値が Grafana の待受ポートとして設定されます
 
 ```bash
 sudo make setup-grafana
