@@ -94,6 +94,11 @@ def sync_log_for_init(con, client, args, target):
     log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
     log_urls = get_target_urls(args.s3_bucket, log_objects[:args.initial_maximum_load])
 
+    # 初期化対象のログが存在しない場合は、テーブル作成をスキップする
+    if len(log_urls) == 0:
+        print(f"No log found for {target} in {args.s3_bucket}.")
+        return
+
     try:
         create_log_table(con, target, log_urls)
         if len(log_objects) > 0:

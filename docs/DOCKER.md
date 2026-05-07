@@ -41,6 +41,8 @@ RustFS の Docker コンテナ上のログは Grafana の Docker コンテナを
 
 設定項目は .env.common.template, .env.docker.template に用意してありますので、これを利用して設定します
 
+Grafana の公開ポートは `.env` の `GRAFANA_HTTP_PORT` で設定します
+
 ```bash
 cat .env.common.template .env.docker.template > .env
 ```
@@ -104,8 +106,8 @@ COMPOSE_PROFILES=cleanup make up-external-s3
 ### Grafana の設定
 
 - ログイン
-  - ブラウザから make up で構築された Grafana (http://192.0.2.0:3000/) にアクセスします
-    - アクセスするブラウザと docker ホストが同じ端末上の場合は http://localhost:3000/ でアクセスできます
+  - ブラウザから make up で構築された Grafana (`http://192.0.2.0:${GRAFANA_HTTP_PORT}/`) にアクセスします
+    - アクセスするブラウザと docker ホストが同じ端末上の場合は `http://localhost:${GRAFANA_HTTP_PORT}/` でアクセスできます
 
   - .env の GF_SECURITY_ADMIN_USER、GF_SECURITY_ADMIN_PASSWORD に設定したアカウントでログインします
 
@@ -139,4 +141,4 @@ make clean
 
 ### 注意点
 
-- Docker Compose で起動した Grafana はポート番号 3000, RustFS はポート番号 9000 と 9001 が公開されますので、外部に公開されるサーバ上で起動させる場合には、適宜 Firewall などで、アクセスを制限するようにしてください
+- Docker Compose で起動した Grafana は `.env` の `GRAFANA_HTTP_PORT` で指定したポート番号、RustFS はポート番号 9000 と 9001 が公開されますので、外部に公開されるサーバ上で起動させる場合には、適宜 Firewall などで、アクセスを制限するようにしてください

@@ -9,12 +9,23 @@ permissions:
 
 
 jobs:
+  scripts-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: false
+      - run: |
+          uv run --with pytest --with testcontainers pytest -vv scripts/tests
+
   ci:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: false
       - run: |

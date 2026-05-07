@@ -18,7 +18,7 @@ default-groups = ["test", "lint"]
 python-preference = "only-managed"
 
 [dependency-groups]
-test = ["pytest", "testcontainers[minio]"]
+test = ["pytest", "testcontainers[minio]", "jinja2"]
 lint = ["ruff", "ty"]
 
 [tool.pytest.ini_options]

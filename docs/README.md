@@ -30,6 +30,12 @@ Grafana のインストール後にプラグインをインストールして使
 
 https://grafana.com/docs/grafana/latest/setup-grafana/installation/ の手順で Grafana をインストールします
 
+インストールする Grafana のバージョンは、12.4.x を指定してインストールしてください
+
+```bash
+apt-get install grafana=12.4.3
+```
+
 ### kohaku リポジトリをクローン
 
 任意のディレクトリで kohaku を取得します
@@ -43,6 +49,8 @@ git clone https://github.com/shiguredo/kohaku.git kohaku
 .env ファイルに、Sora の log ディレクトリのパスや Amazon S3, RustFS へのアクセスに必要な設定をおこないます
 
 設定項目のテンプレートは .env.common.template に用意してありますので、これを利用して設定します
+
+Grafana の待受ポートは `.env` の `GRAFANA_HTTP_PORT` で設定します
 
 ```bash
 cd kohaku
@@ -75,6 +83,8 @@ sudo chown -R grafana:grafana /var/lib/grafana/plugins
 下記のコマンドでを実行して、 Grafana を設定します
 
 設定内容は .env の内容に従っておこないます
+
+`GRAFANA_HTTP_PORT` を変更した場合は、その値が Grafana の待受ポートとして設定されます
 
 ```bash
 sudo make setup-grafana
@@ -109,13 +119,13 @@ sudo make setup-fluent-bit-for-rustfs
 - Amazon S3 の場合
 
 ```bash
-make fluent-bit-yml
+sudo make fluent-bit-yml
 ```
 
 - RustFS の場合
 
 ```bash
-make fluent-bit-yml-for-rustfs
+sudo make fluent-bit-yml-for-rustfs
 ```
 
 #### Fluent Bit による収集対象のログファイル
