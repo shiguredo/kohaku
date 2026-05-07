@@ -380,7 +380,7 @@ def main():
     parser = argparse.ArgumentParser()
     # 共通オプション
     parser.add_argument("--db", default=DEFAULT_DUCKDB_FILE, help="DB file path")
-    parser.add_argument("--s3_endpoint", default="127.0.0.1:9000", help="S3 endpoint")
+    parser.add_argument("--s3_endpoint", default="s3.amazonaws.com", help="S3 endpoint")
     parser.add_argument("--s3_access_key_id", default="rootuser", help="S3 access key id")
     parser.add_argument("--s3_secret_access_key", default="password", help="S3 secret access key")
     parser.add_argument("--s3_use_ssl", action="store_true", help="S3 use SSL")
