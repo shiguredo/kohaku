@@ -12,7 +12,7 @@ case "${SUBCOMMAND}" in
             --s3_secret_access_key "${AWS_SECRET_ACCESS_KEY}" \
             --s3_bucket "${S3_BUCKET}" \
             --s3_prefix "${S3_PREFIX}" \
-            --initial_maximum_load "${INITIAL_MAXIMUM_LOAD}"
+            --initial_maximum_load "${INITIAL_MAXIMUM_LOAD:-100}"
 
         # --s3_use_ssl は action="store_true" のため、true の場合のみフラグを付与する
         if [ "${S3_USE_SSL:-}" = "true" ]; then
