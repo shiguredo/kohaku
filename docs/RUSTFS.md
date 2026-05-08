@@ -1,0 +1,72 @@
+# RustFS サーバーの構築手順
+
+Ubuntu 24.04 上で動作を確認しています
+
+## 概要
+
+このサーバーでは、RustFS を Docker Compose で起動し、Fluent Bit から送信されてきたログを保存します
+
+Amazon S3 を使用する場合は、このサーバーの構築は不要です
+
+## 前提条件
+
+- Docker, Docker Compose がインストールされている
+- Fluent Bit サーバーおよび Ingester + Grafana サーバーからネットワーク経由でアクセスできる
+
+## kohaku リポジトリをクローン
+
+任意のディレクトリで kohaku を取得します
+
+```bash
+git clone https://github.com/shiguredo/kohaku.git kohaku
+```
+
+## 環境変数の準備
+
+.env ファイルに、RustFS の設定をおこないます
+
+設定項目のテンプレートは .env.common.template, .env.docker.template に用意してありますので、これを利用して設定します
+
+```bash
+cd kohaku
+cat .env.common.template .env.docker.template > .env
+vim .env
+```
+
+RustFS の設定に必要な項目は下記のとおりです
+
+- `AWS_ACCESS_KEY_ID` - RustFS のアクセスキー
+- `AWS_SECRET_ACCESS_KEY` - RustFS のシークレットキー
+- `S3_ENDPOINT` - このサーバーのアドレスとポート番号（例: `192.0.2.1:9000`）
+- `S3_USE_SSL` - SSL を使用するかどうか（通常は `false`）
+- `S3_BUCKET` - バケット名
+- `S3_PREFIX` - S3 プレフィックス
+- `RETENTION_PERIOD` - ログの保持期間（日）
+- `CLEANUP_INTERVAL` - 古いオブジェクトを削除する間隔（秒）
+- `RUSTFS_BASE_DIR` - RustFS のデータ保存ディレクトリ（通常は `./rustfs`）
+
+## データ保存ディレクトリの作成
+
+```bash
+mkdir -p ./rustfs/data ./rustfs/logs
+```
+
+## RustFS の起動
+
+Docker Compose で RustFS, mc（初期設定用）, s3-cleaner（古いオブジェクトの削除用）を起動します
+
+```bash
+USER_ID=$(id -u) GROUP_ID=$(id -g) docker compose up -d rustfs mc s3-cleaner
+```
+
+RustFS の起動後、mc コンテナが自動でバケット作成等の初期設定をおこないます
+
+mc コンテナは初期設定完了後に終了します
+
+s3-cleaner は `.env` の `RETENTION_PERIOD`（日）を超えたオブジェクトを、`CLEANUP_INTERVAL`（秒）ごとに削除します
+
+## ファイアウォールの設定
+
+Fluent Bit サーバーおよび Ingester + Grafana サーバーから、ポート 9000 へのアクセスを許可します
+
+管理画面（ポート 9001）は外部からのアクセスが不要であれば制限することを推奨します
