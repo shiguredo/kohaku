@@ -13,8 +13,8 @@ Environment=HOME=/opt/kohaku
 WorkingDirectory=/opt/kohaku/ingester
 TimeoutStartSec=10min
 ExecCondition=/bin/test -f ${DUCKDB_DB_PATH}
-ExecStart=/opt/kohaku/scripts/run-ingester.sh update
-ExecStartPost=/opt/kohaku/scripts/run-ingester.sh delete
+ExecStart=/bin/sh /opt/kohaku/scripts/run-ingester.sh update
+ExecStartPost=/bin/sh /opt/kohaku/scripts/run-ingester.sh delete
 
 Restart=on-failure
 RestartSec=5min
