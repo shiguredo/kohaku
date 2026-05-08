@@ -23,6 +23,10 @@ Ubuntu 24.04 上で動作を確認しています
 - [RustFS サーバーの構築手順](RUSTFS.md)
 - [Ingester + Grafana サーバーの構築手順](INGESTER-GRAFANA.md)
 
+また、Docker を利用して Kohaku 環境を構築する場合は、下記を参照してください
+
+- [Docker Compose による構築手順](DOCKER.md)
+
 ## Amazon S3, RustFS に保存したログデータについて
 
 Amazon S3, RustFS に保存したログデータは削除しませんので、
