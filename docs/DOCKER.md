@@ -1,6 +1,6 @@
 # 構築手順
 
-## docker compose による構築手順
+## Docker Compose による構築手順
 
 Fluent Bit, RustFS, Grafana を Docker コンテナ上に用意する手順です
 
@@ -63,7 +63,7 @@ DOCKER=true make fluent-bit-yml-for-rustfs
 
 ### 構築
 
-make up で、docker compose が実行され、Fluent Bit, RustFS, mc, s3-cleaner, Grafana, ingester の Docker コンテナが立ち上がります
+make up で、Docker Compose が実行され、Fluent Bit, RustFS, mc, s3-cleaner, Grafana, ingester の Docker コンテナが立ち上がります
 
 ```bash
 make up
@@ -107,7 +107,7 @@ COMPOSE_PROFILES=cleanup make up-external-s3
 
 - ログイン
   - ブラウザから make up で構築された Grafana (`http://192.0.2.0:${GRAFANA_HTTP_PORT}/`) にアクセスします
-    - アクセスするブラウザと docker ホストが同じ端末上の場合は `http://localhost:${GRAFANA_HTTP_PORT}/` でアクセスできます
+    - アクセスするブラウザと Docker ホストが同じ端末上の場合は `http://localhost:${GRAFANA_HTTP_PORT}/` でアクセスできます
 
   - .env の GF_SECURITY_ADMIN_USER、GF_SECURITY_ADMIN_PASSWORD に設定したアカウントでログインします
 
