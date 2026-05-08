@@ -132,7 +132,7 @@ git clone --no-checkout . /tmp/kohaku
 cp .env /tmp/kohaku/
 pushd /tmp/kohaku
 git sparse-checkout init --no-cone
-git sparse-checkout set ingester
+git sparse-checkout set ingester scripts
 git checkout develop
 popd
 sudo mv /tmp/kohaku /opt/kohaku
@@ -144,26 +144,17 @@ sudo chown -R kohaku:kohaku /opt/kohaku
 DB へのテーブル作成および初期データの挿入は下記の手順でおこないます
 
 Fluent Bit から RustFS または Amazon S3 へログデータが送られてきてから下記を実行します
-S3_ENDPOINT に Amazon S3 を指定している場合や Amazon S3 互換ストレージに HTTPS でアクセスする場合は、src/run.py 実行時のオプションに --s3_use_ssl を追加して HTTPS を有効化してください
 
 ログデータの保存状況は mc コマンド等で確認してください
 
 ```bash
 set -a
 source /opt/kohaku/.env
+set +a
 pushd /opt/kohaku/ingester
 sudo -E -u kohaku /opt/uv/bin/uv --cache-dir /opt/kohaku/ingester/.cache sync
-sudo -E -u kohaku HOME=/opt/kohaku/ingester /opt/uv/bin/uv run python src/run.py \
-  --db $DUCKDB_DB_PATH \
-  --s3_endpoint $S3_ENDPOINT \
-  --s3_access_key_id $AWS_ACCESS_KEY_ID \
-  --s3_secret_access_key $AWS_SECRET_ACCESS_KEY \
-  --s3_bucket $S3_BUCKET \
-  --s3_prefix $S3_PREFIX \
-  --initial_maximum_load $INITIAL_MAXIMUM_LOAD \
-  init
+sudo -E -u kohaku HOME=/opt/kohaku /bin/sh /opt/kohaku/scripts/run-ingester.sh init
 popd
-set +a
 ```
 
 ## Grafana, Kohaku の起動
