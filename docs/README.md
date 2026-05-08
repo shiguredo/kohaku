@@ -19,9 +19,9 @@ Ubuntu 24.04 上で動作を確認しています
 
 各サーバーの構築手順は下記を参照してください
 
-- [Sora + Fluent Bit サーバーの構築手順](sora-fluent-bit.md)
-- [RustFS サーバーの構築手順](rustfs.md)
-- [Ingester + Grafana サーバーの構築手順](ingester-grafana.md)
+- [Sora + Fluent Bit サーバーの構築手順](SORA-FLUENT-BIT.md)
+- [RustFS サーバーの構築手順](RUSTFS.md)
+- [Ingester + Grafana サーバーの構築手順](INGESTER-GRAFANA.md)
 
 ## Amazon S3, RustFS に保存したログデータについて
 
