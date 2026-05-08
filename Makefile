@@ -82,6 +82,7 @@ env:
 
 endef
 
+# 認証情報は .env の設定を使用する
 define SYSTEMD_FLUENT_BIT
 [Service]
 EnvironmentFile=-/opt/kohaku/.env
