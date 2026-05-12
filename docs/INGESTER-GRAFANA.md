@@ -133,7 +133,7 @@ cp .env /tmp/kohaku/
 pushd /tmp/kohaku
 git sparse-checkout init --no-cone
 git sparse-checkout set ingester scripts
-git checkout develop
+git checkout `git show origin/develop:VERSION`
 popd
 sudo mv /tmp/kohaku /opt/kohaku
 sudo chown -R kohaku:kohaku /opt/kohaku
