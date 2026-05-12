@@ -2,7 +2,6 @@
 set -eu
 
 S3_ALIAS=storage
-MC_INIT_ENABLE_ILM="${MC_INIT_ENABLE_ILM:-false}"
 MC_INIT_MAX_RETRIES="${MC_INIT_MAX_RETRIES:-5}"
 MC_INIT_RETRY_INTERVAL="${MC_INIT_RETRY_INTERVAL:-2}"
 
@@ -25,6 +24,4 @@ done
 
 mc mb --ignore-existing "${S3_ALIAS}/${S3_BUCKET}"
 
-if [ "${MC_INIT_ENABLE_ILM}" = "true" ]; then
-  mc ilm rule add --expire-days "${RETENTION_PERIOD}" "${S3_ALIAS}/${S3_BUCKET}"
-fi
+mc ilm rule add --expire-days "${RETENTION_PERIOD}" "${S3_ALIAS}/${S3_BUCKET}"

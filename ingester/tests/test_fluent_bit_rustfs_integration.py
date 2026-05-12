@@ -17,7 +17,7 @@ SECRET_KEY = "kohakuadmin"
 BUCKET = "kohaku"
 PREFIX = "log"
 RUSTFS_PORT = 9000
-RUSTFS_IMAGE = "rustfs/rustfs:1.0.0-alpha.89"
+RUSTFS_IMAGE = "rustfs/rustfs:1.0.0-beta.2"
 FLUENT_BIT_IMAGE = "fluent/fluent-bit"
 
 

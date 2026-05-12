@@ -15,7 +15,7 @@ services:
     command: /fluent-bit/bin/fluent-bit -c /fluent-bit/etc/fluent-bit.yml
 
   rustfs:
-    image: rustfs/rustfs:1.0.0-alpha.89
+    image: rustfs/rustfs:1.0.0-beta.2
     container_name: rustfs
     ports:
       - 9000:9000
@@ -43,7 +43,6 @@ services:
       - S3_BUCKET=${S3_BUCKET}
       - S3_USE_SSL=${S3_USE_SSL:-false}
       - RETENTION_PERIOD=${RETENTION_PERIOD}
-      - MC_INIT_ENABLE_ILM=false
     depends_on:
       - rustfs
     volumes:
@@ -51,30 +50,6 @@ services:
     entrypoint:
       - /bin/sh
       - /scripts/mc-init.sh
-
-  # S3 互換ストレージ 上の保持期間超過オブジェクト削除用コンテナ
-  s3-cleaner:
-    image: minio/mc:RELEASE.2025-07-21T05-28-08Z
-    container_name: s3-cleaner
-    restart: unless-stopped
-    networks:
-      - kohaku
-    environment:
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - S3_ENDPOINT=${S3_ENDPOINT}
-      - S3_BUCKET=${S3_BUCKET}
-      - S3_PREFIX=${S3_PREFIX}
-      - S3_USE_SSL=${S3_USE_SSL:-false}
-      - RETENTION_PERIOD=${RETENTION_PERIOD}
-      - CLEANUP_INTERVAL=${CLEANUP_INTERVAL:-3600}
-    depends_on:
-      - mc
-    volumes:
-      - ./scripts/s3-cleaner.sh:/scripts/s3-cleaner.sh:ro
-    entrypoint:
-      - /bin/sh
-      - /scripts/s3-cleaner.sh
 
   # motherduck-duckdb-datasource は./plugins に展開済みの想定
   grafana:

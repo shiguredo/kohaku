@@ -20,7 +20,7 @@ ACCESS_KEY = "kohakuadmin"
 SECRET_KEY = "kohakuadmin"
 PREFIX = "log"
 RUSTFS_PORT = 9000
-RUSTFS_IMAGE = "rustfs/rustfs:1.0.0-alpha.89"
+RUSTFS_IMAGE = "rustfs/rustfs:1.0.0-beta.2"
 # 出力されたままのログファイルを保存するディレクトリ
 LOG_DIR = "./tests/log"
 DUCKDB_DIR_PATH = "."

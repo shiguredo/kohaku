@@ -42,7 +42,6 @@ RustFS の設定に必要な項目は下記のとおりです
 - `S3_BUCKET` - バケット名
 - `S3_PREFIX` - S3 プレフィックス
 - `RETENTION_PERIOD` - ログの保持期間（日）
-- `CLEANUP_INTERVAL` - 古いオブジェクトを削除する間隔（秒）
 - `RUSTFS_BASE_DIR` - RustFS のデータ保存ディレクトリ（通常は `./rustfs`）
 
 ## データ保存ディレクトリの作成
@@ -53,17 +52,17 @@ mkdir -p ./rustfs/data ./rustfs/logs
 
 ## RustFS の起動
 
-Docker Compose で RustFS, mc（初期設定用）, s3-cleaner（古いオブジェクトの削除用）を起動します
+Docker Compose で RustFS, mc（初期設定用）を起動します
 
 ```bash
-USER_ID=$(id -u) GROUP_ID=$(id -g) docker compose up -d rustfs mc s3-cleaner
+USER_ID=$(id -u) GROUP_ID=$(id -g) docker compose up -d rustfs mc
 ```
 
-RustFS の起動後、mc コンテナが自動でバケット作成等の初期設定をおこないます
+RustFS の起動後、mc コンテナが自動でバケット作成や Lifecycle Management ルールの登録などの初期設定をおこないます
 
 mc コンテナは初期設定完了後に終了します
 
-s3-cleaner は `.env` の `RETENTION_PERIOD`（日）を超えたオブジェクトを、`CLEANUP_INTERVAL`（秒）ごとに削除します
+保持期間を超えたオブジェクトは、RustFS の Lifecycle Management により `.env` の `RETENTION_PERIOD`（日）後に削除されます
 
 ## ファイアウォールの設定
 

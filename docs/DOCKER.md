@@ -11,7 +11,7 @@ RustFS の Docker コンテナ上のログは Grafana の Docker コンテナを
 
 ## 環境
 
-下記の 6 点で構築します
+下記の 5 点で構築します
 
 - Fluent Bit
   - Sora のログを Storage へ転送
@@ -21,9 +21,6 @@ RustFS の Docker コンテナ上のログは Grafana の Docker コンテナを
 
 - mc
   - バケット作成や Lifecycle Management 設定などの初期設定
-
-- s3-cleaner
-  - 保持期間を超えたオブジェクトの削除
 
 - Kohaku
   - Storage から取得したログを DB で管理
@@ -63,15 +60,13 @@ DOCKER=true make fluent-bit-yml-for-rustfs
 
 ### 構築
 
-make up で、Docker Compose が実行され、Fluent Bit, RustFS, mc, s3-cleaner, Grafana, ingester の Docker コンテナが立ち上がります
+make up で、Docker Compose が実行され、Fluent Bit, RustFS, mc, Grafana, ingester の Docker コンテナが立ち上がります
 
 ```bash
 make up
 ```
 
-`compose.yml` では、`s3-cleaner` サービスは常に起動します
-
-`s3-cleaner` は `.env` の `RETENTION_PERIOD`（日）を超えたオブジェクトを、`CLEANUP_INTERVAL`（秒）ごとに削除します
+`mc` サービスが、`.env` の `RETENTION_PERIOD`（日）を保持期間として、バケットに Lifecycle Management ルールを登録します
 
 ### 外部 S3 互換ストレージ を利用する場合
 
@@ -87,21 +82,10 @@ make up-external-s3
 make down-external-s3
 ```
 
-`make down-external-s3` は `compose.external-s3.yml` のサービス（Fluent Bit, mc, s3-cleaner, Grafana, ingester）の Docker コンテナを削除します
+`make down-external-s3` は `compose.external-s3.yml` のサービス（Fluent Bit, mc, Grafana, ingester）の Docker コンテナを削除します
 
-`compose.external-s3.yml` では、`s3-cleaner` サービスは `profiles: [cleanup]` のため、`COMPOSE_PROFILES=cleanup` を指定した時のみ起動します
-
-- 外部 S3 互換ストレージ が Lifecycle Management に対応している場合
-  - `make up-external-s3` のみ実行してください
-- 外部 S3 互換ストレージ が Lifecycle Management 非対応の場合
-  - `COMPOSE_PROFILES` 環境変数を指定して `make up-external-s3` を実行してください
-
-```bash
-COMPOSE_PROFILES=cleanup make up-external-s3
-```
-
-`s3-cleaner` の削除実行間隔は `.env` の `CLEANUP_INTERVAL`（秒）で設定します
-保持期間は `RETENTION_PERIOD`（日）を使用します
+外部 S3 互換ストレージ は Lifecycle Management に対応している必要があります
+保持期間は `.env` の `RETENTION_PERIOD`（日）を使用します
 
 ### Grafana の設定
 
@@ -118,7 +102,7 @@ COMPOSE_PROFILES=cleanup make up-external-s3
 
 ### 停止
 
-`make down` は `compose.yml` のサービス（Fluent Bit, RustFS, mc, s3-cleaner, Grafana, ingester）の Docker コンテナを削除します
+`make down` は `compose.yml` のサービス（Fluent Bit, RustFS, mc, Grafana, ingester）の Docker コンテナを削除します
 
 make down 時には、make up 時に作成した Grafana 用の Docker イメージも削除します
 

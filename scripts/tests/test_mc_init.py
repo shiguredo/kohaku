@@ -10,7 +10,7 @@ from testcontainers.core.network import Network
 
 
 MC_IMAGE = "minio/mc:RELEASE.2025-07-21T05-28-08Z"
-RUSTFS_IMAGE = "rustfs/rustfs:1.0.0-alpha.89"
+RUSTFS_IMAGE = "rustfs/rustfs:1.0.0-beta.2"
 AWS_ACCESS_KEY_ID = "kohaku-access-key"
 AWS_SECRET_ACCESS_KEY = "kohaku-secret-key"
 S3_ENDPOINT = "rustfs:9000"
@@ -69,10 +69,10 @@ def rustfs_env() -> dict[str, object]:
 
 
 def test_mc_init_creates_bucket(rustfs_env: dict[str, object]) -> None:
-    """mc-init.sh を実行し、S3 バケットを作成できることを検証する。"""
+    """mc-init.sh を実行し、S3 バケットの作成と保持期間設定ができることを検証する。"""
     script_path = SCRIPTS_DIR / "mc-init.sh"
 
-    # 本番同等の起動方法で mc-init.sh を実行し、バケット作成まで進むことを確認する。
+    # 本番同等の起動方法で mc-init.sh を実行し、バケット作成と ILM ルール登録まで進むことを確認する。
     mc_init = (
         DockerContainer(MC_IMAGE, command="/scripts/mc-init.sh")
         .with_network(rustfs_env["network"])
@@ -84,13 +84,12 @@ def test_mc_init_creates_bucket(rustfs_env: dict[str, object]) -> None:
         .with_env("S3_BUCKET", S3_BUCKET)
         .with_env("S3_USE_SSL", "false")
         .with_env("RETENTION_PERIOD", RETENTION_PERIOD)
-        .with_env("MC_INIT_ENABLE_ILM", "false")
         .with_env("MC_INIT_MAX_RETRIES", "30")
         .with_env("MC_INIT_RETRY_INTERVAL", "1")
     )
     run_and_assert_success(mc_init)
 
-    # 作成されたバケットへアクセスできることを確認する。
+    # 作成されたバケットへアクセスできること、および ILM ルールが登録されていることを確認する。
     verify_bucket = (
         DockerContainer(
             MC_IMAGE,
@@ -98,7 +97,8 @@ def test_mc_init_creates_bucket(rustfs_env: dict[str, object]) -> None:
                 "-ceu",
                 'mc alias set storage "http://${S3_ENDPOINT}" "${AWS_ACCESS_KEY_ID}" '
                 '"${AWS_SECRET_ACCESS_KEY}" >/dev/null\n'
-                'mc ls "storage/${S3_BUCKET}" >/dev/null',
+                'mc ls "storage/${S3_BUCKET}" >/dev/null\n'
+                'mc ilm rule ls "storage/${S3_BUCKET}" >/dev/null',
             ],
         )
         .with_network(rustfs_env["network"])
