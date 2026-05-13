@@ -38,6 +38,8 @@ RustFS の Docker コンテナ上のログは Grafana の Docker コンテナを
 
 設定項目は .env.common.template, .env.docker.template に用意してありますので、これを利用して設定します
 
+テンプレート内の設定項目はコメントアウトされています。Docker Compose の設定に必要な項目のコメントアウトを外した上で、環境に合わせて値を設定してください
+
 Grafana の公開ポートは `.env` の `GRAFANA_HTTP_PORT` で設定します
 
 ```bash

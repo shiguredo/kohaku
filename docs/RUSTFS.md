@@ -27,6 +27,8 @@ git clone https://github.com/shiguredo/kohaku.git kohaku
 
 設定項目のテンプレートは .env.common.template, .env.docker.template に用意してありますので、これを利用して設定します
 
+テンプレート内の設定項目はコメントアウトされています。下記の RustFS の設定に必要な項目のコメントアウトを外した上で、環境に合わせて値を設定してください
+
 ```bash
 cd kohaku
 cat .env.common.template .env.docker.template > .env

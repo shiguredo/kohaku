@@ -34,6 +34,8 @@ git clone https://github.com/shiguredo/kohaku.git kohaku
 
 設定項目のテンプレートは .env.common.template に用意してありますので、これを利用して設定します
 
+テンプレート内の設定項目はコメントアウトされています。下記の Ingester + Grafana の設定に必要な項目のコメントアウトを外した上で、環境に合わせて値を設定してください
+
 Grafana の待受ポートは `.env` の `GRAFANA_HTTP_PORT` で設定します
 
 ```bash
