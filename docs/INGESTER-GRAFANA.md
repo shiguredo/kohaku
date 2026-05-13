@@ -17,7 +17,7 @@ https://grafana.com/docs/grafana/latest/setup-grafana/installation/ の手順で
 インストールする Grafana のバージョンは 12.4.x を指定してインストールしてください
 
 ```bash
-apt-get install grafana=12.4.3
+sudo apt-get install grafana=12.4.3
 ```
 
 ## kohaku リポジトリをクローン

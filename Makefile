@@ -82,10 +82,15 @@ env:
 
 endef
 
-# 認証情報は .env の設定を使用する
+define ENV_FLUENT_BIT_SYSTEMD
+AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
+endef
+
 define SYSTEMD_FLUENT_BIT
 [Service]
-EnvironmentFile=-/opt/kohaku/.env
+EnvironmentFile=/etc/fluent-bit/kohaku.env
 ExecStart=
 ExecStart=/opt/fluent-bit/bin/fluent-bit -c /etc/fluent-bit/fluent-bit.yml
 
@@ -93,11 +98,15 @@ endef
 
 export ENV_FLUENT_BIT
 export ENV_FLUENT_BIT_FOR_RUSTFS
+export ENV_FLUENT_BIT_SYSTEMD
 export SYSTEMD_FLUENT_BIT
 
 # fluent-bit の設定を反映する
 setup-fluent-bit: fluent-bit-yml
+	mkdir -p /etc/fluent-bit
 	cp ./fluent-bit.yml /etc/fluent-bit/
+	echo "$$ENV_FLUENT_BIT_SYSTEMD" | tee /etc/fluent-bit/kohaku.env 1>/dev/null
+	chmod 600 /etc/fluent-bit/kohaku.env
 	mkdir -p /etc/systemd/system/fluent-bit.service.d
 	echo "$$SYSTEMD_FLUENT_BIT" | tee /etc/systemd/system/fluent-bit.service.d/override.conf 1>/dev/null
 	systemctl daemon-reload
@@ -109,7 +118,10 @@ fluent-bit-yml:
 
 # rustfs 向けの fluent-bit を設定する
 setup-fluent-bit-for-rustfs: fluent-bit-yml-for-rustfs
+	mkdir -p /etc/fluent-bit
 	cp ./fluent-bit.yml /etc/fluent-bit/
+	echo "$$ENV_FLUENT_BIT_SYSTEMD" | tee /etc/fluent-bit/kohaku.env 1>/dev/null
+	chmod 600 /etc/fluent-bit/kohaku.env
 	mkdir -p /etc/systemd/system/fluent-bit.service.d
 	echo "$$SYSTEMD_FLUENT_BIT" | tee /etc/systemd/system/fluent-bit.service.d/override.conf 1>/dev/null
 	systemctl daemon-reload

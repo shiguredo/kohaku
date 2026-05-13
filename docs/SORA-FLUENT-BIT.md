@@ -49,6 +49,8 @@ Fluent Bit の設定に必要な項目は下記のとおりです
 
 下記のいずれかのコマンドで fluent-bit.yml を生成して、systemd の設定をおこないます
 
+これらのコマンドは、Fluent Bit の systemd 起動時に使用する認証情報を `/etc/fluent-bit/kohaku.env` に保存します
+
 - Amazon S3 の場合
 
 ```bash
