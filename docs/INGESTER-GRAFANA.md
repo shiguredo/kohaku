@@ -120,6 +120,8 @@ ingester を実行する環境を構築します
 
 ingester の実行環境は uv で管理することを想定しているため、uv をインストールします
 
+下記のコマンドは Astral 社が提供する公式インストールスクリプトを sudo で実行します。実行前にスクリプトの内容を確認することを推奨します
+
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sudo env UV_INSTALL_DIR="/opt/uv/bin" sh
 ```
