@@ -9,7 +9,7 @@ Ubuntu 24.04 上で動作を確認しています
 ## 前提条件
 
 - Sora が動作しており、ログが出力されている
-- RustFS または Amazon S3 へネットワーク経由でアクセスできる
+- S3 互換ストレージへネットワーク経由でアクセスできる
 
 ## Fluent Bit のインストール
 
@@ -39,13 +39,21 @@ vim .env
 
 Fluent Bit の設定に必要な項目は下記のとおりです
 
+### 共通の項目
+
 - `SORA_LOG_PATH` - Sora のログディレクトリのパス
-- `AWS_ACCESS_KEY_ID` - RustFS または Amazon S3 のアクセスキー
-- `AWS_SECRET_ACCESS_KEY` - RustFS または Amazon S3 のシークレットキー
+- `AWS_ACCESS_KEY_ID` - S3 互換ストレージのアクセスキー
+- `AWS_SECRET_ACCESS_KEY` - S3 互換ストレージのシークレットキー
 - `S3_BUCKET` - バケット名
 - `S3_PREFIX` - S3 プレフィックス
-- RustFS の場合は `S3_ENDPOINT`（例: `192.0.2.1:9000`）
-- Amazon S3 の場合は `S3_REGION`
+
+### Amazon S3 以外の S3 互換ストレージを利用する場合
+
+- `S3_ENDPOINT` - S3 互換ストレージのエンドポイント（例: `192.0.2.1:9000`）
+
+### 利用する S3 互換ストレージでリージョン指定が必要な場合（Amazon S3 など）
+
+- `S3_REGION` - S3 互換ストレージのリージョン（例: `ap-northeast-1`）
 
 ## Fluent Bit の設定
 
