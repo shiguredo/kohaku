@@ -14,7 +14,9 @@ Ubuntu 24.04 上で動作を確認しています
 
 https://grafana.com/docs/grafana/latest/setup-grafana/installation/ の手順で Grafana をインストールします
 
-インストールする Grafana のバージョンは 12.4.x を指定してインストールしてください
+Grafana は 12.4.x 系をインストールしてください
+
+下記のコマンドでは、現時点の 12.4.x 系の最新版である 12.4.3 をインストールしています
 
 ```bash
 sudo apt-get install grafana=12.4.3
