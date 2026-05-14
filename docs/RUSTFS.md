@@ -56,6 +56,8 @@ mkdir -p ./rustfs/data ./rustfs/logs
 
 Docker Compose で RustFS, mc（初期設定用）を起動します
 
+RustFS のコンテナはホスト上の `./rustfs` ディレクトリに書き込みます。ホストとコンテナで権限を合わせるため、実行ユーザの uid / gid を `USER_ID` と `GROUP_ID` で渡しています
+
 ```bash
 USER_ID=$(id -u) GROUP_ID=$(id -g) docker compose up -d rustfs mc
 ```
