@@ -108,26 +108,23 @@ make down-external-s3
 
 ### 停止
 
-`make down` は `compose.yml` のサービス（Fluent Bit, RustFS, mc, Grafana, ingester）の Docker コンテナを削除します
+`make down` は `compose.yml` のサービス（Fluent Bit, RustFS, mc, Grafana, ingester）の Docker コンテナと、make up 時に作成した Grafana 用の Docker イメージを削除します
 
-make down 時には、make up 時に作成した Grafana 用の Docker イメージも削除します
+volume は削除しないため、ログを保存した DB は保持されます
 
 ```bash
 make down
 ```
 
-make init 時に作成したディレクトリ等を削除します
+`make clean` は make init 時に作成したディレクトリと、Docker Compose の volume を削除します
+
+volume を削除するため、ログを保存した DB も削除されます
 
 ```bash
 make clean
 ```
 
-## Docker コンテナ上に作成される DB について
-
-- Docker Compose で作成した volume は、Docker ホスト上のパスをマウントしていません
-- `make down` では Docker コンテナとローカルビルドイメージを削除しますが、volume は削除しないため、ログを保存した DB は保持されます
-- `make clean` では volume も削除されるため、ログを保存した DB は削除されます
-- Docker Compose 停止後も DB を Docker ホスト上の任意パスで保持したい場合には、`compose.yml` で Docker ホスト上のパスをマウントしてください
+なお、Docker Compose で作成した volume は Docker ホスト上のパスをマウントしていません。Docker Compose 停止後も DB を Docker ホスト上の任意のパスで保持したい場合には、`compose.yml` で Docker ホスト上のパスをマウントしてください
 
 ### 注意点
 
