@@ -29,11 +29,30 @@ Ubuntu 24.04 上で動作を確認しています
 
 - [Docker Compose による構築手順](DOCKER.md)
 
-## Amazon S3, RustFS に保存したログデータについて
+## Amazon S3, RustFS に保存したログデータの保持期間について
 
-Kohaku は、Amazon S3, RustFS に保存したログデータは削除しませんので、
-各ストレージのライフサイクルルールを設定するなどして、
-定期的に削除することを推奨します
+Kohaku 本体は Amazon S3, RustFS に保存したログデータを削除しません。
+保持期間を超えたログの削除は、ストレージ側のライフサイクル機能に任せる構成です
 
-- https://docs.aws.amazon.com/ja_jp/AmazonS3/latest/userguide/object-lifecycle-mgmt.html
+- Docker Compose で構築した場合（`compose.yml`, `compose.external-s3.yml`）
+  - `mc` コンテナが `.env` の `RETENTION_PERIOD`（日）を保持期間として、起動時にバケットへライフサイクルルールを登録します
+
+- RustFS サーバーを単独で構築した場合（[RustFS サーバーの構築手順](RUSTFS.md)）
+  - 上記同様、`mc` コンテナがライフサイクルルールを登録します
+
+- Amazon S3 を直接利用する場合
+  - ライフサイクルルールは自動では登録されません
+  - 運用ポリシーに合わせて Amazon S3 側でライフサイクルルールを設定してください
+
+なお、各ストレージのライフサイクル機能の詳細は下記を参照してください
+
 - https://docs.rustfs.com/features/lifecycle/
+- https://docs.aws.amazon.com/ja_jp/AmazonS3/latest/userguide/object-lifecycle-mgmt.html
+
+### 注意
+
+`RETENTION_PERIOD` は本来、ingester が DuckDB 上で保持するログの期間を制御する設定です
+
+Docker Compose で構築した場合および RustFS サーバーを単独で構築した場合に限り、`mc` コンテナが `RETENTION_PERIOD` の値を RustFS のオブジェクトのライフサイクルルール（保持日数）にも設定します
+
+Amazon S3 を直接利用する場合は、`RETENTION_PERIOD` はオブジェクトの保持期間には影響しません。オブジェクトの保持期間を制御したい場合は、運用ポリシーに合わせて Amazon S3 側でライフサイクルルールを設定してください
