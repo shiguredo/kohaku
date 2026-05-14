@@ -142,16 +142,26 @@ sudo systemctl daemon-reload
 
 ## Kohaku ディレクトリの設置
 
-構築が終わりましたら、/opt/kohaku に Kohaku の実行環境を設置します
+ingester を systemd 経由で実行するための環境を /opt/kohaku に設置します
+
+ingester の実行に必要な `ingester` および `scripts` ディレクトリと、これまでの手順で編集した `.env` ファイルのみを配置します
 
 ```bash
+# 作業用に clone 済みのリポジトリをローカルから clone する
 git clone --no-checkout . /tmp/kohaku
+
+# 編集済みの .env をコピーする
 cp .env /tmp/kohaku/
+
 pushd /tmp/kohaku
+# 必要なディレクトリのみを取り出す sparse-checkout を設定
 git sparse-checkout init --no-cone
 git sparse-checkout set ingester scripts
+
+# VERSION ファイルに記載されたバージョンに固定する
 git checkout `git show origin/develop:VERSION`
 popd
+
 sudo mv /tmp/kohaku /opt/kohaku
 sudo chown -R kohaku:kohaku /opt/kohaku
 ```
