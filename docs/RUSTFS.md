@@ -48,8 +48,11 @@ RustFS の設定に必要な項目は下記のとおりです
 
 ## データ保存ディレクトリの作成
 
+`.env` で設定した `RUSTFS_BASE_DIR` 以下に `data` と `logs` のディレクトリを作成します
+
 ```bash
-mkdir -p ./rustfs/data ./rustfs/logs
+set -a && source .env && set +a
+mkdir -p "${RUSTFS_BASE_DIR}/data" "${RUSTFS_BASE_DIR}/logs"
 ```
 
 ## RustFS の起動
