@@ -13,7 +13,7 @@ Ubuntu 24.04 上で動作を確認しています
 
 ## Fluent Bit のインストール
 
-https://docs.fluentbit.io/manual/installation/getting-started-with-fluent-bit の手順で Fluent Bit をインストールします
+https://docs.fluentbit.io/manual/installation/getting-started-with-fluent-bit の手順で Fluent Bit の最新の安定版をインストールします
 
 ## kohaku リポジトリをクローン
 
