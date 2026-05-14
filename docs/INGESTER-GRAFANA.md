@@ -58,7 +58,7 @@ Ingester + Grafana の設定に必要な項目は下記のとおりです
 - `S3_USE_SSL` - S3 互換ストレージへの接続に SSL を使用するかどうか（Amazon S3 の場合は `true`）
 - `DUCKDB_DB_PATH` - DuckDB の DB ファイルのパス
 - `RETENTION_PERIOD` - ingester が DuckDB 上で保持するログの期間（日）
-- `INITIAL_MAXIMUM_LOAD` - init / update 実行時に読み込む既存ログファイル数の上限
+- `INITIAL_MAXIMUM_LOAD` - init 時、および update 時にテーブル未作成だった場合の、初回テーブル作成における読み込み件数の上限
 - `GRAFANA_HTTP_PORT` - Grafana の待受ポート番号
 - `UV_PYTHON_INSTALL_DIR` - uv が管理する Python のインストール先ディレクトリ
 
