@@ -131,4 +131,4 @@ make clean
 
 ### 注意点
 
-- Docker Compose で起動した Grafana は `.env` の `GRAFANA_HTTP_PORT` で指定したポート番号、RustFS はポート番号 9000 と 9001 が公開されますので、外部に公開されるサーバ上で起動させる場合には、適宜 Firewall などで、アクセスを制限するようにしてください
+- Docker Compose で起動した Grafana は `.env` の `GRAFANA_HTTP_PORT` で指定したポート番号、RustFS はポート番号 9000 と 9001 が公開されますので、外部に公開されるサーバー上で起動させる場合には、適宜 Firewall などで、アクセスを制限するようにしてください
