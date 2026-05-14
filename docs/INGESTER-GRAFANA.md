@@ -46,15 +46,26 @@ vim .env
 
 Ingester + Grafana の設定に必要な項目は下記のとおりです
 
-- `AWS_ACCESS_KEY_ID` - Amazon S3 または RustFS 等の Amazon S3 互換ストレージのアクセスキー
-- `AWS_SECRET_ACCESS_KEY` - Amazon S3 または RustFS 等の Amazon S3 互換ストレージのシークレットキー
-- `S3_ENDPOINT` - Amazon S3 または RustFS 等の Amazon S3 互換ストレージのエンドポイント
+### 共通の項目
+
+- `AWS_ACCESS_KEY_ID` - S3 互換ストレージのアクセスキー
+- `AWS_SECRET_ACCESS_KEY` - S3 互換ストレージのシークレットキー
 - `S3_BUCKET` - バケット名
 - `S3_PREFIX` - S3 プレフィックス
+- `S3_USE_SSL` - S3 互換ストレージへの接続に SSL を使用するかどうか（Amazon S3 の場合は `true`）
 - `DUCKDB_DB_PATH` - DuckDB の DB ファイルのパス
-- `RETENTION_PERIOD` - ログの保持期間（日）
-- `INITIAL_MAXIMUM_LOAD` - 初回起動時に読み込む最大件数
+- `RETENTION_PERIOD` - ingester が DuckDB 上で保持するログの期間（日）
+- `INITIAL_MAXIMUM_LOAD` - init / update 実行時に読み込む既存ログファイル数の上限
 - `GRAFANA_HTTP_PORT` - Grafana の待受ポート番号
+- `UV_PYTHON_INSTALL_DIR` - uv が管理する Python のインストール先ディレクトリ
+
+### Amazon S3 以外の S3 互換ストレージを利用する場合
+
+- `S3_ENDPOINT` - S3 互換ストレージのエンドポイント（例: `192.0.2.1:9000`）
+
+### 利用する S3 互換ストレージでリージョン指定が必要な場合（Amazon S3 など）
+
+- `S3_REGION` - S3 互換ストレージのリージョン（例: `ap-northeast-1`）
 
 ## Grafana プラグインの準備
 
