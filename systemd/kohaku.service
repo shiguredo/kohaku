@@ -1,23 +1,40 @@
 [Unit]
+# サービスの説明
 Description=WebRTC Stats Analyzer Kohaku
+# ネットワークがオンラインになるのを希望する
 Wants=network-online.target
+# ネットワークがオンラインになった後に起動する
 After=network-online.target
 
 [Service]
+# 一度実行して終了するタイプ
 Type=oneshot
+# 実行ユーザー
 User=kohaku
+# 初回起動時の最大負荷値
 Environment=INITIAL_MAXIMUM_LOAD=100
+# 環境変数を読み込むファイル
 EnvironmentFile=/opt/kohaku/.env
+# uv のキャッシュディレクトリ
 Environment=UV_CACHE_DIR=/opt/kohaku/ingester/.cache
+# ホームディレクトリ
 Environment=HOME=/opt/kohaku
+# 作業ディレクトリ
 WorkingDirectory=/opt/kohaku/ingester
+# 起動タイムアウト
 TimeoutStartSec=10min
+# DuckDB ファイルが存在する場合のみ実行する
 ExecCondition=/bin/test -f ${DUCKDB_DB_PATH}
+# メインの ingester 更新処理を実行する
 ExecStart=/bin/sh /opt/kohaku/scripts/run-ingester.sh update
+# 更新処理完了後に古いデータを削除する
 ExecStartPost=/bin/sh /opt/kohaku/scripts/run-ingester.sh delete
 
+# 失敗時のみ再起動する
 Restart=on-failure
+# 再起動までの待機時間
 RestartSec=5min
 
 [Install]
+# マルチユーザーターゲットで有効化する
 WantedBy=multi-user.target

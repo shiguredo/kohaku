@@ -1,10 +1,15 @@
 [Unit]
+# タイマーの説明
 Description=Update DB
 
 [Timer]
+# タイマー有効化から 5 分後に初回実行する
 OnActiveSec=5min
+# サービスが非アクティブになってから 5 分後に再実行する
 OnUnitInactiveSec=5min
+# 起動対象のサービスユニット
 Unit=kohaku.service
 
 [Install]
+# タイマーターゲットで有効化する
 WantedBy=timers.target
