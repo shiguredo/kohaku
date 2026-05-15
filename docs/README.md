@@ -18,8 +18,8 @@ Fluent Bit, ingester, Grafana を同一サーバー上（あるいは役割ご�
 
 手順:
 
-- [Sora + Fluent Bit サーバーの構築手順](SORA-FLUENT-BIT.md)
-- [Ingester + Grafana サーバーの構築手順](INGESTER-GRAFANA.md)
+- [Sora + Fluent Bit サーバーの構築手順](SORA_FLUENT_BIT.md)
+- [Ingester + Grafana サーバーの構築手順](INGESTER_GRAFANA.md)
 - 動作確認用に RustFS を構築する場合: [RustFS サーバーの構築手順](RUSTFS.md)
 
 ### Docker Compose 構成（`compose.yml`）
