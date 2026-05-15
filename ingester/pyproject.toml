@@ -5,22 +5,22 @@ description = "Data ingester for importing WebRTC SFU Sora logs from object stor
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    # Grafana DuckDB Data Source Plugin の DuckDB のバージョンにあわせる
-    "duckdb==1.4.2",
-    "minio>=7.2.15",
-    "pytz>=2025.1",
-    "pyyaml>=6.0.2",
-    "uuid>=1.30",
+  # Grafana DuckDB Data Source Plugin の DuckDB のバージョンにあわせる
+  "duckdb==1.4.2",
+  "minio>=7.2.15",
+  "pytz>=2025.1",
+  "pyyaml>=6.0.2",
+  "uuid>=1.30",
 ]
+
+[dependency-groups]
+lint = ["ruff", "ty"]
+test = ["jinja2", "pytest", "testcontainers[minio]"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
 
 [tool.uv]
 default-groups = ["test", "lint"]
 python-preference = "only-managed"
-
-[dependency-groups]
-test = ["pytest", "testcontainers[minio]", "jinja2"]
-lint = ["ruff", "ty"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["src"]
