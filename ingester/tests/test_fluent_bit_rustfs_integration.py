@@ -21,6 +21,13 @@ RUSTFS_IMAGE = "rustfs/rustfs:1.0.0-beta.2"
 FLUENT_BIT_IMAGE = "fluent/fluent-bit"
 
 
+def fetch_scalar(con, query):
+    """SELECT で 1 行 1 列を返すクエリの最初のカラム値を取得する。"""
+    row = con.execute(query).fetchone()
+    assert row is not None
+    return row[0]
+
+
 def count_objects(client, prefix):
     """
     指定プレフィックス配下のオブジェクト件数を取得する。
@@ -66,7 +73,9 @@ def create_test_log_dir(tmp_path, source_log_dir, include_session_webhook=True):
     return log_dir
 
 
-def run_fluent_bit_and_wait(network, log_dir, config_path, state_dir, client, expected_prefix_counts):
+def run_fluent_bit_and_wait(
+    network, log_dir, config_path, state_dir, client, expected_prefix_counts
+):
     """
     fluent-bit コンテナを起動し、期待件数に到達するまで待機する。
     :param network: テスト用 Docker ネットワーク
@@ -83,23 +92,28 @@ def run_fluent_bit_and_wait(network, log_dir, config_path, state_dir, client, ex
         .with_env("AWS_ACCESS_KEY_ID", ACCESS_KEY)
         .with_env("AWS_SECRET_ACCESS_KEY", SECRET_KEY)
         .with_volume_mapping(str(log_dir), "/log", mode="rw")
-        .with_volume_mapping(str(config_path), "/fluent-bit/etc/fluent-bit.yml", mode="ro")
+        .with_volume_mapping(
+            str(config_path), "/fluent-bit/etc/fluent-bit.yml", mode="ro"
+        )
         .with_volume_mapping(str(state_dir), "/state", mode="rw")
         .with_network(network)
-        .with_command("/fluent-bit/bin/fluent-bit -c /fluent-bit/etc/fluent-bit.yml") as fluent_bit
+        .with_command(
+            "/fluent-bit/bin/fluent-bit -c /fluent-bit/etc/fluent-bit.yml"
+        ) as fluent_bit
     ):
         try:
             for prefix, expected_count in expected_prefix_counts.items():
-                wait_until(lambda p=prefix, n=expected_count: count_objects(client, p) >= n)
+                wait_until(
+                    lambda p=prefix, n=expected_count: count_objects(client, p) >= n
+                )
         except WaitTimeoutError as error:
             fluent_bit_logs = decode_logs(fluent_bit.get_logs())
-            pytest.fail(
-                f"{error}\n\n"
-                f"fluent-bit logs:\n{fluent_bit_logs}"
-            )
+            pytest.fail(f"{error}\n\nfluent-bit logs:\n{fluent_bit_logs}")
 
 
-def run_ingester_cli(ingester_dir, db_path, endpoint, command, initial_maximum_load=1000):
+def run_ingester_cli(
+    ingester_dir, db_path, endpoint, command, initial_maximum_load=1000
+):
     """
     ingester の run.py を CLI として実行する。
     :param ingester_dir: run.py 実行時の作業ディレクトリ
@@ -223,9 +237,11 @@ def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path):
             assert duckdb_path.exists()
 
             with duckdb.connect(str(duckdb_path)) as con:
-                rtc_stats_count = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
-                session_webhook_count = con.execute("SELECT COUNT(*) FROM session_webhook").fetchone()[0]
-                s3_objects_count = con.execute("SELECT COUNT(*) FROM s3_objects").fetchone()[0]
+                rtc_stats_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
+                session_webhook_count = fetch_scalar(
+                    con, "SELECT COUNT(*) FROM session_webhook"
+                )
+                s3_objects_count = fetch_scalar(con, "SELECT COUNT(*) FROM s3_objects")
 
             assert rtc_stats_count > 0
             assert session_webhook_count > 0
@@ -239,7 +255,9 @@ def test_runpy_init_skips_missing_target_without_invalid_input_exception(tmp_pat
     ingester_dir = repo_root / "ingester"
     source_log_dir = ingester_dir / "tests" / "log"
     # rtc_stats のみを投入し、session_webhook は意図的に欠損させる
-    log_dir = create_test_log_dir(tmp_path, source_log_dir, include_session_webhook=False)
+    log_dir = create_test_log_dir(
+        tmp_path, source_log_dir, include_session_webhook=False
+    )
 
     state_dir = tmp_path / "state"
     state_dir.mkdir()
@@ -287,11 +305,12 @@ def test_runpy_init_skips_missing_target_without_invalid_input_exception(tmp_pat
             assert "InvalidInputException" not in run.stderr
 
             with duckdb.connect(str(duckdb_path)) as con:
-                rtc_stats_count = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
-                session_webhook_table_count = con.execute(
-                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='session_webhook'"
-                ).fetchone()[0]
-                s3_objects_count = con.execute("SELECT COUNT(*) FROM s3_objects").fetchone()[0]
+                rtc_stats_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
+                session_webhook_table_count = fetch_scalar(
+                    con,
+                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='session_webhook'",
+                )
+                s3_objects_count = fetch_scalar(con, "SELECT COUNT(*) FROM s3_objects")
 
             # rtc_stats は通常どおり取り込まれること
             assert rtc_stats_count > 0
@@ -305,11 +324,16 @@ def test_runpy_init_skips_missing_target_without_invalid_input_exception(tmp_pat
             assert update_run.returncode == 0, update_run.stderr
 
             with duckdb.connect(str(duckdb_path)) as con:
-                rtc_stats_count_after_update = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
-                session_webhook_table_count_after_update = con.execute(
-                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='session_webhook'"
-                ).fetchone()[0]
-                s3_objects_count_after_update = con.execute("SELECT COUNT(*) FROM s3_objects").fetchone()[0]
+                rtc_stats_count_after_update = fetch_scalar(
+                    con, "SELECT COUNT(*) FROM rtc_stats"
+                )
+                session_webhook_table_count_after_update = fetch_scalar(
+                    con,
+                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='session_webhook'",
+                )
+                s3_objects_count_after_update = fetch_scalar(
+                    con, "SELECT COUNT(*) FROM s3_objects"
+                )
 
             assert rtc_stats_count_after_update == rtc_stats_count
             assert session_webhook_table_count_after_update == 0
@@ -364,11 +388,13 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
             assert init_run.returncode == 0, init_run.stderr
 
             with duckdb.connect(str(duckdb_path)) as con:
-                before_count = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
+                before_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
                 before_cursor = get_s3_cursor(con, "rtc_stats")
 
             append_rtc_stats_log(log_dir)
-            rtc_stats_object_count_before = count_objects(client, f"{PREFIX}/rtc_stats/")
+            rtc_stats_object_count_before = count_objects(
+                client, f"{PREFIX}/rtc_stats/"
+            )
             run_fluent_bit_and_wait(
                 network,
                 log_dir,
@@ -382,7 +408,7 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
             assert update_run.returncode == 0, update_run.stderr
 
             with duckdb.connect(str(duckdb_path)) as con:
-                after_count = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
+                after_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
                 after_cursor = get_s3_cursor(con, "rtc_stats")
 
             assert after_count > before_count
@@ -392,11 +418,13 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
             assert after_cursor != before_cursor
 
             # 新規ログなしの update では重複取り込みしないことを確認する
-            update_run_again = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
+            update_run_again = run_ingester_cli(
+                ingester_dir, duckdb_path, endpoint, "update"
+            )
             assert update_run_again.returncode == 0, update_run_again.stderr
 
             with duckdb.connect(str(duckdb_path)) as con:
-                final_count = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()[0]
+                final_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
                 final_cursor = get_s3_cursor(con, "rtc_stats")
             assert final_count == after_count
             # 新規ログがない update では cursor も進まない
@@ -421,13 +449,15 @@ def test_runpy_init_fails_when_bucket_not_found(tmp_path):
             endpoint = f"{rustfs.get_container_host_ip()}:{rustfs.get_exposed_port(RUSTFS_PORT)}"
 
             wait_until(
-                lambda: minio.Minio(
-                    endpoint,
-                    access_key=ACCESS_KEY,
-                    secret_key=SECRET_KEY,
-                    secure=False,
-                ).list_buckets()
-                is not None
+                lambda: (
+                    minio.Minio(
+                        endpoint,
+                        access_key=ACCESS_KEY,
+                        secret_key=SECRET_KEY,
+                        secure=False,
+                    ).list_buckets()
+                    is not None
+                )
             )
 
             run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")

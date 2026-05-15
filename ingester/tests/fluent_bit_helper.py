@@ -5,7 +5,10 @@ from jinja2 import Template
 FLUENT_BIT_S3_ENDPOINT = "http://rustfs:9000"
 FLUENT_BIT_SORA_LOG_PATH = "/log"
 FLUENT_BIT_CONFIG_TEMPLATE_PATH = (
-    Path(__file__).resolve().parent / "fixtures" / "fluent-bit" / "default-fluent-bit.yml.j2"
+    Path(__file__).resolve().parent
+    / "fixtures"
+    / "fluent-bit"
+    / "default-fluent-bit.yml.j2"
 )
 
 

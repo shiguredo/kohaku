@@ -15,10 +15,10 @@ DEFAULT_DUCKDB_FILE = "duck.db"
 DEFAULT_S3_BUCKET_NAME = "kohaku"
 DEFAULT_S3_PREFIX = "log"
 
-DEFAULT_S3_REGION="ap-northeast-1"
-DEFAULT_RETENTION_PERIOD=7
+DEFAULT_S3_REGION = "ap-northeast-1"
+DEFAULT_RETENTION_PERIOD = 7
 # init 時に読み込むファイル数の上限
-DEFAULT_INITIAL_MAXIMUM_LOAD=100
+DEFAULT_INITIAL_MAXIMUM_LOAD = 100
 
 COLUMNS_DIR = "./DUCKDB_COLUMNS"
 # DB ファイルが破損していると判断するためのエラーメッセージのパターン
@@ -36,11 +36,13 @@ LOG_TARGETS = (
     "session_webhook",
 )
 
+
 def positive_int(value):
     int_value = int(value)
     if int_value < 1:
         raise argparse.ArgumentTypeError("initial_maximum_load must be >= 1")
     return int_value
+
 
 def load_columns():
     duckdb_columns = {}
@@ -49,11 +51,13 @@ def load_columns():
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Column definition file not found: {file_path}")
 
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             # YAML ファイルを読み込んで辞書に変換
             columns = yaml.safe_load(f)
             if not isinstance(columns, dict):
-                raise ValueError(f"Invalid format in {file_path}, expected a dictionary.")
+                raise ValueError(
+                    f"Invalid format in {file_path}, expected a dictionary."
+                )
             duckdb_columns[target] = columns
 
     return duckdb_columns
@@ -65,11 +69,12 @@ def init(args):
     if is_initialized_db(args.db):
         return
 
-    client = minio.Minio(args.s3_endpoint,
-                         access_key=args.s3_access_key_id,
-                         secret_key=args.s3_secret_access_key,
-                         secure=args.s3_use_ssl)
-
+    client = minio.Minio(
+        args.s3_endpoint,
+        access_key=args.s3_access_key_id,
+        secret_key=args.s3_secret_access_key,
+        secure=args.s3_use_ssl,
+    )
 
     with duckdb.connect(args.db) as con:
         con.execute("INSTALL icu")
@@ -78,8 +83,16 @@ def init(args):
         # 取得済みの最後のオブジェクト情報を保存するテーブルを作成
         create_s3_object_table(con)
 
-        s3_setup(con, args.s3_endpoint, args.s3_access_key_id, args.s3_secret_access_key, args.s3_use_ssl, args.s3_region)
+        s3_setup(
+            con,
+            args.s3_endpoint,
+            args.s3_access_key_id,
+            args.s3_secret_access_key,
+            args.s3_use_ssl,
+            args.s3_region,
+        )
         sync_logs(con, client, args, "init")
+
 
 def sync_logs(con, client, args, mode):
     for target in LOG_TARGETS:
@@ -90,9 +103,10 @@ def sync_logs(con, client, args, mode):
         else:
             raise ValueError(f"Unknown mode: {mode}")
 
+
 def sync_log_for_init(con, client, args, target):
     log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
-    log_urls = get_target_urls(args.s3_bucket, log_objects[:args.initial_maximum_load])
+    log_urls = get_target_urls(args.s3_bucket, log_objects[: args.initial_maximum_load])
 
     # 初期化対象のログが存在しない場合は、テーブル作成をスキップする
     if len(log_urls) == 0:
@@ -110,16 +124,21 @@ def sync_log_for_init(con, client, args, target):
     except Exception as e:
         raise e
 
+
 def sync_log_for_update(con, client, args, target):
     object = select_s3_object(con, target)
     if object is None:
-        log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
+        log_objects = list_objects(
+            client, args.s3_bucket, f"{args.s3_prefix}/{target}/"
+        )
         if len(log_objects) == 0:
             print(f"No log found for {target} in {args.s3_bucket}.")
             # 対象のオブジェクトが存在しない場合はスキップする
             return
 
-        log_urls = get_target_urls(args.s3_bucket, log_objects[:args.initial_maximum_load])
+        log_urls = get_target_urls(
+            args.s3_bucket, log_objects[: args.initial_maximum_load]
+        )
         create_log_table(con, target, log_urls)
         if len(log_objects) > 0:
             object = latest_object(log_objects)
@@ -127,6 +146,7 @@ def sync_log_for_update(con, client, args, target):
     else:
         # テーブルが存在しているのでログを追加する
         insert_log_from_s3(con, client, target, args.s3_bucket, args.s3_prefix)
+
 
 def latest_object(objects):
     if not objects:
@@ -147,13 +167,21 @@ def is_after_s3_cursor(obj, last_modified, object_name):
         return False
     return obj.object_name > object_name
 
+
 def create_s3_object_table(con):
-    con.execute("CREATE TABLE IF NOT EXISTS s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)")
+    con.execute(
+        "CREATE TABLE IF NOT EXISTS s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)"
+    )
+
 
 def table_exists(con, table_name):
-    rel = con.execute("SELECT count(*) FROM information_schema.tables WHERE table_name=?", (table_name,))
+    rel = con.execute(
+        "SELECT count(*) FROM information_schema.tables WHERE table_name=?",
+        (table_name,),
+    )
     count = rel.fetchone()
     return count[0] > 0
+
 
 def is_broken_db_error(error):
     """
@@ -162,6 +190,7 @@ def is_broken_db_error(error):
     message = str(error).lower()
     # 下記のエラーメッセージが含まれている場合は DB ファイルが破損していると判断する
     return any(pattern in message for pattern in BROKEN_DB_ERROR_PATTERNS)
+
 
 def move_broken_db(db_path):
     """
@@ -177,6 +206,7 @@ def move_broken_db(db_path):
 
     return broken_db_path
 
+
 def prepare_db_for_init(db_path):
     """
     DB ファイルが存在する場合に、DB ファイルが破損していないかを確認する
@@ -188,7 +218,11 @@ def prepare_db_for_init(db_path):
     try:
         with duckdb.connect(db_path) as con:
             con.execute("SELECT 1")
-    except (duckdb.IOException, duckdb.InternalException, duckdb.FatalException) as error:
+    except (
+        duckdb.IOException,
+        duckdb.InternalException,
+        duckdb.FatalException,
+    ) as error:
         print(f"Error occurred while connecting to DB: {error}")
         if is_broken_db_error(error):
             broken_db_path = move_broken_db(db_path)
@@ -197,6 +231,7 @@ def prepare_db_for_init(db_path):
     except Exception as error:
         print(f"Unexpected error occurred while connecting to DB: {error}")
         raise error
+
 
 def is_initialized_db(db_path):
     """
@@ -212,8 +247,10 @@ def is_initialized_db(db_path):
 
     return True
 
+
 def update_s3_object_table(con, log_type, object):
-    con.execute("""
+    con.execute(
+        """
         MERGE INTO s3_objects AS target
         USING (SELECT ? AS type, ? AS object_name, ? AS last_modified) AS source
         ON target.type = source.type
@@ -221,11 +258,15 @@ def update_s3_object_table(con, log_type, object):
             UPDATE SET object_name = source.object_name, last_modified = source.last_modified
         WHEN NOT MATCHED THEN
             INSERT (type, object_name, last_modified) VALUES (source.type, source.object_name, source.last_modified);
-    """, (log_type, object.object_name, object.last_modified))
+    """,
+        (log_type, object.object_name, object.last_modified),
+    )
+
 
 def list_objects(client, bucket, prefix):
     objects = client.list_objects(bucket, prefix=prefix, recursive=True)
     return list(sorted(objects, key=lambda obj: obj.last_modified, reverse=True))
+
 
 def get_target_urls(bucket, objects):
     urls = []
@@ -234,6 +275,7 @@ def get_target_urls(bucket, objects):
         urls.append(f"s3://{bucket}/{obj.object_name}")
 
     return urls
+
 
 def remove_delete_incompleted_copy_files(copyfile):
     """
@@ -246,7 +288,10 @@ def remove_delete_incompleted_copy_files(copyfile):
         except FileNotFoundError:
             pass
 
-def s3_setup(con, s3_endpoint, s3_access_key_id, s3_secret_access_key, s3_use_ssl, s3_region):
+
+def s3_setup(
+    con, s3_endpoint, s3_access_key_id, s3_secret_access_key, s3_use_ssl, s3_region
+):
     con.execute("INSTALL httpfs")
     con.execute("LOAD httpfs")
     con.execute("SET s3_url_style='path'")
@@ -256,13 +301,16 @@ def s3_setup(con, s3_endpoint, s3_access_key_id, s3_secret_access_key, s3_use_ss
     con.execute("SET s3_use_ssl=?", (s3_use_ssl,))
     con.execute("SET s3_region=?", (s3_region,))
 
+
 def create_log_table(con, table_name, target_urls):
     # s3://log/connection/2021/06/01/a.gz, s3://log/connection/2021/06/02/b.gz, ... のようなパスを想定
     # テーブル作成時は全てのファイルを読み込む
     # TODO: 指定した時間以降にするかは別途検討する
     duckdb_columns = load_columns()
     if table_name not in duckdb_columns:
-        raise ValueError(f"Unknown table name: {table_name}. Available tables: {list(duckdb_columns.keys())}")
+        raise ValueError(
+            f"Unknown table name: {table_name}. Available tables: {list(duckdb_columns.keys())}"
+        )
 
     # テーブルが存在する場合はすぐにリターンする
     if table_exists(con, table_name):
@@ -275,18 +323,29 @@ def create_log_table(con, table_name, target_urls):
     rel = con.read_json(target_urls, union_by_name=True, columns=columns)
     rel.create(table_name)
 
+
 def update(args):
     if not os.path.exists(args.db):
         raise Exception("DB-FILE-NOT-FOUND")
 
-    client = minio.Minio(args.s3_endpoint,
-                         access_key=args.s3_access_key_id,
-                         secret_key=args.s3_secret_access_key,
-                         secure=args.s3_use_ssl)
+    client = minio.Minio(
+        args.s3_endpoint,
+        access_key=args.s3_access_key_id,
+        secret_key=args.s3_secret_access_key,
+        secure=args.s3_use_ssl,
+    )
 
     with duckdb.connect(args.db) as con:
-        s3_setup(con, args.s3_endpoint, args.s3_access_key_id, args.s3_secret_access_key, args.s3_use_ssl, args.s3_region)
+        s3_setup(
+            con,
+            args.s3_endpoint,
+            args.s3_access_key_id,
+            args.s3_secret_access_key,
+            args.s3_use_ssl,
+            args.s3_region,
+        )
         sync_logs(con, client, args, "update")
+
 
 def delete(args):
     if not os.path.exists(args.db):
@@ -296,7 +355,9 @@ def delete(args):
 
     deleted_rows = 0
     with duckdb.connect(args.db) as con:
-        timestamp = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=args.retention_period))
+        timestamp = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+            days=args.retention_period
+        )
         for target in LOG_TARGETS:
             deleted_rows += delete_log_by_timestamp(con, target, timestamp)
 
@@ -318,7 +379,15 @@ def delete(args):
 
     try:
         # コピーしたファイルを、元の DB ファイルに上書きする
-        os.chmod(copy_file, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
+        os.chmod(
+            copy_file,
+            stat.S_IRUSR
+            | stat.S_IWUSR
+            | stat.S_IRGRP
+            | stat.S_IWGRP
+            | stat.S_IROTH
+            | stat.S_IWOTH,
+        )
         shutil.move(copy_file, args.db)
     except Exception as e:
         # 処理に失敗したときの残る可能性のあるファイルを削除する
@@ -334,7 +403,8 @@ def insert_log_from_s3(con, client, table_name, bucket, prefix):
     log_objects = list_objects(client, bucket, f"{prefix}/{table_name}/")
 
     target_log_objects = [
-        obj for obj in log_objects
+        obj
+        for obj in log_objects
         if is_after_s3_cursor(obj, object_last_modified, object_name)
     ]
     target_urls = get_target_urls(bucket, target_log_objects)
@@ -349,20 +419,25 @@ def insert_log_from_s3(con, client, table_name, bucket, prefix):
             con.rollback()
             raise e
 
+
 def insert_log(con, table_name, target_urls):
     duckdb_columns = load_columns()
     if table_name not in duckdb_columns:
-        raise ValueError(f"Unknown table name: {table_name}. Available tables: {list(duckdb_columns.keys())}")
+        raise ValueError(
+            f"Unknown table name: {table_name}. Available tables: {list(duckdb_columns.keys())}"
+        )
 
     columns = duckdb_columns[table_name]
     rel = con.read_json(target_urls, union_by_name=True, columns=columns)
     rel.insert_into(table_name)
+
 
 def select_s3_object(con, log_type):
     return con.execute(
         "SELECT object_name, last_modified FROM s3_objects WHERE type=?",
         (log_type,),
     ).fetchone()
+
 
 def delete_log_by_timestamp(con, table_name, timestamp):
     if not table_exists(con, table_name):
@@ -376,20 +451,36 @@ def delete_log_by_timestamp(con, table_name, timestamp):
     result = con.fetchone()
     return result[0]
 
+
 def main():
     parser = argparse.ArgumentParser()
     # 共通オプション
     parser.add_argument("--db", default=DEFAULT_DUCKDB_FILE, help="DB file path")
     parser.add_argument("--s3_endpoint", default="s3.amazonaws.com", help="S3 endpoint")
-    parser.add_argument("--s3_access_key_id", default="rootuser", help="S3 access key id")
-    parser.add_argument("--s3_secret_access_key", default="password", help="S3 secret access key")
+    parser.add_argument(
+        "--s3_access_key_id", default="rootuser", help="S3 access key id"
+    )
+    parser.add_argument(
+        "--s3_secret_access_key", default="password", help="S3 secret access key"
+    )
     parser.add_argument("--s3_use_ssl", action="store_true", help="S3 use SSL")
     parser.add_argument("--s3_region", default=DEFAULT_S3_REGION, help="S3 region")
-    parser.add_argument("--s3_bucket", default=DEFAULT_S3_BUCKET_NAME, help="S3 bucket name")
+    parser.add_argument(
+        "--s3_bucket", default=DEFAULT_S3_BUCKET_NAME, help="S3 bucket name"
+    )
     parser.add_argument("--s3_prefix", default=DEFAULT_S3_PREFIX, help="S3 prefix")
-    parser.add_argument("--retention_period", default=DEFAULT_RETENTION_PERIOD, help="retention period", type=int)
-    parser.add_argument("--initial_maximum_load", default=DEFAULT_INITIAL_MAXIMUM_LOAD, help="Initial maximum load", type=positive_int)
-
+    parser.add_argument(
+        "--retention_period",
+        default=DEFAULT_RETENTION_PERIOD,
+        help="retention period",
+        type=int,
+    )
+    parser.add_argument(
+        "--initial_maximum_load",
+        default=DEFAULT_INITIAL_MAXIMUM_LOAD,
+        help="Initial maximum load",
+        type=positive_int,
+    )
 
     subparsers = parser.add_subparsers(required=True)
     subparsers_init = subparsers.add_parser("init")
@@ -449,9 +540,18 @@ def main():
     shutil.copyfile(args.db, tmp_file)
 
     # grafana から読み込むために 666 に設定する
-    os.chmod(tmp_file, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
+    os.chmod(
+        tmp_file,
+        stat.S_IRUSR
+        | stat.S_IWUSR
+        | stat.S_IRGRP
+        | stat.S_IWGRP
+        | stat.S_IROTH
+        | stat.S_IWOTH,
+    )
     readonly_file = ".".join([args.db, "readonly"])
     shutil.move(tmp_file, readonly_file)
+
 
 if __name__ == "__main__":
     main()

@@ -28,6 +28,9 @@ test = [
 pythonpath = ["src"]
 testpaths = ["tests"]
 
+[tool.ty.environment]
+extra-paths = ["src"]
+
 [tool.uv]
 default-groups = ["test", "lint"]
 python-preference = "only-managed"

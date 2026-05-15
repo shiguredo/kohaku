@@ -16,8 +16,12 @@ from .helpers import wait_until
 
 
 GRAFANA_IMAGE = "grafana/grafana:12.4.3-ubuntu"
-PLUGIN_DIR = Path(__file__).resolve().parents[2] / "plugins" / "motherduck-duckdb-datasource"
-GRAFANA_DATASOURCES_DIR = Path(__file__).resolve().parents[2] / "grafana" / "datasources"
+PLUGIN_DIR = (
+    Path(__file__).resolve().parents[2] / "plugins" / "motherduck-duckdb-datasource"
+)
+GRAFANA_DATASOURCES_DIR = (
+    Path(__file__).resolve().parents[2] / "grafana" / "datasources"
+)
 GRAFANA_DASHBOARDS_DIR = Path(__file__).resolve().parents[2] / "grafana" / "dashboards"
 ADMIN_USER = "shiguredo"
 ADMIN_PASSWORD = "password"
@@ -70,7 +74,9 @@ def request_json(url, method="GET", body=None, headers=None):
             payload = response.read()
     except urllib.error.HTTPError as error:
         detail = error.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"{method} {url} failed with HTTP {error.code}: {detail}") from error
+        raise RuntimeError(
+            f"{method} {url} failed with HTTP {error.code}: {detail}"
+        ) from error
     if not payload:
         return None
     return json.loads(payload.decode("utf-8"))
@@ -170,7 +176,9 @@ def query_grafana_datasource(base_url, auth_header, datasource_uid):
         "from": "now-5m",
         "to": "now",
     }
-    return request_json(f"{base_url}/api/ds/query", method="POST", body=query_body, headers=auth_header)
+    return request_json(
+        f"{base_url}/api/ds/query", method="POST", body=query_body, headers=auth_header
+    )
 
 
 def wait_for_grafana(base_url, auth_header):
@@ -180,16 +188,26 @@ def wait_for_grafana(base_url, auth_header):
     :param auth_header: 認証用ヘッダー
     :return: なし
     """
+
     # Grafana の起動完了と datasource の provision 完了を別々に待つ。
     def health_is_ready():
         try:
-            return request_json(f"{base_url}/api/health", headers=auth_header)["database"] == "ok"
+            return (
+                request_json(f"{base_url}/api/health", headers=auth_header)["database"]
+                == "ok"
+            )
         except Exception:
             return False
 
     def datasource_is_ready():
         try:
-            return request_json(f"{base_url}/api/datasources/name/{DATA_SOURCE_NAME}", headers=auth_header) is not None
+            return (
+                request_json(
+                    f"{base_url}/api/datasources/name/{DATA_SOURCE_NAME}",
+                    headers=auth_header,
+                )
+                is not None
+            )
         except Exception:
             return False
 
@@ -219,10 +237,26 @@ def test_grafana_can_query_duckdb_data(tmp_path):
         .with_env("GF_PATHS_PLUGINS", "/var/lib/grafana/plugins")
         .with_env("GF_PATHS_PROVISIONING", "/etc/grafana/provisioning")
         .with_env("GF_PLUGINS_FORWARD_HOST_ENV_VARS", DATA_SOURCE_NAME)
-        .with_volume_mapping(str(grafana_datasources_dir), "/etc/grafana/provisioning/datasources", mode="ro")
-        .with_volume_mapping(str(grafana_dashboards_dir / "kohaku.yml"), "/etc/grafana/provisioning/dashboards/kohaku.yml", mode="ro")
-        .with_volume_mapping(str(grafana_dashboards_dir / "kohaku"), "/var/lib/grafana/dashboards/kohaku", mode="ro")
-        .with_volume_mapping(str(plugin_dir), "/var/lib/grafana/plugins/motherduck-duckdb-datasource", mode="ro")
+        .with_volume_mapping(
+            str(grafana_datasources_dir),
+            "/etc/grafana/provisioning/datasources",
+            mode="ro",
+        )
+        .with_volume_mapping(
+            str(grafana_dashboards_dir / "kohaku.yml"),
+            "/etc/grafana/provisioning/dashboards/kohaku.yml",
+            mode="ro",
+        )
+        .with_volume_mapping(
+            str(grafana_dashboards_dir / "kohaku"),
+            "/var/lib/grafana/dashboards/kohaku",
+            mode="ro",
+        )
+        .with_volume_mapping(
+            str(plugin_dir),
+            "/var/lib/grafana/plugins/motherduck-duckdb-datasource",
+            mode="ro",
+        )
         .with_volume_mapping(str(duckdb_dir.parent), "/var/lib/kohaku", mode="rw")
     )
 
@@ -242,7 +276,9 @@ def test_grafana_can_query_duckdb_data(tmp_path):
         wait_for_grafana(base_url, auth_header)
 
         # データソースの確認
-        datasource = request_json(f"{base_url}/api/datasources/name/{DATA_SOURCE_NAME}", headers=auth_header)
+        datasource = request_json(
+            f"{base_url}/api/datasources/name/{DATA_SOURCE_NAME}", headers=auth_header
+        )
         assert datasource is not None
         assert datasource["name"] == DATA_SOURCE_NAME
         assert datasource["type"] == DATA_SOURCE_NAME

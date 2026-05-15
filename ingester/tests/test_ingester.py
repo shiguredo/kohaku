@@ -25,8 +25,22 @@ RUSTFS_IMAGE = "rustfs/rustfs:1.0.0-beta.2"
 LOG_DIR = "./tests/log"
 DUCKDB_DIR_PATH = "."
 
+
 class Args:
-    def __init__(self, db=None, s3_endpoint=None, s3_access_key_id=None, s3_secret_access_key=None, s3_use_ssl=None, s3_region=None, storage=None, s3_bucket=None, s3_prefix=None, retention_period=None, initial_maximum_load=None):
+    def __init__(
+        self,
+        db=None,
+        s3_endpoint=None,
+        s3_access_key_id=None,
+        s3_secret_access_key=None,
+        s3_use_ssl=None,
+        s3_region=None,
+        storage=None,
+        s3_bucket=None,
+        s3_prefix=None,
+        retention_period=None,
+        initial_maximum_load=None,
+    ):
         self.db = db
         self.s3_endpoint = s3_endpoint
         self.s3_access_key_id = s3_access_key_id
@@ -38,6 +52,7 @@ class Args:
         self.s3_prefix = s3_prefix
         self.retention_period = retention_period
         self.initial_maximum_load = initial_maximum_load
+
 
 def data_path(s3_prefix, tag, directory):
     """
@@ -51,6 +66,7 @@ def data_path(s3_prefix, tag, directory):
     filename = f"{uuid.uuid4()}.gz"
     return f"{s3_prefix}/{tag}/{directory}/{filename}"
 
+
 def list_objects(s3_client, bucket_name, prefix=None):
     """
     指定されたバケット内のオブジェクトをリストする関数
@@ -62,6 +78,7 @@ def list_objects(s3_client, bucket_name, prefix=None):
 
     objects = s3_client.list_objects(bucket_name, prefix=prefix, recursive=True)
     return [obj.object_name for obj in objects]
+
 
 def remove_objects(s3_client, bucket_name):
     """
@@ -75,6 +92,7 @@ def remove_objects(s3_client, bucket_name):
     for obj in objects:
         s3_client.remove_object(bucket_name, obj)
 
+
 def remove_bucket(s3_client, bucket_name):
     """
     指定されたバケットを削除する関数
@@ -85,6 +103,7 @@ def remove_bucket(s3_client, bucket_name):
 
     remove_objects(s3_client, bucket_name)
     s3_client.remove_bucket(bucket_name)
+
 
 # 指定した期間だけ過去に更新する関数
 def update_timestamp_for_rtc_stats(con, obj, period):
@@ -106,19 +125,30 @@ def update_timestamp_for_rtc_stats(con, obj, period):
     timestamp = now - datetime.timedelta(days=period)
 
     # 更新日時を更新するクエリを実行
-    con.execute("""
+    con.execute(
+        """
         UPDATE rtc_stats
         SET timestamp = ?
         WHERE connection_id = ? AND rtc_id = ? AND rtc_type = ? AND timestamp = ?
-    """, (timestamp, connection_id, rtc_id, rtc_type, org_timestamp))
+    """,
+        (timestamp, connection_id, rtc_id, rtc_type, org_timestamp),
+    )
 
     # 更新後の確認
-    con.execute("SELECT timestamp FROM rtc_stats WHERE connection_id = ? AND rtc_id = ? AND rtc_type = ? AND timestamp = ?", (connection_id, rtc_id, rtc_type, timestamp))
+    con.execute(
+        "SELECT timestamp FROM rtc_stats WHERE connection_id = ? AND rtc_id = ? AND rtc_type = ? AND timestamp = ?",
+        (connection_id, rtc_id, rtc_type, timestamp),
+    )
     updated_timestamp = con.fetchone()
     if updated_timestamp:
-        print(f"Updated timestamp for connection_id: {connection_id}, rtc_id: {rtc_id}, rtc_type: {rtc_type}: {updated_timestamp[0]}")
+        print(
+            f"Updated timestamp for connection_id: {connection_id}, rtc_id: {rtc_id}, rtc_type: {rtc_type}: {updated_timestamp[0]}"
+        )
     else:
-        print(f"No record found for connection_id: {connection_id}, rtc_id: {rtc_id}, rtc_type: {rtc_type}, org_timestamp: {org_timestamp}")
+        print(
+            f"No record found for connection_id: {connection_id}, rtc_id: {rtc_id}, rtc_type: {rtc_type}, org_timestamp: {org_timestamp}"
+        )
+
 
 def get_latest_object(s3_client, bucket, prefix):
     """
@@ -132,6 +162,7 @@ def get_latest_object(s3_client, bucket, prefix):
     objects = s3_client.list_objects(bucket, prefix=prefix, recursive=True)
     return max(objects, key=lambda obj: obj.last_modified)
 
+
 @pytest.fixture(scope="session")
 def rustfs_container():
     with (
@@ -142,9 +173,11 @@ def rustfs_container():
     ):
         yield rustfs
 
+
 @pytest.fixture(scope="session")
 def rustfs_endpoint(rustfs_container):
     return f"{rustfs_container.get_container_host_ip()}:{rustfs_container.get_exposed_port(RUSTFS_PORT)}"
+
 
 @pytest.fixture
 def s3_client(rustfs_endpoint):
@@ -172,7 +205,7 @@ def s3_client(rustfs_endpoint):
                 log_file_path = os.path.join(LOG_DIR, filename)
                 # ファイル名からタグを取得
                 tag = filename.split(".")[0]
-                with open(log_file_path, 'rb') as data:
+                with open(log_file_path, "rb") as data:
                     for line in data:
                         directory = now.strftime("%Y/%m/%d")
                         s3_path = data_path(PREFIX, tag, directory)
@@ -180,7 +213,7 @@ def s3_client(rustfs_endpoint):
                         compressed_log_data = gzip.compress(line)
 
                         # アップロード
-                        result = client.put_object(
+                        client.put_object(
                             BUCKET,
                             s3_path,
                             io.BytesIO(compressed_log_data),
@@ -188,6 +221,7 @@ def s3_client(rustfs_endpoint):
                         )
 
     return client
+
 
 @pytest.fixture
 def s3_client_without_session_webhook(rustfs_endpoint):
@@ -210,7 +244,7 @@ def s3_client_without_session_webhook(rustfs_endpoint):
     # rtc_stats のみアップロードし、session_webhook はアップロードしない
     now = datetime.datetime.now(datetime.timezone.utc)
     log_file_path = os.path.join(LOG_DIR, "rtc_stats.jsonl")
-    with open(log_file_path, 'rb') as data:
+    with open(log_file_path, "rb") as data:
         for line in data:
             directory = now.strftime("%Y/%m/%d")
             s3_path = data_path(PREFIX, "rtc_stats", directory)
@@ -226,6 +260,7 @@ def s3_client_without_session_webhook(rustfs_endpoint):
 
     return client
 
+
 def test_init(request, s3_client, rustfs_endpoint):
     """init 実行でログを取り込み、DuckDB とオブジェクトカーソルが作成されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
@@ -234,7 +269,9 @@ def test_init(request, s3_client, rustfs_endpoint):
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加する
     request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
-    request.addfinalizer(lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None)
+    request.addfinalizer(
+        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
+    )
 
     # テスト開始時に BUCKET が存在することを確認
     assert s3_client.bucket_exists(BUCKET)
@@ -250,7 +287,7 @@ def test_init(request, s3_client, rustfs_endpoint):
         storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
-        initial_maximum_load=1000
+        initial_maximum_load=1000,
     )
 
     # init関数を呼び出して初期化する
@@ -272,11 +309,20 @@ def test_init(request, s3_client, rustfs_endpoint):
         assert result[0] == len(objects)
 
         # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
-        latest_object = get_latest_object(s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
-        duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified,))
+        latest_object = get_latest_object(
+            s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"])
+        )
+        duckdb_connection.execute(
+            "SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?",
+            (
+                "rtc_stats",
+                latest_object.last_modified,
+            ),
+        )
         result = duckdb_connection.fetchone()
         assert result is not None
         assert result[0] == 1
+
 
 def test_re_init(request, s3_client, rustfs_endpoint):
     """init を再実行してもデータ件数とカーソル情報が変化しないことを確認する。"""
@@ -286,7 +332,9 @@ def test_re_init(request, s3_client, rustfs_endpoint):
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
     request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
-    request.addfinalizer(lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None)
+    request.addfinalizer(
+        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
+    )
 
     # テスト開始時に BUCKET が存在することを確認
     assert s3_client.bucket_exists(BUCKET)
@@ -302,7 +350,7 @@ def test_re_init(request, s3_client, rustfs_endpoint):
         storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
-        initial_maximum_load=1000
+        initial_maximum_load=1000,
     )
 
     # init関数を呼び出して初期化する
@@ -324,8 +372,16 @@ def test_re_init(request, s3_client, rustfs_endpoint):
         assert result[0] == len(objects)
 
         # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
-        latest_object = get_latest_object(s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
-        duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified,))
+        latest_object = get_latest_object(
+            s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"])
+        )
+        duckdb_connection.execute(
+            "SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?",
+            (
+                "rtc_stats",
+                latest_object.last_modified,
+            ),
+        )
         result = duckdb_connection.fetchone()
         assert result is not None
         assert result[0] == 1
@@ -340,10 +396,17 @@ def test_re_init(request, s3_client, rustfs_endpoint):
 
         # 再実行後も、s3_objects の last_modified が変わらないことを確認する
         # 前回の実行時に取得した latest_object をそのまま利用する
-        duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified,))
+        duckdb_connection.execute(
+            "SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?",
+            (
+                "rtc_stats",
+                latest_object.last_modified,
+            ),
+        )
         result = duckdb_connection.fetchone()
         assert result is not None
         assert result[0] == 1
+
 
 def test_file_count_limit_for_init(request, s3_client, rustfs_endpoint):
     """init の初期読み込み上限で取り込み件数が制限されることを確認する。"""
@@ -353,7 +416,9 @@ def test_file_count_limit_for_init(request, s3_client, rustfs_endpoint):
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加する
     request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
-    request.addfinalizer(lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None)
+    request.addfinalizer(
+        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
+    )
 
     # テスト開始時に BUCKET が存在することを確認
     assert s3_client.bucket_exists(BUCKET)
@@ -372,7 +437,7 @@ def test_file_count_limit_for_init(request, s3_client, rustfs_endpoint):
         storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
-        initial_maximum_load=initial_maximum_load
+        initial_maximum_load=initial_maximum_load,
     )
 
     # init関数を呼び出して初期化する
@@ -396,11 +461,17 @@ def test_file_count_limit_for_init(request, s3_client, rustfs_endpoint):
         assert result[0] == initial_maximum_load
 
         # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
-        latest_object = get_latest_object(s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
-        duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified))
+        latest_object = get_latest_object(
+            s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"])
+        )
+        duckdb_connection.execute(
+            "SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?",
+            ("rtc_stats", latest_object.last_modified),
+        )
         result = duckdb_connection.fetchone()
         assert result is not None
         assert result[0] == 1
+
 
 def test_update(request, s3_client, rustfs_endpoint):
     """update 実行時に差分ログのみが追加され、件数とカーソルが更新されることを確認する。"""
@@ -410,7 +481,9 @@ def test_update(request, s3_client, rustfs_endpoint):
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
     request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
-    request.addfinalizer(lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None)
+    request.addfinalizer(
+        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
+    )
 
     # テスト開始時に BUCKET が存在することを確認
     assert s3_client.bucket_exists(BUCKET)
@@ -426,7 +499,7 @@ def test_update(request, s3_client, rustfs_endpoint):
         storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
-        initial_maximum_load=1000
+        initial_maximum_load=1000,
     )
 
     # init関数を呼び出して初期化する
@@ -457,11 +530,11 @@ def test_update(request, s3_client, rustfs_endpoint):
 
         # 新規の log データを RustFS に追加した後に update を呼び出して、データ数が増えることを確認する
         new_log_file = os.path.join(LOG_DIR, "rtc_stats.jsonl")
-        with open(new_log_file, 'rb') as data:
+        with open(new_log_file, "rb") as data:
             for line in data:
                 parsed_log = json.loads(line)
                 now = datetime.datetime.now(datetime.timezone.utc)
-                log_data = json.dumps(parsed_log).encode('utf-8')
+                log_data = json.dumps(parsed_log).encode("utf-8")
                 compressed_log_data = gzip.compress(log_data)
 
                 directory = now.strftime("%Y/%m/%d")
@@ -487,11 +560,20 @@ def test_update(request, s3_client, rustfs_endpoint):
         assert result[0] == len(objects)
 
         # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
-        latest_object = get_latest_object(s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"]))
-        duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?", ("rtc_stats", latest_object.last_modified,))
+        latest_object = get_latest_object(
+            s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"])
+        )
+        duckdb_connection.execute(
+            "SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?",
+            (
+                "rtc_stats",
+                latest_object.last_modified,
+            ),
+        )
         result = duckdb_connection.fetchone()
         assert result is not None
         assert result[0] == 1
+
 
 def test_all_delete(request, s3_client, rustfs_endpoint):
     """保持期間外のデータだけで構成された場合に delete で全件削除されることを確認する。"""
@@ -501,7 +583,9 @@ def test_all_delete(request, s3_client, rustfs_endpoint):
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
     request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
-    request.addfinalizer(lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None)
+    request.addfinalizer(
+        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
+    )
     # テスト開始時に BUCKET が存在することを確認
 
     assert s3_client.bucket_exists(BUCKET)
@@ -516,7 +600,7 @@ def test_all_delete(request, s3_client, rustfs_endpoint):
         storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
-        initial_maximum_load=1000
+        initial_maximum_load=1000,
     )
 
     # init関数を呼び出して初期化する
@@ -536,9 +620,10 @@ def test_all_delete(request, s3_client, rustfs_endpoint):
         # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
         assert result[0] == len(objects)
 
-
         # DuckDB のオブジェクトを取得する
-        duckdb_connection.execute("SELECT timestamp, connection_id, rtc_id, rtc_type FROM rtc_stats")
+        duckdb_connection.execute(
+            "SELECT timestamp, connection_id, rtc_id, rtc_type FROM rtc_stats"
+        )
         objects = duckdb_connection.fetchall()
         # すべてのオブジェクトの timestamp を 2 日前に更新する
         for _, obj in enumerate(objects):
@@ -559,6 +644,7 @@ def test_all_delete(request, s3_client, rustfs_endpoint):
         # 全てのオブジェクトの timestamp を 2 日前に更新したため、全てのデータが削除される
         assert result[0] == 0
 
+
 def test_delete(request, s3_client, rustfs_endpoint):
     """保持期間外と期間内が混在する場合に delete で期間外のみ削除されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
@@ -567,7 +653,9 @@ def test_delete(request, s3_client, rustfs_endpoint):
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
     request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
-    request.addfinalizer(lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None)
+    request.addfinalizer(
+        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
+    )
     # テスト開始時に BUCKET が存在することを確認
 
     assert s3_client.bucket_exists(BUCKET)
@@ -582,7 +670,7 @@ def test_delete(request, s3_client, rustfs_endpoint):
         storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
-        initial_maximum_load=1000
+        initial_maximum_load=1000,
     )
 
     # init関数を呼び出して初期化する
@@ -602,9 +690,10 @@ def test_delete(request, s3_client, rustfs_endpoint):
         # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
         assert result[0] == len(objects)
 
-
         # DuckDB のオブジェクトを取得する
-        duckdb_connection.execute("SELECT timestamp, connection_id, rtc_id, rtc_type FROM rtc_stats")
+        duckdb_connection.execute(
+            "SELECT timestamp, connection_id, rtc_id, rtc_type FROM rtc_stats"
+        )
         objects = duckdb_connection.fetchall()
         # オブジェクトの半数の timestamp を 2 日前に更新する
         for i, obj in enumerate(objects):
@@ -630,6 +719,7 @@ def test_delete(request, s3_client, rustfs_endpoint):
         # 偶数番目のオブジェクトの timestamp を 2 日前に更新したため、半分のデータが残る
         assert result[0] == len(objects) // 2
 
+
 def test_delete_within_retention_period(request, s3_client, rustfs_endpoint):
     """保持期間内のデータのみの場合に delete を実行しても削除されないことを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
@@ -638,7 +728,9 @@ def test_delete_within_retention_period(request, s3_client, rustfs_endpoint):
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
     request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
-    request.addfinalizer(lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None)
+    request.addfinalizer(
+        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
+    )
     # テスト開始時に BUCKET が存在することを確認
 
     assert s3_client.bucket_exists(BUCKET)
@@ -653,7 +745,7 @@ def test_delete_within_retention_period(request, s3_client, rustfs_endpoint):
         storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
-        initial_maximum_load=1000
+        initial_maximum_load=1000,
     )
 
     # init関数を呼び出して初期化する
@@ -674,7 +766,9 @@ def test_delete_within_retention_period(request, s3_client, rustfs_endpoint):
         assert result[0] == len(objects)
 
         # DuckDB のオブジェクトを取得する
-        duckdb_connection.execute("SELECT timestamp, connection_id, rtc_id, rtc_type FROM rtc_stats")
+        duckdb_connection.execute(
+            "SELECT timestamp, connection_id, rtc_id, rtc_type FROM rtc_stats"
+        )
         objects = duckdb_connection.fetchall()
         # オブジェクトの半数の timestamp を 2 日前に更新する
         for i, obj in enumerate(objects):
@@ -700,6 +794,7 @@ def test_delete_within_retention_period(request, s3_client, rustfs_endpoint):
         # データの保持期間が 3 日のため、データは削除されない
         assert result[0] == len(objects)
 
+
 def test_no_bucket(request, rustfs_endpoint):
     """RustFS のバケットが存在しない場合に init が例外を送出することを確認する。"""
 
@@ -708,7 +803,11 @@ def test_no_bucket(request, rustfs_endpoint):
         duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
 
         # テスト後に DuckDB のファイルを削除するためのクリーンアップ処理を追加
-        request.addfinalizer(lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None)
+        request.addfinalizer(
+            lambda: (
+                os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
+            )
+        )
 
         # ingester/src/run.py の init 関数を呼び出すための引数を設定
         args = Args(
@@ -722,20 +821,27 @@ def test_no_bucket(request, rustfs_endpoint):
             # 存在しないバケット名
             s3_bucket="non_existent_bucket",
             s3_prefix=PREFIX,
-            initial_maximum_load=1000
+            initial_maximum_load=1000,
         )
 
         init(args)
 
-def test_init_skips_missing_session_webhook(request, s3_client_without_session_webhook, rustfs_endpoint):
+
+def test_init_skips_missing_session_webhook(
+    request, s3_client_without_session_webhook, rustfs_endpoint
+):
     """session_webhook が S3 に存在しない場合でも init が成功し、rtc_stats のみ取り込まれることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
     duckdb_filename = f"{request.node.name}.db"
     duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加する
-    request.addfinalizer(lambda: remove_bucket(s3_client_without_session_webhook, BUCKET))
-    request.addfinalizer(lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None)
+    request.addfinalizer(
+        lambda: remove_bucket(s3_client_without_session_webhook, BUCKET)
+    )
+    request.addfinalizer(
+        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
+    )
 
     # テスト開始時に BUCKET が存在することを確認
     assert s3_client_without_session_webhook.bucket_exists(BUCKET)
@@ -751,7 +857,7 @@ def test_init_skips_missing_session_webhook(request, s3_client_without_session_w
         storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
-        initial_maximum_load=1000
+        initial_maximum_load=1000,
     )
 
     # session_webhook が欠損していても init が例外を送出しないことを確認する
@@ -781,6 +887,7 @@ def test_init_skips_missing_session_webhook(request, s3_client_without_session_w
         assert cursor_count is not None
         assert cursor_count[0] == 1
 
+
 def test_prepare_db_for_init_renames_broken_db_file(tmp_path):
     """壊れた DB を prepare_db_for_init が検出し、DB と WAL をリネームして退避したことを確認する。"""
     db_path = tmp_path / "broken.db"
@@ -792,7 +899,9 @@ def test_prepare_db_for_init_renames_broken_db_file(tmp_path):
 
     renamed_files = list(tmp_path.glob("broken.db.broken.*"))
     assert len(renamed_files) == 2
-    renamed_db_files = [path for path in renamed_files if not str(path).endswith(".wal")]
+    renamed_db_files = [
+        path for path in renamed_files if not str(path).endswith(".wal")
+    ]
     renamed_wal_files = [path for path in renamed_files if str(path).endswith(".wal")]
     assert len(renamed_db_files) == 1
     assert len(renamed_wal_files) == 1
