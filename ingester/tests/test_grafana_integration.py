@@ -2,7 +2,6 @@ import base64
 import json
 import os
 import shutil
-import subprocess
 import urllib.error
 import urllib.request
 from collections.abc import Mapping
@@ -17,37 +16,28 @@ from testcontainers.core.exceptions import ContainerStartException
 from .helpers import wait_until
 
 
+# 使用する Grafana の Docker イメージタグ
 GRAFANA_IMAGE = "grafana/grafana:12.4.3-ubuntu"
+# Grafana にマウントする DuckDB プラグインのソースディレクトリ
 PLUGIN_DIR = (
     Path(__file__).resolve().parents[2] / "plugins" / "motherduck-duckdb-datasource"
 )
+# Grafana に provisioning する datasource 設定の格納ディレクトリ
 GRAFANA_DATASOURCES_DIR = (
     Path(__file__).resolve().parents[2] / "grafana" / "datasources"
 )
+# Grafana に provisioning するダッシュボード定義の格納ディレクトリ
 GRAFANA_DASHBOARDS_DIR = Path(__file__).resolve().parents[2] / "grafana" / "dashboards"
+# Grafana コンテナの管理者ユーザー名 (テスト専用)
 ADMIN_USER = "shiguredo"
+# Grafana コンテナの管理者パスワード (テスト専用)
 ADMIN_PASSWORD = "password"
+# Grafana に provisioning する datasource 名 兼 plugin id
 DATA_SOURCE_NAME = "motherduck-duckdb-datasource"
 
 
-@pytest.fixture(scope="session", autouse=True)
-def init_grafana_plugin() -> None:
-    """
-    Grafana の integration test に必要な plugin を事前に作成する。
-    :return: なし
-    """
-    # pytest 開始時に 1 回だけ init を実行し、plugins 配下をテスト前提の状態にする。
-    repo_root = Path(__file__).resolve().parents[2]
-    subprocess.run(["make", "init"], cwd=repo_root, check=True)
-
-
 def build_auth_header(user: str, password: str) -> dict[str, str]:
-    """
-    Grafana の Basic 認証ヘッダーを生成する。
-    :param user: ユーザー名
-    :param password: パスワード
-    :return: Authorization ヘッダーを持つ辞書
-    """
+    """Grafana の Basic 認証ヘッダーを生成する。"""
     token = base64.b64encode(f"{user}:{password}".encode("utf-8")).decode("ascii")
     return {"Authorization": f"Basic {token}"}
 
@@ -58,14 +48,7 @@ def request_json(
     body: Any = None,
     headers: Mapping[str, str] | None = None,
 ) -> Any:
-    """
-    JSON API を呼び出し、レスポンスを辞書として返す。
-    :param url: リクエスト先 URL
-    :param method: HTTP メソッド
-    :param body: JSON で送るリクエストボディ
-    :param headers: 追加ヘッダー
-    :return: JSON デコード結果、または空レスポンス時は None
-    """
+    """JSON API を呼び出してレスポンスを辞書として返す。空レスポンスは None。"""
     request_headers = {"Accept": "application/json"}
     if headers:
         request_headers.update(headers)
@@ -90,11 +73,7 @@ def request_json(
 
 
 def create_duckdb_readonly_copy(base_dir: Path) -> Path:
-    """
-    Grafana が参照できる DuckDB の読み取り専用コピーを作成する。
-    :param base_dir: 一時ディレクトリのルート
-    :return: duck.db.readonly を含むディレクトリの Path
-    """
+    """Grafana が参照できる DuckDB の読み取り専用コピーを作成する。"""
     duckdb_dir = base_dir / "duckdb"
     duckdb_dir.mkdir(parents=True, exist_ok=True)
 
@@ -128,13 +107,7 @@ def create_duckdb_readonly_copy(base_dir: Path) -> Path:
 def extract_first_table_value(
     response: Mapping[str, Any], ref_id: str = "A", field_name: str = "count"
 ) -> Any:
-    """
-    /api/ds/query の結果から最初のテーブル値を取り出す。
-    :param response: Grafana の JSON レスポンス
-    :param ref_id: 抽出対象の query refId
-    :param field_name: 抽出対象の列名
-    :return: 指定列の先頭値
-    """
+    """/api/ds/query の結果から最初のテーブル値を取り出す。"""
     frame = response["results"][ref_id]["frames"][0]
     field_names = [field["name"] for field in frame["schema"]["fields"]]
     field_index = field_names.index(field_name)
@@ -144,13 +117,7 @@ def extract_first_table_value(
 def query_grafana_datasource(
     base_url: str, auth_header: Mapping[str, str], datasource_uid: str
 ) -> Any:
-    """
-    Grafana の datasource に対して DuckDB の件数取得クエリを実行する。
-    :param base_url: Grafana のベース URL
-    :param auth_header: 認証用ヘッダー
-    :param datasource_uid: datasource UID
-    :return: /api/ds/query の JSON レスポンス
-    """
+    """Grafana の datasource に対して DuckDB の件数取得クエリを実行する。"""
     query_body = {
         "queries": [
             {
@@ -193,12 +160,7 @@ def query_grafana_datasource(
 
 
 def wait_for_grafana(base_url: str, auth_header: Mapping[str, str]) -> None:
-    """
-    Grafana の起動と datasource の provision 完了を待つ。
-    :param base_url: Grafana のベース URL
-    :param auth_header: 認証用ヘッダー
-    :return: なし
-    """
+    """Grafana の起動と datasource の provision 完了を待つ。"""
 
     # Grafana の起動完了と datasource の provision 完了を別々に待つ。
     def health_is_ready() -> bool:

@@ -10,15 +10,11 @@ import pytest
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.network import Network
 
+from .conftest import ACCESS_KEY, BUCKET, PREFIX, RUSTFS_IMAGE, RUSTFS_PORT, SECRET_KEY
 from .fluent_bit_helper import create_fluent_bit_config
 from .helpers import WaitTimeoutError, wait_until
 
-ACCESS_KEY = "kohakuadmin"
-SECRET_KEY = "kohakuadmin"
-BUCKET = "kohaku"
-PREFIX = "log"
-RUSTFS_PORT = 9000
-RUSTFS_IMAGE = "rustfs/rustfs:1.0.0-beta.2"
+# 使用する fluent-bit の Docker イメージ (タグ未指定で latest 相当)
 FLUENT_BIT_IMAGE = "fluent/fluent-bit"
 
 
@@ -30,21 +26,12 @@ def fetch_scalar(con: duckdb.DuckDBPyConnection, query: str) -> Any:
 
 
 def count_objects(client: minio.Minio, prefix: str) -> int:
-    """
-    指定プレフィックス配下のオブジェクト件数を取得する。
-    :param client: MinIO 互換クライアント
-    :param prefix: 件数集計対象のプレフィックス
-    :return: オブジェクト件数を表す整数
-    """
+    """指定プレフィックス配下のオブジェクト件数を取得する。"""
     return len(list(client.list_objects(BUCKET, prefix=prefix, recursive=True)))
 
 
 def decode_logs(logs: Any) -> str:
-    """
-    ログ出力を文字列へ正規化する。
-    :param logs: bytes または文字列化可能なログデータ
-    :return: UTF-8 で復号した、または文字列化したログ文字列
-    """
+    """ログ出力を文字列へ正規化する。bytes は UTF-8 で復号する。"""
     if isinstance(logs, bytes):
         return logs.decode("utf-8", errors="replace")
     return str(logs)
@@ -53,13 +40,7 @@ def decode_logs(logs: Any) -> str:
 def create_test_log_dir(
     tmp_path: Path, source_log_dir: Path, include_session_webhook: bool = True
 ) -> Path:
-    """
-    テスト用ログディレクトリを作成し、入力ログファイルを配置する。
-    :param tmp_path: pytest が提供する一時ディレクトリ
-    :param source_log_dir: 元となるログファイルを保持するディレクトリ
-    :param include_session_webhook: session_webhook の入力ファイルを生成するかどうか
-    :return: 生成したログディレクトリの Path オブジェクト
-    """
+    """テスト用ログディレクトリを作成し、入力ログファイルを配置する。"""
     # fluent-bit 入力用のログディレクトリをテスト毎に作成する
     log_dir = tmp_path / "log"
     log_dir.mkdir()
@@ -84,16 +65,7 @@ def run_fluent_bit_and_wait(
     client: minio.Minio,
     expected_prefix_counts: dict[str, int],
 ) -> None:
-    """
-    fluent-bit コンテナを起動し、期待件数に到達するまで待機する。
-    :param network: テスト用 Docker ネットワーク
-    :param log_dir: fluent-bit 入力ログのマウント元ディレクトリ
-    :param config_path: fluent-bit 設定ファイルの Path
-    :param state_dir: fluent-bit 状態ファイルのマウント元ディレクトリ
-    :param client: オブジェクトストレージクライアント
-    :param expected_prefix_counts: プレフィックスごとの期待最小件数を持つ辞書
-    :return: なし。待機がタイムアウトした場合は pytest.fail を呼び出す
-    """
+    """fluent-bit コンテナを起動し、期待件数に到達するまで待機する。タイムアウトすると pytest.fail。"""
     # fluent-bit を起動し、期待オブジェクト数に達するまで待機する
     with (
         DockerContainer(FLUENT_BIT_IMAGE)
@@ -126,15 +98,7 @@ def run_ingester_cli(
     command: str,
     initial_maximum_load: int = 1000,
 ) -> subprocess.CompletedProcess[str]:
-    """
-    ingester の run.py を CLI として実行する。
-    :param ingester_dir: run.py 実行時の作業ディレクトリ
-    :param db_path: DuckDB ファイルパス
-    :param endpoint: 接続先 S3 エンドポイント
-    :param command: 実行するサブコマンド
-    :param initial_maximum_load: init 時の初期読み込み上限件数
-    :return: subprocess.run が返す CompletedProcess オブジェクト
-    """
+    """ingester の run.py を CLI として実行し、stdout/stderr を呼び出し元で検証できるようにする。"""
     # run.py を CLI 経由で実行し、stdout/stderr を呼び出し元で検証できるようにする
     cmd = [
         "uv",
@@ -167,11 +131,7 @@ def run_ingester_cli(
 
 
 def append_rtc_stats_log(log_dir: Path) -> None:
-    """
-    rtc_stats ログに 1 行追加し、新規オブジェクト送信の契機を作る。
-    :param log_dir: rtc_stats.jsonl を含むログディレクトリ
-    :return: なし
-    """
+    """rtc_stats ログに 1 行追加し、新規オブジェクト送信の契機を作る。"""
     # 既存ログ 1 行を複製して識別子だけ変え、新規オブジェクト送信を発生させる
     rtc_stats_path = log_dir / "rtc_stats.jsonl"
     first_line = rtc_stats_path.read_text(encoding="utf-8").splitlines()[0]
@@ -188,12 +148,7 @@ def append_rtc_stats_log(log_dir: Path) -> None:
 def get_s3_cursor(
     con: duckdb.DuckDBPyConnection, log_type: str
 ) -> tuple[Any, ...] | None:
-    """
-    指定ログ種別の S3 カーソル情報を取得する。
-    :param con: DuckDB 接続オブジェクト
-    :param log_type: s3_objects テーブルの type 列に対応するログ種別
-    :return: object_name と last_modified のタプル。未登録時は None
-    """
+    """指定ログ種別の S3 カーソル (object_name, last_modified) を返す。未登録時は None。"""
     return con.execute(
         "SELECT object_name, last_modified FROM s3_objects WHERE type=?",
         (log_type,),

@@ -3,7 +3,7 @@ import io
 import datetime
 import gzip
 import json
-from collections.abc import Iterator, Sequence
+from collections.abc import Sequence
 from typing import Any
 
 from run import init, update, delete, prepare_db_for_init
@@ -11,36 +11,49 @@ from run import init, update, delete, prepare_db_for_init
 import uuid
 import minio
 import pytest
-from testcontainers.core.container import DockerContainer
 
+from .conftest import ACCESS_KEY, BUCKET, PREFIX, SECRET_KEY
 from .helpers import wait_until
 
 import duckdb
 
-BUCKET = "kohaku"
-ACCESS_KEY = "kohakuadmin"
-SECRET_KEY = "kohakuadmin"
-PREFIX = "log"
-RUSTFS_PORT = 9000
-RUSTFS_IMAGE = "rustfs/rustfs:1.0.0-beta.2"
 # 出力されたままのログファイルを保存するディレクトリ
 LOG_DIR = "./tests/log"
+# テスト中に DuckDB ファイルを置くディレクトリ (カレント直下)
 DUCKDB_DIR_PATH = "."
 
 
 class Args:
+    """ingester/src/run.py が受け取る argparse.Namespace を模した DTO。
+
+    テストから init / update / delete を直接呼び出すために、本番で argparse が組み立てる
+    Namespace と同じ属性名を揃えてある。各サブコマンドが参照するフィールドの組は異なる
+    (例: delete は db と retention_period のみ参照する) ため、すべて Optional にしてある。
+    """
+
     def __init__(
         self,
+        # DuckDB ファイルのパス (例: "./test_init.db")。init/update/delete すべてで参照する
         db: str | None = None,
+        # S3 互換ストレージの HTTP エンドポイント (例: "127.0.0.1:9000")。テストでは RustFS コンテナを指す
         s3_endpoint: str | None = None,
+        # S3 互換ストレージのアクセスキー (RustFS の RUSTFS_ACCESS_KEY と同じ値)
         s3_access_key_id: str | None = None,
+        # S3 互換ストレージのシークレットキー (RustFS の RUSTFS_SECRET_KEY と同じ値)
         s3_secret_access_key: str | None = None,
+        # S3 接続時に SSL/TLS を使うかどうか。テストの RustFS は http なので False
         s3_use_ssl: bool | None = None,
+        # S3 のリージョン名 (例: "ap-northeast-1")。リクエスト署名に使う
         s3_region: str | None = None,
+        # ストレージ種別の識別用フィールド。現状 run.py 側からは参照されておらず、テスト引数の名残
         storage: str | None = None,
+        # 取り込み対象の S3 バケット名 (テストでは BUCKET 定数)
         s3_bucket: str | None = None,
+        # ログオブジェクトキー先頭のプレフィックス (テストでは PREFIX 定数、"log/rtc_stats/..." のように使う)
         s3_prefix: str | None = None,
+        # delete サブコマンド用: 何日より古い行を削除するかの閾値 (単位: 日)
         retention_period: int | None = None,
+        # init サブコマンド用: 一度に取り込む S3 オブジェクト件数の上限
         initial_maximum_load: int | None = None,
     ) -> None:
         self.db = db
@@ -57,14 +70,7 @@ class Args:
 
 
 def data_path(s3_prefix: str, tag: str, directory: str) -> str:
-    """
-    S3 のデータパスを生成する関数
-    :param s3_prefix: S3 のプレフィックス
-    :param tag: タグ
-    :param directory: ディレクトリ名
-    :return: フォーマットされた S3 パス
-    """
-
+    """S3 のデータパスを生成する。"""
     filename = f"{uuid.uuid4()}.gz"
     return f"{s3_prefix}/{tag}/{directory}/{filename}"
 
@@ -72,55 +78,29 @@ def data_path(s3_prefix: str, tag: str, directory: str) -> str:
 def list_objects(
     s3_client: minio.Minio, bucket_name: str, prefix: str | None = None
 ) -> list[str]:
-    """
-    指定されたバケット内のオブジェクトをリストする関数
-    :param s3_client: S3 クライアント
-    :param bucket_name: バケット名
-    :param prefix: 取得対象のプレフィックス。指定しない場合は全件を取得する
-    :return: オブジェクトのリスト
-    """
-
+    """指定されたバケット内のオブジェクト名一覧を返す。prefix 未指定時は全件取得する。"""
     objects = s3_client.list_objects(bucket_name, prefix=prefix, recursive=True)
     return [obj.object_name for obj in objects]
 
 
 def remove_objects(s3_client: minio.Minio, bucket_name: str) -> None:
-    """
-    指定されたバケット内のすべてのオブジェクトを削除する関数
-    :param s3_client: S3 クライアント
-    :param bucket_name: バケット名
-    :return: なし
-    """
-
+    """指定されたバケット内のすべてのオブジェクトを削除する。"""
     objects = list_objects(s3_client, bucket_name)
     for obj in objects:
         s3_client.remove_object(bucket_name, obj)
 
 
 def remove_bucket(s3_client: minio.Minio, bucket_name: str) -> None:
-    """
-    指定されたバケットを削除する関数
-    :param s3_client: S3 クライアント
-    :param bucket_name: バケット名
-    :return: なし
-    """
-
+    """指定されたバケットを中身ごと削除する。"""
     remove_objects(s3_client, bucket_name)
     s3_client.remove_bucket(bucket_name)
 
 
-# 指定した期間だけ過去に更新する関数
+# rtc_stats の timestamp を period 日だけ過去にずらすヘルパー関数
 def update_timestamp_for_rtc_stats(
     con: duckdb.DuckDBPyConnection, obj: Sequence[Any], period: int
 ) -> None:
-    """
-    DuckDB のオブジェクトの更新日時を更新する関数
-    :param con: DuckDB の接続オブジェクト
-    :param obj: 更新対象のオブジェクト
-    :param period: timestamp を過去に設定する期間（日数）
-    :return: なし
-    """
-
+    """rtc_stats の timestamp を現在時刻から period 日だけ過去に更新する。"""
     org_timestamp = obj[0]
     connection_id = obj[1]
     rtc_id = obj[2]
@@ -157,32 +137,9 @@ def update_timestamp_for_rtc_stats(
 
 
 def get_latest_object(s3_client: minio.Minio, bucket: str, prefix: str) -> Any:
-    """
-    オブジェクトストレージ上で処理対象の最新のオブジェクトを取得する関数
-    :param s3_client: S3 クライアント
-    :param bucket: 対象バケット名
-    :param prefix: 検索対象のプレフィックス
-    :return: 最新のオブジェクト
-    """
-
+    """オブジェクトストレージ上で last_modified が最大のオブジェクトを返す。"""
     objects = s3_client.list_objects(bucket, prefix=prefix, recursive=True)
     return max(objects, key=lambda obj: obj.last_modified)
-
-
-@pytest.fixture(scope="session")
-def rustfs_container() -> Iterator[DockerContainer]:
-    with (
-        DockerContainer(RUSTFS_IMAGE)
-        .with_env("RUSTFS_ACCESS_KEY", ACCESS_KEY)
-        .with_env("RUSTFS_SECRET_KEY", SECRET_KEY)
-        .with_exposed_ports(RUSTFS_PORT) as rustfs
-    ):
-        yield rustfs
-
-
-@pytest.fixture(scope="session")
-def rustfs_endpoint(rustfs_container: DockerContainer) -> str:
-    return f"{rustfs_container.get_container_host_ip()}:{rustfs_container.get_exposed_port(RUSTFS_PORT)}"
 
 
 @pytest.fixture

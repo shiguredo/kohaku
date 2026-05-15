@@ -2,8 +2,11 @@ from pathlib import Path
 
 from jinja2 import Template
 
+# fluent-bit からアクセスする S3 エンドポイント (同一 Docker network 上の rustfs ホスト名を解決)
 FLUENT_BIT_S3_ENDPOINT = "http://rustfs:9000"
+# fluent-bit コンテナ内で監視対象とするログディレクトリパス
 FLUENT_BIT_SORA_LOG_PATH = "/log"
+# fluent-bit 設定生成に用いる Jinja2 テンプレートの配置パス
 FLUENT_BIT_CONFIG_TEMPLATE_PATH = (
     Path(__file__).resolve().parent
     / "fixtures"
@@ -20,16 +23,7 @@ def create_fluent_bit_config(
     s3_prefix: str = "log",
     sora_log_path: str = FLUENT_BIT_SORA_LOG_PATH,
 ) -> None:
-    """
-    fluent-bit 設定テンプレートを描画して設定ファイルを書き出す。
-    :param config_path: 出力先設定ファイルの Path
-    :param template_path: fluent-bit 設定テンプレートの Path
-    :param s3_endpoint: fluent-bit が接続する S3 エンドポイント
-    :param s3_bucket: 出力先バケット名
-    :param s3_prefix: 出力オブジェクトのプレフィックス
-    :param sora_log_path: fluent-bit が参照するログディレクトリパス
-    :return: なし
-    """
+    """fluent-bit 設定テンプレートを描画して設定ファイルを書き出す。"""
     template_text = Path(template_path).read_text(encoding="utf-8")
     config_text = Template(template_text).render(
         s3_endpoint=s3_endpoint,

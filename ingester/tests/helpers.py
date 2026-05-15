@@ -11,13 +11,7 @@ def wait_until(
     timeout_sec: float = 120,
     interval_sec: float = 1,
 ) -> None:
-    """
-    条件が真になるまで待機する。
-    :param condition: 真偽値を返す関数
-    :param timeout_sec: タイムアウト秒数
-    :param interval_sec: 再試行間隔秒数
-    :return: なし。条件が満たされない場合は WaitTimeoutError を送出する
-    """
+    """条件が真になるまで待機し、タイムアウトしたら WaitTimeoutError を送出する。"""
     deadline = time.time() + timeout_sec
     while time.time() < deadline:
         try:
