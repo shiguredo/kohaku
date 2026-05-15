@@ -20,3 +20,12 @@ __pycache__
 *.pdb
 *.egg
 *.egg-info
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.venv
+
+# agent
+.agents
+.claude
+.opencode
