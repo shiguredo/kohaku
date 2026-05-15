@@ -42,13 +42,30 @@ RustFS の Docker コンテナ上のログは Grafana の Docker コンテナを
 
 設定項目は .env.common.template, .env.docker.template に用意してありますので、これを利用して設定します
 
-テンプレート内の設定項目はコメントアウトされています。Docker Compose の設定に必要な項目のコメントアウトを外した上で、環境に合わせて値を設定してください
-
-Grafana の公開ポートは `.env` の `GRAFANA_HTTP_PORT` で設定します
-
 ```bash
 cat .env.common.template .env.docker.template > .env
 ```
+
+作成した `.env` 内の設定項目はコメントアウトされています。Docker Compose の設定に必要な項目のコメントアウトを外した上で、環境に合わせて値を設定してください
+
+Docker Compose の設定に必要な項目は下記のとおりです
+
+- `SORA_LOG_PATH` - Fluent Bit コンテナにマウントする Sora のログディレクトリのパス
+- `AWS_ACCESS_KEY_ID` - RustFS または S3 互換ストレージのアクセスキー
+- `AWS_SECRET_ACCESS_KEY` - RustFS または S3 互換ストレージのシークレットキー
+- `DUCKDB_DB_PATH` - DuckDB の DB ファイルのパス
+- `GRAFANA_HTTP_PORT` - Grafana の公開ポート番号
+- `S3_USE_SSL` - S3 互換ストレージへの接続に SSL を使用するかどうか（Docker Compose で同時に起動する RustFS を利用する場合は `false`）
+- `S3_ENDPOINT` - S3 互換ストレージのエンドポイント（Docker Compose で同時に起動する RustFS を利用する場合は `rustfs:9000`）
+- `S3_BUCKET` - バケット名
+- `S3_PREFIX` - S3 プレフィックス
+- `S3_REGION` - S3 互換ストレージのリージョン（例: `ap-northeast-1`）
+- `UPDATE_INTERVAL` - ingester の実行間隔（秒）
+- `INITIAL_MAXIMUM_LOAD` - init 時、および update 時にテーブル未作成だった場合の、初回テーブル作成における読み込み件数の上限
+- `RETENTION_PERIOD` - ログの保持期間（日）
+- `GF_SECURITY_ADMIN_USER` - Grafana の管理ユーザ
+- `GF_SECURITY_ADMIN_PASSWORD` - Grafana の管理パスワード
+- `RUSTFS_BASE_DIR` - RustFS のデータ保存ディレクトリ
 
 ### 初期設定
 
