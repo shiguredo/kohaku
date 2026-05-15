@@ -121,8 +121,6 @@ def sync_log_for_init(con, client, args, target):
     except duckdb.InvalidInputException as e:
         # まだディレクトリがないため、エラーを表示して次へ
         print(f"InvalidInputException ({target}): {e}")
-    except Exception as e:
-        raise e
 
 
 def sync_log_for_update(con, client, args, target):
@@ -230,7 +228,7 @@ def prepare_db_for_init(db_path):
             return
     except Exception as error:
         print(f"Unexpected error occurred while connecting to DB: {error}")
-        raise error
+        raise
 
 
 def is_initialized_db(db_path):
@@ -371,11 +369,11 @@ def delete(args):
             con.execute(f"ATTACH '{args.db}' AS db")
             con.execute(f"ATTACH '{copy_file}' AS copy")
             con.execute("COPY FROM DATABASE db TO copy")
-    except Exception as e:
+    except Exception:
         # 処理に失敗したときの残る可能性のあるファイルを削除する
         remove_delete_incompleted_copy_files(copy_file)
         # return code を 0 以外にするため例外を呼び出し元に投げる
-        raise e
+        raise
 
     try:
         # コピーしたファイルを、元の DB ファイルに上書きする
@@ -389,11 +387,11 @@ def delete(args):
             | stat.S_IWOTH,
         )
         shutil.move(copy_file, args.db)
-    except Exception as e:
+    except Exception:
         # 処理に失敗したときの残る可能性のあるファイルを削除する
         remove_delete_incompleted_copy_files(copy_file)
         # return code を 0 以外にするため例外を呼び出し元に投げる
-        raise e
+        raise
 
 
 def insert_log_from_s3(con, client, table_name, bucket, prefix):
@@ -415,9 +413,9 @@ def insert_log_from_s3(con, client, table_name, bucket, prefix):
             insert_log(con, table_name, target_urls)
             update_s3_object_table(con, table_name, latest_object(target_log_objects))
             con.commit()
-        except Exception as e:
+        except Exception:
             con.rollback()
-            raise e
+            raise
 
 
 def insert_log(con, table_name, target_urls):
