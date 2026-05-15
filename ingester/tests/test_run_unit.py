@@ -11,9 +11,7 @@ import run
 
 def test_positive_int_rejects_zero():
     """0 を渡した場合に引数エラーとなることを確認する。"""
-    with pytest.raises(
-        argparse.ArgumentTypeError, match="initial_maximum_load must be >= 1"
-    ):
+    with pytest.raises(argparse.ArgumentTypeError, match="value must be >= 1"):
         run.positive_int("0")
 
 

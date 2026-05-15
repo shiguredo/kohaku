@@ -40,7 +40,7 @@ LOG_TARGETS = (
 def positive_int(value):
     int_value = int(value)
     if int_value < 1:
-        raise argparse.ArgumentTypeError("initial_maximum_load must be >= 1")
+        raise argparse.ArgumentTypeError("value must be >= 1")
     return int_value
 
 
@@ -473,7 +473,7 @@ def main():
         "--retention_period",
         default=DEFAULT_RETENTION_PERIOD,
         help="retention period",
-        type=int,
+        type=positive_int,
     )
     parser.add_argument(
         "--initial_maximum_load",
