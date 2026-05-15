@@ -2,6 +2,8 @@
 
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/shiguredo/kohaku.svg)](https://github.com/shiguredo/kohaku)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![GitHub Actions](https://github.com/shiguredo/kohaku/actions/workflows/ci.yml/badge.svg)](https://github.com/shiguredo/kohaku/actions/workflows/ci.yml)
+[![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.gg/shiguredo)
 
 ## About Shiguredo's open source software
 
@@ -61,9 +63,10 @@ WebRTC 統計情報を収集し、TimescaleDB に保存するゲートウェイ�
 - [DigitalOcean | Spaces](https://www.digitalocean.com/products/spaces)
 - [Vultr | Object Storage](https://www.vultr.com/products/object-storage/)
 
-## 対応 Sora
+## 対応バージョン
 
 - WebRTC SFU Sora 2024.2 以降
+- Python 3.14 以降
 
 ## 優先実装
 
@@ -94,8 +97,8 @@ Discord へお願いします。
 Apache License 2.0
 
 ```text
-Copyright 2025-2025, Hiroshi Yoshida (Original Author)
-Copyright 2025-2025, Shiguredo Inc.
+Copyright 2025-2026, Hiroshi Yoshida (Original Author)
+Copyright 2025-2026, Shiguredo Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
