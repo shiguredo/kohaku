@@ -3,6 +3,8 @@ import io
 import datetime
 import gzip
 import json
+from collections.abc import Iterator, Sequence
+from typing import Any
 
 from run import init, update, delete, prepare_db_for_init
 
@@ -29,18 +31,18 @@ DUCKDB_DIR_PATH = "."
 class Args:
     def __init__(
         self,
-        db=None,
-        s3_endpoint=None,
-        s3_access_key_id=None,
-        s3_secret_access_key=None,
-        s3_use_ssl=None,
-        s3_region=None,
-        storage=None,
-        s3_bucket=None,
-        s3_prefix=None,
-        retention_period=None,
-        initial_maximum_load=None,
-    ):
+        db: str | None = None,
+        s3_endpoint: str | None = None,
+        s3_access_key_id: str | None = None,
+        s3_secret_access_key: str | None = None,
+        s3_use_ssl: bool | None = None,
+        s3_region: str | None = None,
+        storage: str | None = None,
+        s3_bucket: str | None = None,
+        s3_prefix: str | None = None,
+        retention_period: int | None = None,
+        initial_maximum_load: int | None = None,
+    ) -> None:
         self.db = db
         self.s3_endpoint = s3_endpoint
         self.s3_access_key_id = s3_access_key_id
@@ -54,7 +56,7 @@ class Args:
         self.initial_maximum_load = initial_maximum_load
 
 
-def data_path(s3_prefix, tag, directory):
+def data_path(s3_prefix: str, tag: str, directory: str) -> str:
     """
     S3 のデータパスを生成する関数
     :param s3_prefix: S3 のプレフィックス
@@ -67,7 +69,9 @@ def data_path(s3_prefix, tag, directory):
     return f"{s3_prefix}/{tag}/{directory}/{filename}"
 
 
-def list_objects(s3_client, bucket_name, prefix=None):
+def list_objects(
+    s3_client: minio.Minio, bucket_name: str, prefix: str | None = None
+) -> list[str]:
     """
     指定されたバケット内のオブジェクトをリストする関数
     :param s3_client: S3 クライアント
@@ -80,7 +84,7 @@ def list_objects(s3_client, bucket_name, prefix=None):
     return [obj.object_name for obj in objects]
 
 
-def remove_objects(s3_client, bucket_name):
+def remove_objects(s3_client: minio.Minio, bucket_name: str) -> None:
     """
     指定されたバケット内のすべてのオブジェクトを削除する関数
     :param s3_client: S3 クライアント
@@ -93,7 +97,7 @@ def remove_objects(s3_client, bucket_name):
         s3_client.remove_object(bucket_name, obj)
 
 
-def remove_bucket(s3_client, bucket_name):
+def remove_bucket(s3_client: minio.Minio, bucket_name: str) -> None:
     """
     指定されたバケットを削除する関数
     :param s3_client: S3 クライアント
@@ -106,7 +110,9 @@ def remove_bucket(s3_client, bucket_name):
 
 
 # 指定した期間だけ過去に更新する関数
-def update_timestamp_for_rtc_stats(con, obj, period):
+def update_timestamp_for_rtc_stats(
+    con: duckdb.DuckDBPyConnection, obj: Sequence[Any], period: int
+) -> None:
     """
     DuckDB のオブジェクトの更新日時を更新する関数
     :param con: DuckDB の接続オブジェクト
@@ -150,7 +156,7 @@ def update_timestamp_for_rtc_stats(con, obj, period):
         )
 
 
-def get_latest_object(s3_client, bucket, prefix):
+def get_latest_object(s3_client: minio.Minio, bucket: str, prefix: str) -> Any:
     """
     オブジェクトストレージ上で処理対象の最新のオブジェクトを取得する関数
     :param s3_client: S3 クライアント
@@ -164,7 +170,7 @@ def get_latest_object(s3_client, bucket, prefix):
 
 
 @pytest.fixture(scope="session")
-def rustfs_container():
+def rustfs_container() -> Iterator[DockerContainer]:
     with (
         DockerContainer(RUSTFS_IMAGE)
         .with_env("RUSTFS_ACCESS_KEY", ACCESS_KEY)
@@ -175,12 +181,12 @@ def rustfs_container():
 
 
 @pytest.fixture(scope="session")
-def rustfs_endpoint(rustfs_container):
+def rustfs_endpoint(rustfs_container: DockerContainer) -> str:
     return f"{rustfs_container.get_container_host_ip()}:{rustfs_container.get_exposed_port(RUSTFS_PORT)}"
 
 
 @pytest.fixture
-def s3_client(rustfs_endpoint):
+def s3_client(rustfs_endpoint: str) -> minio.Minio:
     # RustFS に接続する MinIO クライアントを作成する
     client = minio.Minio(
         rustfs_endpoint,
@@ -224,7 +230,7 @@ def s3_client(rustfs_endpoint):
 
 
 @pytest.fixture
-def s3_client_without_session_webhook(rustfs_endpoint):
+def s3_client_without_session_webhook(rustfs_endpoint: str) -> minio.Minio:
     # session_webhook を意図的に除外し、ログ種別が欠損した状態を再現する S3 クライアントを作成する
     # RustFS に接続する MinIO クライアントを作成する
     client = minio.Minio(

@@ -13,13 +13,13 @@ FLUENT_BIT_CONFIG_TEMPLATE_PATH = (
 
 
 def create_fluent_bit_config(
-    config_path,
-    template_path=FLUENT_BIT_CONFIG_TEMPLATE_PATH,
-    s3_endpoint=FLUENT_BIT_S3_ENDPOINT,
-    s3_bucket="kohaku",
-    s3_prefix="log",
-    sora_log_path=FLUENT_BIT_SORA_LOG_PATH,
-):
+    config_path: Path,
+    template_path: Path = FLUENT_BIT_CONFIG_TEMPLATE_PATH,
+    s3_endpoint: str = FLUENT_BIT_S3_ENDPOINT,
+    s3_bucket: str = "kohaku",
+    s3_prefix: str = "log",
+    sora_log_path: str = FLUENT_BIT_SORA_LOG_PATH,
+) -> None:
     """
     fluent-bit 設定テンプレートを描画して設定ファイルを書き出す。
     :param config_path: 出力先設定ファイルの Path

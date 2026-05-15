@@ -2,6 +2,7 @@ import json
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import duckdb
 import minio
@@ -21,14 +22,14 @@ RUSTFS_IMAGE = "rustfs/rustfs:1.0.0-beta.2"
 FLUENT_BIT_IMAGE = "fluent/fluent-bit"
 
 
-def fetch_scalar(con, query):
+def fetch_scalar(con: duckdb.DuckDBPyConnection, query: str) -> Any:
     """SELECT で 1 行 1 列を返すクエリの最初のカラム値を取得する。"""
     row = con.execute(query).fetchone()
     assert row is not None
     return row[0]
 
 
-def count_objects(client, prefix):
+def count_objects(client: minio.Minio, prefix: str) -> int:
     """
     指定プレフィックス配下のオブジェクト件数を取得する。
     :param client: MinIO 互換クライアント
@@ -38,7 +39,7 @@ def count_objects(client, prefix):
     return len(list(client.list_objects(BUCKET, prefix=prefix, recursive=True)))
 
 
-def decode_logs(logs):
+def decode_logs(logs: Any) -> str:
     """
     ログ出力を文字列へ正規化する。
     :param logs: bytes または文字列化可能なログデータ
@@ -49,7 +50,9 @@ def decode_logs(logs):
     return str(logs)
 
 
-def create_test_log_dir(tmp_path, source_log_dir, include_session_webhook=True):
+def create_test_log_dir(
+    tmp_path: Path, source_log_dir: Path, include_session_webhook: bool = True
+) -> Path:
     """
     テスト用ログディレクトリを作成し、入力ログファイルを配置する。
     :param tmp_path: pytest が提供する一時ディレクトリ
@@ -74,8 +77,13 @@ def create_test_log_dir(tmp_path, source_log_dir, include_session_webhook=True):
 
 
 def run_fluent_bit_and_wait(
-    network, log_dir, config_path, state_dir, client, expected_prefix_counts
-):
+    network: Network,
+    log_dir: Path,
+    config_path: Path,
+    state_dir: Path,
+    client: minio.Minio,
+    expected_prefix_counts: dict[str, int],
+) -> None:
     """
     fluent-bit コンテナを起動し、期待件数に到達するまで待機する。
     :param network: テスト用 Docker ネットワーク
@@ -112,8 +120,12 @@ def run_fluent_bit_and_wait(
 
 
 def run_ingester_cli(
-    ingester_dir, db_path, endpoint, command, initial_maximum_load=1000
-):
+    ingester_dir: Path,
+    db_path: Path,
+    endpoint: str,
+    command: str,
+    initial_maximum_load: int = 1000,
+) -> subprocess.CompletedProcess[str]:
     """
     ingester の run.py を CLI として実行する。
     :param ingester_dir: run.py 実行時の作業ディレクトリ
@@ -154,7 +166,7 @@ def run_ingester_cli(
     )
 
 
-def append_rtc_stats_log(log_dir):
+def append_rtc_stats_log(log_dir: Path) -> None:
     """
     rtc_stats ログに 1 行追加し、新規オブジェクト送信の契機を作る。
     :param log_dir: rtc_stats.jsonl を含むログディレクトリ
@@ -173,7 +185,9 @@ def append_rtc_stats_log(log_dir):
         f.write(json.dumps(data) + "\n")
 
 
-def get_s3_cursor(con, log_type):
+def get_s3_cursor(
+    con: duckdb.DuckDBPyConnection, log_type: str
+) -> tuple[Any, ...] | None:
     """
     指定ログ種別の S3 カーソル情報を取得する。
     :param con: DuckDB 接続オブジェクト

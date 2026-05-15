@@ -1,11 +1,16 @@
 import time
+from collections.abc import Callable
 
 
 class WaitTimeoutError(Exception):
     pass
 
 
-def wait_until(condition, timeout_sec=120, interval_sec=1):
+def wait_until(
+    condition: Callable[[], bool],
+    timeout_sec: float = 120,
+    interval_sec: float = 1,
+) -> None:
     """
     条件が真になるまで待機する。
     :param condition: 真偽値を返す関数

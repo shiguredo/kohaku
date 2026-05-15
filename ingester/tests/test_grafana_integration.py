@@ -5,7 +5,9 @@ import shutil
 import subprocess
 import urllib.error
 import urllib.request
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 import duckdb
 import pytest
@@ -29,7 +31,7 @@ DATA_SOURCE_NAME = "motherduck-duckdb-datasource"
 
 
 @pytest.fixture(scope="session", autouse=True)
-def init_grafana_plugin():
+def init_grafana_plugin() -> None:
     """
     Grafana の integration test に必要な plugin を事前に作成する。
     :return: なし
@@ -39,7 +41,7 @@ def init_grafana_plugin():
     subprocess.run(["make", "init"], cwd=repo_root, check=True)
 
 
-def build_auth_header(user, password):
+def build_auth_header(user: str, password: str) -> dict[str, str]:
     """
     Grafana の Basic 認証ヘッダーを生成する。
     :param user: ユーザー名
@@ -50,7 +52,12 @@ def build_auth_header(user, password):
     return {"Authorization": f"Basic {token}"}
 
 
-def request_json(url, method="GET", body=None, headers=None):
+def request_json(
+    url: str,
+    method: str = "GET",
+    body: Any = None,
+    headers: Mapping[str, str] | None = None,
+) -> Any:
     """
     JSON API を呼び出し、レスポンスを辞書として返す。
     :param url: リクエスト先 URL
@@ -118,7 +125,9 @@ def create_duckdb_readonly_copy(base_dir: Path) -> Path:
     return duckdb_dir
 
 
-def extract_first_table_value(response, ref_id="A", field_name="count"):
+def extract_first_table_value(
+    response: Mapping[str, Any], ref_id: str = "A", field_name: str = "count"
+) -> Any:
     """
     /api/ds/query の結果から最初のテーブル値を取り出す。
     :param response: Grafana の JSON レスポンス
@@ -132,7 +141,9 @@ def extract_first_table_value(response, ref_id="A", field_name="count"):
     return frame["data"]["values"][field_index][0]
 
 
-def query_grafana_datasource(base_url, auth_header, datasource_uid):
+def query_grafana_datasource(
+    base_url: str, auth_header: Mapping[str, str], datasource_uid: str
+) -> Any:
     """
     Grafana の datasource に対して DuckDB の件数取得クエリを実行する。
     :param base_url: Grafana のベース URL
@@ -181,7 +192,7 @@ def query_grafana_datasource(base_url, auth_header, datasource_uid):
     )
 
 
-def wait_for_grafana(base_url, auth_header):
+def wait_for_grafana(base_url: str, auth_header: Mapping[str, str]) -> None:
     """
     Grafana の起動と datasource の provision 完了を待つ。
     :param base_url: Grafana のベース URL
@@ -190,7 +201,7 @@ def wait_for_grafana(base_url, auth_header):
     """
 
     # Grafana の起動完了と datasource の provision 完了を別々に待つ。
-    def health_is_ready():
+    def health_is_ready() -> bool:
         try:
             return (
                 request_json(f"{base_url}/api/health", headers=auth_header)["database"]
@@ -199,7 +210,7 @@ def wait_for_grafana(base_url, auth_header):
         except Exception:
             return False
 
-    def datasource_is_ready():
+    def datasource_is_ready() -> bool:
         try:
             return (
                 request_json(
