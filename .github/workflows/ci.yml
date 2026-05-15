@@ -7,14 +7,13 @@ on:
 permissions:
   contents: write
 
-
 jobs:
   scripts-tests:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           enable-cache: false
       - run: |
@@ -25,7 +24,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v8.1.0
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           enable-cache: false
       - run: |
@@ -35,10 +34,28 @@ jobs:
           uv run pytest tests/
         working-directory: ingester
 
+  lint:
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: false
+      - run: uv sync
+        working-directory: ingester
+      - run: uv run ruff check
+        working-directory: ingester
+      - run: uv run ruff format --check
+        working-directory: ingester
+      - run: uv run ty check
+        working-directory: ingester
+
   slack_notify:
     needs:
       - scripts-tests
       - ci
+      - lint
     runs-on: ubuntu-slim
     if: ${{ always() }}
     timeout-minutes: 5
