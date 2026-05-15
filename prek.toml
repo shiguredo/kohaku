@@ -1,0 +1,42 @@
+# prek の設定ファイル
+# 詳細は https://prek.j178.dev/ を参照
+
+minimum_prek_version = "0.4.0"
+
+[[repos]]
+repo = "builtin"
+hooks = [
+  { id = "trailing-whitespace" },
+  { id = "end-of-file-fixer" },
+  { id = "mixed-line-ending", args = ["--fix=lf"] },
+  { id = "check-yaml" },
+  { id = "check-toml" },
+  { id = "check-json" },
+  { id = "check-merge-conflict" },
+  { id = "check-case-conflict" },
+  { id = "check-added-large-files" },
+  { id = "check-illegal-windows-names" },
+  { id = "check-symlinks" },
+  { id = "destroyed-symlinks" },
+  { id = "fix-byte-order-marker" },
+  { id = "detect-private-key" },
+  { id = "check-executables-have-shebangs" },
+  { id = "check-shebang-scripts-are-executable" },
+]
+
+# ingester / scripts 配下の Python コードを ruff で lint / format する
+[[repos]]
+repo = "https://github.com/astral-sh/ruff-pre-commit"
+rev = "v0.15.13"
+hooks = [
+  { id = "ruff-check", args = ["--fix"], files = "^(ingester|scripts)/.*\\.py$" },
+  { id = "ruff-format", files = "^(ingester|scripts)/.*\\.py$" },
+]
+
+# ingester 配下の Python コードを ty で型チェックする
+# ty は preview 中の Astral 製型チェッカーで、公式 pre-commit hook が無いため local 定義
+[[repos]]
+repo = "local"
+hooks = [
+  { id = "ty", name = "ty (ingester)", language = "system", entry = "uv run --directory ingester ty check", files = "^ingester/.*\\.py$", pass_filenames = false },
+]
