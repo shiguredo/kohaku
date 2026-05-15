@@ -14,8 +14,15 @@ dependencies = [
 ]
 
 [dependency-groups]
-lint = ["ruff", "ty"]
-test = ["jinja2", "pytest", "testcontainers[minio]"]
+lint = [
+  "ruff",
+  "ty",
+]
+test = [
+  "jinja2",
+  "pytest",
+  "testcontainers[minio]",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
