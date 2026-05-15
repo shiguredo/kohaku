@@ -13,6 +13,8 @@ Type=oneshot
 User=kohaku
 # 初回起動時の最大負荷値
 Environment=INITIAL_MAXIMUM_LOAD=100
+# update 1 回あたりの最大読み込み件数
+Environment=UPDATE_MAXIMUM_LOAD=100
 # 環境変数を読み込むファイル
 EnvironmentFile=/opt/kohaku/.env
 # uv のキャッシュディレクトリ

@@ -154,4 +154,4 @@ setup-kohaku:
 	mkdir -p /var/lib/kohaku/duckdb
 	chown -R kohaku:kohaku /var/lib/kohaku
 	find /var/lib/kohaku/ -type d -exec chmod 755 {} +
-	find /var/lib/kohaku/ -type f -exec chmod 666 {} +
+	find /var/lib/kohaku/ -type f -exec chmod 644 {} +

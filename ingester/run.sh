@@ -2,11 +2,8 @@
 
 set -euo pipefail
 
-# UTC ではなく /UTC にリンクが貼られ、DuckDB の TimeZone 設定も /UTC になるため、
-# Python API 側で UnknownTimeZoneError になるため、リンクを UTC に変更する
-ln -fs /usr/share/zoneinfo/UTC /etc/localtime
-
-mkdir -p /var/lib/kohaku/duckdb
+# タイムゾーン設定 (/etc/localtime のリンク) と /var/lib/kohaku/duckdb の作成は
+# Dockerfile のビルド時に済ませているため、ここでは行わない。
 
 cd /ingester
 
@@ -16,6 +13,7 @@ if [ "${S3_USE_SSL:-}" = "true" ]; then
 fi
 
 initial_maximum_load="${INITIAL_MAXIMUM_LOAD:-100}"
+update_maximum_load="${UPDATE_MAXIMUM_LOAD:-100}"
 
 # テーブル作成および初期データの挿入
 if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
@@ -41,6 +39,7 @@ do
                              --s3_bucket "${S3_BUCKET}" \
                              --s3_prefix "${S3_PREFIX}" \
                              --initial_maximum_load "${initial_maximum_load}" \
+                             --update_maximum_load "${update_maximum_load}" \
                              "${s3_ssl_args[@]}" \
                              update; then
     echo "run.py update failed. continue loop." >&2
