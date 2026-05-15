@@ -1,6 +1,12 @@
 # ingester
 
+ingester は、S3 に保存されたログデータを DuckDB にインサートするためのツールです。S3 からデータを取得して、DuckDB に挿入することで、効率的なクエリ処理が可能になります。
+
+ingester は Systemd のサービスとして実行されることを想定しています。定期的に S3 からデータを取得して、DuckDB に挿入することで、 Grafana からのクエリに対して最新のデータを提供します。
+
 ## 実行環境の構築
+
+uv をインストールして、依存関係をインストールしてください。
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
