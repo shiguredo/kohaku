@@ -571,7 +571,7 @@ def main():
     # grafana から読み込むために other 読み取り権を付与する。書き込みは不要なので 0o644 に揃える
     os.chmod(
         tmp_file,
-        stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH,
+        stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP,
     )
     readonly_file = ".".join([args.db, "readonly"])
     shutil.move(tmp_file, readonly_file)
