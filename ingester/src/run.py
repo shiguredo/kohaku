@@ -395,7 +395,7 @@ def delete(args):
         # other への書き込み権限は不要なので 0o644 に揃える
         os.chmod(
             copy_file,
-            stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH,
+            stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP,
         )
         shutil.move(copy_file, args.db)
     except Exception:
