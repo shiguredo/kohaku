@@ -109,6 +109,13 @@ systemd で Kohaku を実行するためのユーザを用意します
 sudo useradd -M -s /sbin/nologin kohaku
 ```
 
+また、Kohaku と Grafana で DB ファイルを共有するため、
+grafana ユーザを 上記で追加した kohaku ユーザのグループに追加して、DB ファイルにアクセスできるようにします
+
+```bash
+sudo usermod -aG kohaku grafana
+```
+
 ## duckdb の DB ファイル保存等に使用する kohaku ディレクトリの作成
 
 下記のコマンドで、/var/lib/kohaku にディレクトリを作成します

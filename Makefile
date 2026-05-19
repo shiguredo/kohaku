@@ -150,8 +150,9 @@ setup-grafana:
 	sudo chown -R grafana:grafana /var/lib/grafana/dashboards/kohaku/
 
 # Kohaku の保存領域と権限を準備する
+# grafana ユーザも　kohaku グループに属している前提で、/var/lib/kohaku 以下のファイルに触れるようにする
 setup-kohaku:
 	mkdir -p /var/lib/kohaku/duckdb
 	chown -R kohaku:kohaku /var/lib/kohaku
 	find /var/lib/kohaku/ -type d -exec chmod 755 {} +
-	find /var/lib/kohaku/ -type f -exec chmod 644 {} +
+	find /var/lib/kohaku/ -type f -exec chmod 660 {} +

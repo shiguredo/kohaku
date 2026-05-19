@@ -392,7 +392,7 @@ def delete(args):
 
     try:
         # コピーしたファイルを、元の DB ファイルに上書きする
-        # other への書き込み権限は不要なので 0o644 に揃える
+        # other の読み込み権限、書き込み権限は不要なので 0o660 に揃える
         os.chmod(
             copy_file,
             stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP,
@@ -568,7 +568,7 @@ def main():
     tmp_file = ".".join([args.db, "bacon"])
     shutil.copyfile(args.db, tmp_file)
 
-    # grafana から読み込むために other 読み取り権を付与する。書き込みは不要なので 0o644 に揃える
+    # other の読み込み権限、書き込み権限は不要なので 0o660 に揃える
     os.chmod(
         tmp_file,
         stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP,
