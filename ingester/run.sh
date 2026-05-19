@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+# grafana グループ (GID=0) と DB ファイルを共有するためグループ書き込みを許可する
+umask 0002
+
 # タイムゾーン設定 (/etc/localtime のリンク) と /var/lib/kohaku/duckdb の作成は
 # Dockerfile のビルド時に済ませているため、ここでは行わない。
 
