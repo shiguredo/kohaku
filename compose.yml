@@ -83,10 +83,7 @@ services:
     build:
       context: ./ingester
       dockerfile: Dockerfile
-      args:
-        - USER_ID=${USER_ID}
     container_name: ingester
-    user: ${USER_ID}
     environment:
       - DUCKDB_DB_PATH=${DUCKDB_DB_PATH}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
