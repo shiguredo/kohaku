@@ -27,7 +27,7 @@ down-external-s3:
 clean:
 	rm -rf ./plugins ./fluent-bit.yml
 	rm -rf init/dist
-	docker volume rm kohaku-volume
+	docker volume rm kohaku-volume kohaku-ingester-venv
 	rm -rf ./rustfs/data ./rustfs/logs
 	-docker network rm -f kohaku-network
 
