@@ -8,6 +8,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+import docker
 import duckdb
 import pytest
 from testcontainers.core.container import DockerContainer
@@ -18,6 +19,8 @@ from .helpers import wait_until
 
 # 使用する Grafana の Docker イメージタグ
 GRAFANA_IMAGE = "grafana/grafana:12.4.3-ubuntu"
+# 一時ファイルの group を gid=0 に揃えるための軽量イメージ
+ALPINE_IMAGE = "alpine:3.20"
 # Grafana にマウントする DuckDB プラグインのソースディレクトリ
 PLUGIN_DIR = (
     Path(__file__).resolve().parents[2] / "plugins" / "motherduck-duckdb-datasource"
@@ -96,12 +99,32 @@ def create_duckdb_readonly_copy(base_dir: Path) -> Path:
 
     readonly_path = duckdb_dir / "duck.db.readonly"
     shutil.copyfile(db_path, readonly_path)
-    # コンテナ内の grafana ユーザーがファイルを読み取れるようにする。
-    os.chmod(readonly_path, 0o666)
-    # pytest が tmp_path を 0o700 で作成するため、コンテナユーザーがディレクトリを辿れるよう 0o755 に変更する。
+    # 本番では grafana ユーザーを kohaku グループに追加して 0o660 のファイルへアクセスする運用のため、
+    # テストでも同じ 0o660 にする。grafana コンテナ内の grafana ユーザーは primary gid=0 で動くため、
+    # ホスト側ファイルの group を gid=0 にすることで本番と同じパーミッションで読み書きできる状態にする。
+    os.chmod(readonly_path, 0o660)
+    # pytest が tmp_path を 0o700 で作成するため、コンテナユーザーがディレクトリを辿れるよう 0o755 にする。
     os.chmod(duckdb_dir, 0o755)
     os.chmod(base_dir, 0o755)
+    assign_root_group(base_dir)
     return duckdb_dir
+
+
+def assign_root_group(path: Path) -> None:
+    """ホスト側パス配下のファイルとディレクトリの group を gid=0 に変更する。
+
+    grafana コンテナの grafana ユーザーは primary gid=0 で動くため、
+    group を 0 に揃えることで本番と同じ 0o660 のままアクセスできる。
+    chown はホスト側ユーザーの権限では実行できないことが多いため、
+    root で動く使い捨ての alpine コンテナを経由して chown を実行する。
+    """
+    client = docker.from_env()
+    client.containers.run(
+        ALPINE_IMAGE,
+        command=["chown", "-R", ":0", "/data"],
+        volumes={str(path): {"bind": "/data", "mode": "rw"}},
+        remove=True,
+    )
 
 
 def extract_first_table_value(
