@@ -45,6 +45,39 @@ def test_delete_returns_without_copy_when_no_rows_deleted(tmp_path):
     assert os.path.exists(f"{db_path}.copy") is False
 
 
+def test_delete_handles_single_quote_in_db_path(tmp_path):
+    """シングルクォートを含む DB ファイルパスでも ATTACH 文が成立し、delete が完走することを確認する。
+
+    escape_sql_string_literal によるエスケープが実際の ATTACH 文で有効であることを、
+    実 DuckDB を相手にしたファイル操作経路で検証する。
+    """
+    # ファイル名にシングルクォートを含める。エスケープが効いていなければ ATTACH 文が
+    # 構文エラーになるか、別のパスを参照してしまう。
+    db_path = tmp_path / "test'delete.db"
+
+    # retention_period=1 で削除対象となるよう、2 日前の timestamp を持つ行を挿入する。
+    old_timestamp = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+        days=2
+    )
+    with duckdb.connect(str(db_path)) as con:
+        con.execute("CREATE TABLE rtc_stats (timestamp TIMESTAMPTZ)")
+        con.execute("CREATE TABLE session_webhook (timestamp TIMESTAMPTZ)")
+        con.execute("INSERT INTO rtc_stats VALUES (?)", (old_timestamp,))
+
+    args = SimpleNamespace(db=str(db_path), retention_period=1)
+    run.delete(args)
+
+    # delete 後、古い行が削除されていることを確認する。
+    # ATTACH/COPY 経路が破綻していればここまで到達せず、データも消えない。
+    with duckdb.connect(str(db_path)) as con:
+        result = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()
+        assert result is not None
+        assert result[0] == 0
+
+    # COPY 用の一時ファイルが残っていないことを確認する (ATTACH/COPY/move が完了している)。
+    assert os.path.exists(f"{db_path}.copy") is False
+
+
 # require_s3_credentials
 
 
