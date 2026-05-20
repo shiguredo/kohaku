@@ -8,10 +8,10 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-import docker
 import duckdb
 import pytest
 from testcontainers.core.container import DockerContainer
+from testcontainers.core.docker_client import DockerClient
 from testcontainers.core.exceptions import ContainerStartException
 
 from .helpers import wait_until
@@ -118,8 +118,7 @@ def assign_root_group(path: Path) -> None:
     chown はホスト側ユーザーの権限では実行できないことが多いため、
     root で動く使い捨ての alpine コンテナを経由して chown を実行する。
     """
-    client = docker.from_env()
-    client.containers.run(
+    DockerClient().run(
         ALPINE_IMAGE,
         command=["chown", "-R", ":0", "/data"],
         volumes={str(path): {"bind": "/data", "mode": "rw"}},
