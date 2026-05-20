@@ -140,9 +140,14 @@ def update_timestamp_for_rtc_stats(
 
 
 def get_latest_object(s3_client: minio.Minio, bucket: str, prefix: str) -> Any:
-    """オブジェクトストレージ上で last_modified が最大のオブジェクトを返す。"""
+    """オブジェクトストレージ上で最新のオブジェクトを返す。
+
+    本番コードの list_objects と同じく (last_modified, object_name) を比較キーにする。
+    last_modified が同値の場合に object_name で順序が決まるため、本番とテストで
+    「最新」の定義を一致させる。
+    """
     objects = s3_client.list_objects(bucket, prefix=prefix, recursive=True)
-    return max(objects, key=lambda obj: obj.last_modified)
+    return max(objects, key=lambda obj: (obj.last_modified, obj.object_name))
 
 
 @pytest.fixture
@@ -274,7 +279,7 @@ def test_init(request, s3_client, rustfs_endpoint):
         # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
         assert result[0] == len(objects)
 
-        # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
+        # DuckDB に保存されている last_modified が、最新オブジェクト ((last_modified, object_name) の最大) の last_modified と一致することを確認する
         latest_object = get_latest_object(
             s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"])
         )
@@ -337,7 +342,7 @@ def test_re_init(request, s3_client, rustfs_endpoint):
         # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
         assert result[0] == len(objects)
 
-        # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
+        # DuckDB に保存されている last_modified が、最新オブジェクト ((last_modified, object_name) の最大) の last_modified と一致することを確認する
         latest_object = get_latest_object(
             s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"])
         )
@@ -426,7 +431,7 @@ def test_file_count_limit_for_init(request, s3_client, rustfs_endpoint):
         assert result[0] < len(objects)
         assert result[0] == initial_maximum_load
 
-        # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
+        # DuckDB に保存されている last_modified が、最新オブジェクト ((last_modified, object_name) の最大) の last_modified と一致することを確認する
         latest_object = get_latest_object(
             s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"])
         )
@@ -525,7 +530,7 @@ def test_update(request, s3_client, rustfs_endpoint):
         objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
         assert result[0] == len(objects)
 
-        # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
+        # DuckDB に保存されている last_modified が、最新オブジェクト ((last_modified, object_name) の最大) の last_modified と一致することを確認する
         latest_object = get_latest_object(
             s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"])
         )
