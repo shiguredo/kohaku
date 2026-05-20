@@ -154,7 +154,14 @@ def sync_log_for_update(con, client, args, target):
             update_s3_object_table(con, target, log_objects[0])
     else:
         # テーブルが存在しているのでログを追加する
-        insert_log_from_s3(con, client, target, args)
+        insert_log_from_s3(
+            con,
+            client,
+            target,
+            args.s3_bucket,
+            args.s3_prefix,
+            args.update_maximum_load,
+        )
 
 
 def is_after_s3_cursor(obj, last_modified, object_name):
@@ -405,13 +412,11 @@ def delete(args):
         raise
 
 
-def insert_log_from_s3(con, client, table_name, args):
+def insert_log_from_s3(con, client, table_name, bucket, prefix, update_maximum_load):
     cursor = select_s3_object(con, table_name)
     object_name, object_last_modified = cursor
 
-    log_objects = list_objects(
-        client, args.s3_bucket, f"{args.s3_prefix}/{table_name}/"
-    )
+    log_objects = list_objects(client, bucket, f"{prefix}/{table_name}/")
 
     target_log_objects = [
         obj
@@ -421,13 +426,13 @@ def insert_log_from_s3(con, client, table_name, args):
 
     # 長時間停止後に大量ファイルが蓄積したケースに備え、古い方からバッチで取り込む。
     # 降順ソートされているため、末尾側 update_maximum_load 件が古い順のバッチになる。
-    if len(target_log_objects) > args.update_maximum_load:
-        target_log_objects = target_log_objects[-args.update_maximum_load :]
+    if len(target_log_objects) > update_maximum_load:
+        target_log_objects = target_log_objects[-update_maximum_load:]
 
     if len(target_log_objects) == 0:
         return
 
-    target_urls = get_target_urls(args.s3_bucket, target_log_objects)
+    target_urls = get_target_urls(bucket, target_log_objects)
     con.begin()
     try:
         insert_log(con, table_name, target_urls)
