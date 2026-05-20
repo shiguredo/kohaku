@@ -974,6 +974,103 @@ def test_update_maximum_load_splits_batches(request, s3_client, rustfs_endpoint)
     assert fetch_rtc_stats_count() == initial_count + 5
 
 
+def test_update_maximum_load_one_takes_single_object_per_call(
+    request, s3_client, rustfs_endpoint
+):
+    """update_maximum_load=1 (positive_int の最小値) で 1 回あたり 1 件ずつ取り込むことを確認する。
+
+    target_log_objects[-args.update_maximum_load :] のスライスが [-1:] になる境界値で、
+    残件が複数あっても 1 件だけ取り込み、複数回呼び出しで取り込み切ることを確認する。
+    """
+    # node.name を使用して DuckDB のファイル名を生成する
+    duckdb_filename = f"{request.node.name}.db"
+    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+
+    # テスト後に BUCKET と DuckDB ファイルを削除するためのクリーンアップ処理を追加する
+    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
+    request.addfinalizer(
+        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
+    )
+
+    assert s3_client.bucket_exists(BUCKET)
+
+    # 既存ログをすべて取り込んでカーソルを最新に揃える
+    args = Args(
+        db=duckdb_filepath,
+        s3_endpoint=rustfs_endpoint,
+        s3_access_key_id=ACCESS_KEY,
+        s3_secret_access_key=SECRET_KEY,
+        s3_use_ssl=False,
+        s3_region="ap-northeast-1",
+        storage="rustfs",
+        s3_bucket=BUCKET,
+        s3_prefix=PREFIX,
+        initial_maximum_load=1000,
+    )
+    init(args)
+
+    def fetch_rtc_stats_count() -> int:
+        """rtc_stats の現在の件数を取得する。"""
+        with duckdb.connect(duckdb_filepath) as con:
+            con.execute("SELECT COUNT(*) FROM rtc_stats")
+            result = con.fetchone()
+            assert result is not None
+            return result[0]
+
+    # init で 1 件以上は取り込まれている前提
+    initial_count = fetch_rtc_stats_count()
+    assert initial_count > 0
+
+    # 新規ログを 3 件追加する
+    new_log_file = os.path.join(LOG_DIR, "rtc_stats.jsonl")
+    with open(new_log_file, "rb") as data:
+        new_lines = data.readlines()[:3]
+    assert len(new_lines) == 3
+
+    for line in new_lines:
+        now = datetime.datetime.now(datetime.timezone.utc)
+        directory = now.strftime("%Y/%m/%d")
+        s3_path = data_path(PREFIX, "rtc_stats", directory)
+        compressed_log_data = gzip.compress(line)
+        s3_client.put_object(
+            BUCKET,
+            s3_path,
+            io.BytesIO(compressed_log_data),
+            length=len(compressed_log_data),
+        )
+
+    # update_maximum_load=1 で update を呼び出すと、1 回あたり 1 件しか取り込まれない
+    batch_args = Args(
+        db=duckdb_filepath,
+        s3_endpoint=rustfs_endpoint,
+        s3_access_key_id=ACCESS_KEY,
+        s3_secret_access_key=SECRET_KEY,
+        s3_use_ssl=False,
+        s3_region="ap-northeast-1",
+        storage="rustfs",
+        s3_bucket=BUCKET,
+        s3_prefix=PREFIX,
+        initial_maximum_load=1000,
+        update_maximum_load=1,
+    )
+
+    # 1 回目: 1 件取り込まれること
+    update(batch_args)
+    assert fetch_rtc_stats_count() == initial_count + 1
+
+    # 2 回目: さらに 1 件取り込まれて合計 2 件追加
+    update(batch_args)
+    assert fetch_rtc_stats_count() == initial_count + 2
+
+    # 3 回目: 残り 1 件取り込まれて合計 3 件追加
+    update(batch_args)
+    assert fetch_rtc_stats_count() == initial_count + 3
+
+    # 4 回目: 取り込むものが無いため件数が変わらない
+    update(batch_args)
+    assert fetch_rtc_stats_count() == initial_count + 3
+
+
 def test_prepare_db_for_init_does_not_rename_on_permission_denied(tmp_path):
     """Permission denied の場合は破損 DB ではないため、リネームしないことを確認する"""
     db_path = tmp_path / "permission.db"
