@@ -540,6 +540,9 @@ def main():
             if error.code == "NoSuchBucket":
                 exit_with_stderr(f"S3 bucket not found: {args.s3_bucket}")
             exit_with_stderr(f"S3 error occurred (code={error.code}): {error.message}")
+        if isinstance(error, ValueError):
+            # require_s3_credentials などの入力バリデーション失敗は、トレースバックなしで原因のみ表示して終了する
+            exit_with_stderr(str(error))
         raise error
 
     if args.func == init:
