@@ -75,10 +75,12 @@ def require_s3_credentials(args):
 
 def init(args):
     print("init")
-    require_s3_credentials(args)
     prepare_db_for_init(args.db)
     if is_initialized_db(args.db):
         return
+
+    # 初期化が必要なケースに限り S3 接続が必要なので、ここで認証情報を要求する。
+    require_s3_credentials(args)
 
     client = minio.Minio(
         args.s3_endpoint,
