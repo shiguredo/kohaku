@@ -45,8 +45,6 @@ class Args:
         s3_use_ssl: bool | None = None,
         # S3 のリージョン名 (例: "ap-northeast-1")。リクエスト署名に使う
         s3_region: str | None = None,
-        # ストレージ種別の識別用フィールド。現状 run.py 側からは参照されておらず、テスト引数の名残
-        storage: str | None = None,
         # 取り込み対象の S3 バケット名 (テストでは BUCKET 定数)
         s3_bucket: str | None = None,
         # ログオブジェクトキー先頭のプレフィックス (テストでは PREFIX 定数、"log/rtc_stats/..." のように使う)
@@ -64,7 +62,6 @@ class Args:
         self.s3_secret_access_key = s3_secret_access_key
         self.s3_use_ssl = s3_use_ssl
         self.s3_region = s3_region
-        self.storage = storage
         self.s3_bucket = s3_bucket
         self.s3_prefix = s3_prefix
         self.retention_period = retention_period
@@ -275,7 +272,6 @@ def test_init(request, s3_client, rustfs_endpoint):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
@@ -338,7 +334,6 @@ def test_re_init(request, s3_client, rustfs_endpoint):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
@@ -425,7 +420,6 @@ def test_file_count_limit_for_init(request, s3_client, rustfs_endpoint):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=initial_maximum_load,
@@ -487,7 +481,6 @@ def test_update(request, s3_client, rustfs_endpoint):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
@@ -588,7 +581,6 @@ def test_all_delete(request, s3_client, rustfs_endpoint):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
@@ -658,7 +650,6 @@ def test_delete(request, s3_client, rustfs_endpoint):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
@@ -733,7 +724,6 @@ def test_delete_within_retention_period(request, s3_client, rustfs_endpoint):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
@@ -808,7 +798,6 @@ def test_no_bucket(request, rustfs_endpoint):
             s3_secret_access_key=SECRET_KEY,
             s3_use_ssl=False,
             s3_region="ap-northeast-1",
-            storage="rustfs",
             # 存在しないバケット名
             s3_bucket="non_existent_bucket",
             s3_prefix=PREFIX,
@@ -845,7 +834,6 @@ def test_init_skips_missing_session_webhook(
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
@@ -900,7 +888,6 @@ def test_init_and_update_on_empty_bucket(request, s3_client_empty, rustfs_endpoi
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
@@ -988,7 +975,6 @@ def test_update_maximum_load_splits_batches(request, s3_client, rustfs_endpoint)
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
@@ -1033,7 +1019,6 @@ def test_update_maximum_load_splits_batches(request, s3_client, rustfs_endpoint)
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
@@ -1085,7 +1070,6 @@ def test_update_maximum_load_one_takes_single_object_per_call(
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
@@ -1130,7 +1114,6 @@ def test_update_maximum_load_one_takes_single_object_per_call(
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
