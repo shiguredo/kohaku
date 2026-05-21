@@ -232,6 +232,26 @@ def s3_client_without_session_webhook(rustfs_endpoint: str) -> minio.Minio:
     return client
 
 
+@pytest.fixture
+def s3_client_empty(rustfs_endpoint: str) -> minio.Minio:
+    """ログオブジェクトを 1 件もアップロードしない空バケットを準備する S3 クライアント。"""
+    client = minio.Minio(
+        rustfs_endpoint,
+        access_key=ACCESS_KEY,
+        secret_key=SECRET_KEY,
+        secure=False,
+    )
+    # RustFS が利用可能になるまで待機する
+    wait_until(lambda: client.list_buckets() is not None)
+    # バケットの作成
+    found = client.bucket_exists(BUCKET)
+    # バケットは常に存在しない
+    assert found is False
+    client.make_bucket(BUCKET)
+    # オブジェクトは意図的に 1 件も置かない
+    return client
+
+
 def test_init(request, s3_client, rustfs_endpoint):
     """init 実行でログを取り込み、DuckDB とオブジェクトカーソルが作成されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
@@ -857,6 +877,69 @@ def test_init_skips_missing_session_webhook(
         cursor_count = duckdb_connection.fetchone()
         assert cursor_count is not None
         assert cursor_count[0] == 1
+
+
+def test_init_and_update_on_empty_bucket(request, s3_client_empty, rustfs_endpoint):
+    """全ターゲットが空のバケットに対して init/update がエラーなく完走し、データテーブルが作成されないことを確認する。"""
+    # node.name を使用して DuckDB のファイル名を生成する
+    duckdb_filename = f"{request.node.name}.db"
+    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+
+    # テスト後に BUCKET と DuckDB ファイルを削除するためのクリーンアップ処理を追加する
+    request.addfinalizer(lambda: remove_bucket(s3_client_empty, BUCKET))
+    request.addfinalizer(
+        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
+    )
+
+    assert s3_client_empty.bucket_exists(BUCKET)
+
+    args = Args(
+        db=duckdb_filepath,
+        s3_endpoint=rustfs_endpoint,
+        s3_access_key_id=ACCESS_KEY,
+        s3_secret_access_key=SECRET_KEY,
+        s3_use_ssl=False,
+        s3_region="ap-northeast-1",
+        storage="rustfs",
+        s3_bucket=BUCKET,
+        s3_prefix=PREFIX,
+        initial_maximum_load=1000,
+    )
+
+    # 空バケットでも init は完走し、DB ファイルが作成される
+    init(args)
+    assert os.path.exists(duckdb_filepath)
+
+    def assert_only_s3_objects_table(con: duckdb.DuckDBPyConnection) -> None:
+        """LOG_TARGETS のテーブルは作成されず、s3_objects のみ存在することを確認する。"""
+        for target in ("rtc_stats", "session_webhook"):
+            con.execute(
+                "SELECT COUNT(*) FROM information_schema.tables WHERE table_name=?",
+                (target,),
+            )
+            table_count = con.fetchone()
+            assert table_count is not None
+            assert table_count[0] == 0, f"{target} should not be created"
+        con.execute(
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='s3_objects'"
+        )
+        s3_objects_table_count = con.fetchone()
+        assert s3_objects_table_count is not None
+        assert s3_objects_table_count[0] == 1
+        # オブジェクトが 1 件もないため、カーソル行も入らない
+        con.execute("SELECT COUNT(*) FROM s3_objects")
+        cursor_count = con.fetchone()
+        assert cursor_count is not None
+        assert cursor_count[0] == 0
+
+    with duckdb.connect(duckdb_filepath) as duckdb_connection:
+        assert_only_s3_objects_table(duckdb_connection)
+
+    # 空バケットのまま update を呼んでもエラーにならず、データテーブルも作成されない
+    update(args)
+
+    with duckdb.connect(duckdb_filepath) as duckdb_connection:
+        assert_only_s3_objects_table(duckdb_connection)
 
 
 def test_prepare_db_for_init_renames_broken_db_file(tmp_path):
