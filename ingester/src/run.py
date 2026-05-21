@@ -485,6 +485,28 @@ def delete_log_by_timestamp(con, table_name, timestamp):
     return result[0]
 
 
+def exit_with_stderr(message):
+    """エラーメッセージを stderr に書き出して exit code 1 で終了する。"""
+    print(message, file=sys.stderr)
+    sys.exit(1)
+
+
+def handle_storage_error(error, bucket):
+    """main からのトップレベル例外を分類して、ユーザー向けに整形する。
+
+    S3Error と ValueError は exit_with_stderr で終了し、それ以外は呼び出し元へ再送出する。
+    bucket は NoSuchBucket メッセージ用の表示値として受け取る。
+    """
+    if isinstance(error, S3Error):
+        if error.code == "NoSuchBucket":
+            exit_with_stderr(f"S3 bucket not found: {bucket}")
+        exit_with_stderr(f"S3 error occurred (code={error.code}): {error.message}")
+    if isinstance(error, ValueError):
+        # require_s3_credentials などの入力バリデーション失敗は、トレースバックなしで原因のみ表示して終了する
+        exit_with_stderr(str(error))
+    raise error
+
+
 def main():
     parser = argparse.ArgumentParser()
     # 共通オプション
@@ -532,26 +554,12 @@ def main():
     args = parser.parse_args()
     db = args.db
 
-    def exit_with_stderr(message):
-        print(message, file=sys.stderr)
-        sys.exit(1)
-
-    def handle_storage_error(error):
-        if isinstance(error, S3Error):
-            if error.code == "NoSuchBucket":
-                exit_with_stderr(f"S3 bucket not found: {args.s3_bucket}")
-            exit_with_stderr(f"S3 error occurred (code={error.code}): {error.message}")
-        if isinstance(error, ValueError):
-            # require_s3_credentials などの入力バリデーション失敗は、トレースバックなしで原因のみ表示して終了する
-            exit_with_stderr(str(error))
-        raise error
-
     if args.func == init:
         # init は DB ファイルがない、または、DB にデータが入っていない場合のみ実行する想定のため、ファイル更新比較処理の対象外
         try:
             args.func(args)
         except Exception as error:
-            handle_storage_error(error)
+            handle_storage_error(error, args.s3_bucket)
     else:
         # DB ファイルがない場合は終了する
         if not os.path.exists(db):
@@ -565,7 +573,7 @@ def main():
             try:
                 args.func(args)
             except Exception as error:
-                handle_storage_error(error)
+                handle_storage_error(error, args.s3_bucket)
 
             statinfo = os.stat(db)
             if mtime == statinfo.st_mtime:
