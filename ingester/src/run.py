@@ -117,20 +117,26 @@ def sync_logs(con, client, args, mode):
             raise ValueError(f"Unknown mode: {mode}")
 
 
-def sync_log_for_init(con, client, args, target):
-    log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
-    log_urls = get_target_urls(args.s3_bucket, log_objects[: args.initial_maximum_load])
+def initialize_log_table(con, client, args, target):
+    """対象テーブルを初回作成する。
 
-    # 初期化対象のログが存在しない場合は、テーブル作成をスキップする
-    if len(log_urls) == 0:
+    S3 上のオブジェクト一覧を取得し、initial_maximum_load 件までを読み込んでテーブルを作成、
+    最新オブジェクトでカーソルを更新する。対象オブジェクトが無ければ何もしない。
+    """
+    log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
+    if len(log_objects) == 0:
         print(f"No log found for {target} in {args.s3_bucket}.")
         return
 
+    log_urls = get_target_urls(args.s3_bucket, log_objects[: args.initial_maximum_load])
+    create_log_table(con, target, log_urls)
+    # list_objects は (last_modified, object_name) の降順なので先頭が最新
+    update_s3_object_table(con, target, log_objects[0])
+
+
+def sync_log_for_init(con, client, args, target):
     try:
-        create_log_table(con, target, log_urls)
-        if len(log_objects) > 0:
-            # list_objects は (last_modified, object_name) の降順なので先頭が最新
-            update_s3_object_table(con, target, log_objects[0])
+        initialize_log_table(con, client, args, target)
     except duckdb.InvalidInputException as e:
         # まだディレクトリがないため、エラーを表示して次へ
         print(f"InvalidInputException ({target}): {e}")
@@ -139,21 +145,7 @@ def sync_log_for_init(con, client, args, target):
 def sync_log_for_update(con, client, args, target):
     cursor = select_s3_object(con, target)
     if cursor is None:
-        log_objects = list_objects(
-            client, args.s3_bucket, f"{args.s3_prefix}/{target}/"
-        )
-        if len(log_objects) == 0:
-            print(f"No log found for {target} in {args.s3_bucket}.")
-            # 対象のオブジェクトが存在しない場合はスキップする
-            return
-
-        log_urls = get_target_urls(
-            args.s3_bucket, log_objects[: args.initial_maximum_load]
-        )
-        create_log_table(con, target, log_urls)
-        if len(log_objects) > 0:
-            # list_objects は (last_modified, object_name) の降順なので先頭が最新
-            update_s3_object_table(con, target, log_objects[0])
+        initialize_log_table(con, client, args, target)
     else:
         # テーブルが存在しているのでログを追加する
         insert_log_from_s3(
