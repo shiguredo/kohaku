@@ -20,7 +20,7 @@ class SyncMode(enum.Enum):
 
 
 DEFAULT_DUCKDB_FILE = "duck.db"
-# /kohaku/log/connection/2025/06/01/a.gz のようなパスを想定
+# /kohaku/log/rtc_stats/2025/06/01/a.gz のようなパスを想定
 DEFAULT_S3_BUCKET_NAME = "kohaku"
 DEFAULT_S3_PREFIX = "log"
 
