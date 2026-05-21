@@ -130,7 +130,7 @@ def initialize_log_table(con, client, args, target):
 
     log_urls = get_target_urls(args.s3_bucket, log_objects[: args.initial_maximum_load])
     create_log_table(con, target, log_urls)
-    # list_objects は (last_modified, object_name) の降順なので先頭が最新
+    # 先頭が最新
     update_s3_object_table(con, target, log_objects[0])
 
 
@@ -265,9 +265,15 @@ def update_s3_object_table(con, log_type, obj):
 
 
 def list_objects(client, bucket, prefix):
-    # オブジェクトキーが時系列順とは限らない (UUID 等を含むケースがある) ため、
-    # MinIO の start_after でカーソル以降を絞り込むのは取り逃しのリスクがあり使用しない。
-    # last_modified が同値の場合のカーソル比較のため、object_name もソートキーに含める。
+    """指定 prefix 配下のオブジェクトを (last_modified, object_name) の降順で返す。
+
+    戻り値の先頭が最新のオブジェクト、最後が最古のオブジェクトになる。
+    last_modified が同値の場合は object_name の辞書順降順で並ぶ
+    (is_after_s3_cursor のカーソル比較順序と一致させるため)。
+
+    オブジェクトキーが時系列順とは限らない (UUID 等を含むケースがある) ため、
+    MinIO の start_after でカーソル以降を絞り込むのは取り逃しのリスクがあり使用しない。
+    """
     objects = client.list_objects(bucket, prefix=prefix, recursive=True)
     return sorted(
         objects, key=lambda obj: (obj.last_modified, obj.object_name), reverse=True
@@ -430,7 +436,7 @@ def insert_log_from_s3(con, client, table_name, bucket, prefix, update_maximum_l
     con.begin()
     try:
         insert_log(con, table_name, target_urls)
-        # list_objects は (last_modified, object_name) の降順なので先頭がこのバッチの最新
+        # 先頭がこのバッチの最新
         update_s3_object_table(con, table_name, target_log_objects[0])
         con.commit()
     except Exception:
