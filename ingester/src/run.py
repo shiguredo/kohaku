@@ -391,13 +391,7 @@ def delete(args):
             con.execute(f"ATTACH '{escape_sql_string_literal(args.db)}' AS db")
             con.execute(f"ATTACH '{escape_sql_string_literal(copy_file)}' AS copy")
             con.execute("COPY FROM DATABASE db TO copy")
-    except Exception:
-        # 処理に失敗したときの残る可能性のあるファイルを削除する
-        remove_delete_incompleted_copy_files(copy_file)
-        # return code を 0 以外にするため例外を呼び出し元に投げる
-        raise
 
-    try:
         # コピーしたファイルを、元の DB ファイルに上書きする
         # other の読み込み権限、書き込み権限は不要なので 0o660 に揃える
         os.chmod(
