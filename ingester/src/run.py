@@ -1,4 +1,5 @@
 import argparse
+import enum
 import os
 import shutil
 import stat
@@ -9,6 +10,14 @@ import yaml
 import duckdb
 import minio
 from minio.error import S3Error
+
+
+class SyncMode(enum.Enum):
+    """sync_logs の動作モード。"""
+
+    INIT = "init"
+    UPDATE = "update"
+
 
 DEFAULT_DUCKDB_FILE = "duck.db"
 # /kohaku/log/connection/2025/06/01/a.gz のようなパスを想定
@@ -104,14 +113,14 @@ def init(args):
             args.s3_use_ssl,
             args.s3_region,
         )
-        sync_logs(con, client, args, "init")
+        sync_logs(con, client, args, SyncMode.INIT)
 
 
 def sync_logs(con, client, args, mode):
     for target in LOG_TARGETS:
-        if mode == "init":
+        if mode is SyncMode.INIT:
             sync_log_for_init(con, client, args, target)
-        elif mode == "update":
+        elif mode is SyncMode.UPDATE:
             sync_log_for_update(con, client, args, target)
         else:
             raise ValueError(f"Unknown mode: {mode}")
@@ -364,7 +373,7 @@ def update(args):
             args.s3_use_ssl,
             args.s3_region,
         )
-        sync_logs(con, client, args, "update")
+        sync_logs(con, client, args, SyncMode.UPDATE)
 
 
 def delete(args):
