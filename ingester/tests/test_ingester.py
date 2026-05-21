@@ -614,7 +614,6 @@ def test_all_delete(request, s3_client, rustfs_endpoint):
 
         # delete 関数を呼び出すための引数を設定
         # retention_period を 1 日に設定して、2 日前のデータが削除されることを確認する
-        # delete 関数を呼び出すための引数を設定
         args = Args(
             db=duckdb_filepath,
             retention_period=1,
