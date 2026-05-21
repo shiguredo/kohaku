@@ -120,21 +120,6 @@ def update_timestamp_for_rtc_stats(
         (timestamp, connection_id, rtc_id, rtc_type, org_timestamp),
     )
 
-    # 更新後の確認
-    con.execute(
-        "SELECT timestamp FROM rtc_stats WHERE connection_id = ? AND rtc_id = ? AND rtc_type = ? AND timestamp = ?",
-        (connection_id, rtc_id, rtc_type, timestamp),
-    )
-    updated_timestamp = con.fetchone()
-    if updated_timestamp:
-        print(
-            f"Updated timestamp for connection_id: {connection_id}, rtc_id: {rtc_id}, rtc_type: {rtc_type}: {updated_timestamp[0]}"
-        )
-    else:
-        print(
-            f"No record found for connection_id: {connection_id}, rtc_id: {rtc_id}, rtc_type: {rtc_type}, org_timestamp: {org_timestamp}"
-        )
-
 
 def get_latest_object(s3_client: minio.Minio, bucket: str, prefix: str) -> Any:
     """オブジェクトストレージ上で最新のオブジェクトを返す。
