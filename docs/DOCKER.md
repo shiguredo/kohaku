@@ -62,6 +62,7 @@ Docker Compose の設定に必要な項目は下記のとおりです
 - `S3_REGION` - S3 互換ストレージのリージョン（例: `ap-northeast-1`）
 - `UPDATE_INTERVAL` - ingester の実行間隔（秒）
 - `INITIAL_MAXIMUM_LOAD` - init 時、および update 時にテーブル未作成だった場合の、初回テーブル作成における読み込み件数の上限
+- `UPDATE_MAXIMUM_LOAD` - update 時の 1 バッチで取り込むログ件数の上限。長時間停止後の復帰時に大量蓄積したログをバッチ分割するために使う
 - `RETENTION_PERIOD` - ログの保持期間（日）
 - `GF_SECURITY_ADMIN_USER` - Grafana の管理ユーザ
 - `GF_SECURITY_ADMIN_PASSWORD` - Grafana の管理パスワード

@@ -59,6 +59,7 @@ Ingester + Grafana の設定に必要な項目は下記のとおりです
 - `DUCKDB_DB_PATH` - DuckDB の DB ファイルのパス
 - `RETENTION_PERIOD` - ingester が DuckDB 上で保持するログの期間（日）
 - `INITIAL_MAXIMUM_LOAD` - init 時、および update 時にテーブル未作成だった場合の、初回テーブル作成における読み込み件数の上限
+- `UPDATE_MAXIMUM_LOAD` - update 時の 1 バッチで取り込むログ件数の上限。長時間停止後の復帰時に大量蓄積したログをバッチ分割するために使う
 - `GRAFANA_HTTP_PORT` - Grafana の待受ポート番号
 - `UV_PYTHON_INSTALL_DIR` - uv が管理する Python のインストール先ディレクトリ
 
