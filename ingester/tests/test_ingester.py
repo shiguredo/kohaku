@@ -45,8 +45,6 @@ class Args:
         s3_use_ssl: bool | None = None,
         # S3 のリージョン名 (例: "ap-northeast-1")。リクエスト署名に使う
         s3_region: str | None = None,
-        # ストレージ種別の識別用フィールド。現状 run.py 側からは参照されておらず、テスト引数の名残
-        storage: str | None = None,
         # 取り込み対象の S3 バケット名 (テストでは BUCKET 定数)
         s3_bucket: str | None = None,
         # ログオブジェクトキー先頭のプレフィックス (テストでは PREFIX 定数、"log/rtc_stats/..." のように使う)
@@ -55,6 +53,8 @@ class Args:
         retention_period: int | None = None,
         # init サブコマンド用: 一度に取り込む S3 オブジェクト件数の上限
         initial_maximum_load: int | None = None,
+        # update サブコマンド用: 一度に取り込む S3 オブジェクト件数の上限
+        update_maximum_load: int = 1000,
     ) -> None:
         self.db = db
         self.s3_endpoint = s3_endpoint
@@ -62,11 +62,11 @@ class Args:
         self.s3_secret_access_key = s3_secret_access_key
         self.s3_use_ssl = s3_use_ssl
         self.s3_region = s3_region
-        self.storage = storage
         self.s3_bucket = s3_bucket
         self.s3_prefix = s3_prefix
         self.retention_period = retention_period
         self.initial_maximum_load = initial_maximum_load
+        self.update_maximum_load = update_maximum_load
 
 
 def data_path(s3_prefix: str, tag: str, directory: str) -> str:
@@ -120,26 +120,16 @@ def update_timestamp_for_rtc_stats(
         (timestamp, connection_id, rtc_id, rtc_type, org_timestamp),
     )
 
-    # 更新後の確認
-    con.execute(
-        "SELECT timestamp FROM rtc_stats WHERE connection_id = ? AND rtc_id = ? AND rtc_type = ? AND timestamp = ?",
-        (connection_id, rtc_id, rtc_type, timestamp),
-    )
-    updated_timestamp = con.fetchone()
-    if updated_timestamp:
-        print(
-            f"Updated timestamp for connection_id: {connection_id}, rtc_id: {rtc_id}, rtc_type: {rtc_type}: {updated_timestamp[0]}"
-        )
-    else:
-        print(
-            f"No record found for connection_id: {connection_id}, rtc_id: {rtc_id}, rtc_type: {rtc_type}, org_timestamp: {org_timestamp}"
-        )
-
 
 def get_latest_object(s3_client: minio.Minio, bucket: str, prefix: str) -> Any:
-    """オブジェクトストレージ上で last_modified が最大のオブジェクトを返す。"""
+    """オブジェクトストレージ上で最新のオブジェクトを返す。
+
+    本番コードの list_objects と同じく (last_modified, object_name) を比較キーにする。
+    last_modified が同値の場合に object_name で順序が決まるため、本番とテストで
+    「最新」の定義を一致させる。
+    """
     objects = s3_client.list_objects(bucket, prefix=prefix, recursive=True)
-    return max(objects, key=lambda obj: obj.last_modified)
+    return max(objects, key=lambda obj: (obj.last_modified, obj.object_name))
 
 
 @pytest.fixture
@@ -224,6 +214,26 @@ def s3_client_without_session_webhook(rustfs_endpoint: str) -> minio.Minio:
     return client
 
 
+@pytest.fixture
+def s3_client_empty(rustfs_endpoint: str) -> minio.Minio:
+    """ログオブジェクトを 1 件もアップロードしない空バケットを準備する S3 クライアント。"""
+    client = minio.Minio(
+        rustfs_endpoint,
+        access_key=ACCESS_KEY,
+        secret_key=SECRET_KEY,
+        secure=False,
+    )
+    # RustFS が利用可能になるまで待機する
+    wait_until(lambda: client.list_buckets() is not None)
+    # バケットの作成
+    found = client.bucket_exists(BUCKET)
+    # バケットは常に存在しない
+    assert found is False
+    client.make_bucket(BUCKET)
+    # オブジェクトは意図的に 1 件も置かない
+    return client
+
+
 def test_init(request, s3_client, rustfs_endpoint):
     """init 実行でログを取り込み、DuckDB とオブジェクトカーソルが作成されることを確認する。"""
     # node.name を使用して DuckDB のファイル名を生成する
@@ -247,7 +257,6 @@ def test_init(request, s3_client, rustfs_endpoint):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
@@ -271,7 +280,7 @@ def test_init(request, s3_client, rustfs_endpoint):
         # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
         assert result[0] == len(objects)
 
-        # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
+        # DuckDB に保存されている last_modified が、最新オブジェクト ((last_modified, object_name) の最大) の last_modified と一致することを確認する
         latest_object = get_latest_object(
             s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"])
         )
@@ -310,7 +319,6 @@ def test_re_init(request, s3_client, rustfs_endpoint):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
@@ -334,7 +342,7 @@ def test_re_init(request, s3_client, rustfs_endpoint):
         # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
         assert result[0] == len(objects)
 
-        # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
+        # DuckDB に保存されている last_modified が、最新オブジェクト ((last_modified, object_name) の最大) の last_modified と一致することを確認する
         latest_object = get_latest_object(
             s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"])
         )
@@ -397,7 +405,6 @@ def test_file_count_limit_for_init(request, s3_client, rustfs_endpoint):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=initial_maximum_load,
@@ -423,7 +430,7 @@ def test_file_count_limit_for_init(request, s3_client, rustfs_endpoint):
         assert result[0] < len(objects)
         assert result[0] == initial_maximum_load
 
-        # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
+        # DuckDB に保存されている last_modified が、最新オブジェクト ((last_modified, object_name) の最大) の last_modified と一致することを確認する
         latest_object = get_latest_object(
             s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"])
         )
@@ -459,7 +466,6 @@ def test_update(request, s3_client, rustfs_endpoint):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
@@ -522,7 +528,7 @@ def test_update(request, s3_client, rustfs_endpoint):
         objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
         assert result[0] == len(objects)
 
-        # DuckDB に保存されている last_modified が、最新のオブジェクト の last_modified と一致することを確認する
+        # DuckDB に保存されている last_modified が、最新オブジェクト ((last_modified, object_name) の最大) の last_modified と一致することを確認する
         latest_object = get_latest_object(
             s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"])
         )
@@ -560,7 +566,6 @@ def test_all_delete(request, s3_client, rustfs_endpoint):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
@@ -594,7 +599,6 @@ def test_all_delete(request, s3_client, rustfs_endpoint):
 
         # delete 関数を呼び出すための引数を設定
         # retention_period を 1 日に設定して、2 日前のデータが削除されることを確認する
-        # delete 関数を呼び出すための引数を設定
         args = Args(
             db=duckdb_filepath,
             retention_period=1,
@@ -630,7 +634,6 @@ def test_delete(request, s3_client, rustfs_endpoint):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
@@ -705,7 +708,6 @@ def test_delete_within_retention_period(request, s3_client, rustfs_endpoint):
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
@@ -780,7 +782,6 @@ def test_no_bucket(request, rustfs_endpoint):
             s3_secret_access_key=SECRET_KEY,
             s3_use_ssl=False,
             s3_region="ap-northeast-1",
-            storage="rustfs",
             # 存在しないバケット名
             s3_bucket="non_existent_bucket",
             s3_prefix=PREFIX,
@@ -817,7 +818,6 @@ def test_init_skips_missing_session_webhook(
         s3_secret_access_key=SECRET_KEY,
         s3_use_ssl=False,
         s3_region="ap-northeast-1",
-        storage="rustfs",
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
@@ -851,6 +851,68 @@ def test_init_skips_missing_session_webhook(
         assert cursor_count[0] == 1
 
 
+def test_init_and_update_on_empty_bucket(request, s3_client_empty, rustfs_endpoint):
+    """全ターゲットが空のバケットに対して init/update がエラーなく完走し、データテーブルが作成されないことを確認する。"""
+    # node.name を使用して DuckDB のファイル名を生成する
+    duckdb_filename = f"{request.node.name}.db"
+    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+
+    # テスト後に BUCKET と DuckDB ファイルを削除するためのクリーンアップ処理を追加する
+    request.addfinalizer(lambda: remove_bucket(s3_client_empty, BUCKET))
+    request.addfinalizer(
+        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
+    )
+
+    assert s3_client_empty.bucket_exists(BUCKET)
+
+    args = Args(
+        db=duckdb_filepath,
+        s3_endpoint=rustfs_endpoint,
+        s3_access_key_id=ACCESS_KEY,
+        s3_secret_access_key=SECRET_KEY,
+        s3_use_ssl=False,
+        s3_region="ap-northeast-1",
+        s3_bucket=BUCKET,
+        s3_prefix=PREFIX,
+        initial_maximum_load=1000,
+    )
+
+    # 空バケットでも init は完走し、DB ファイルが作成される
+    init(args)
+    assert os.path.exists(duckdb_filepath)
+
+    def assert_only_s3_objects_table(con: duckdb.DuckDBPyConnection) -> None:
+        """LOG_TARGETS のテーブルは作成されず、s3_objects のみ存在することを確認する。"""
+        for target in ("rtc_stats", "session_webhook"):
+            con.execute(
+                "SELECT COUNT(*) FROM information_schema.tables WHERE table_name=?",
+                (target,),
+            )
+            table_count = con.fetchone()
+            assert table_count is not None
+            assert table_count[0] == 0, f"{target} should not be created"
+        con.execute(
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='s3_objects'"
+        )
+        s3_objects_table_count = con.fetchone()
+        assert s3_objects_table_count is not None
+        assert s3_objects_table_count[0] == 1
+        # オブジェクトが 1 件もないため、カーソル行も入らない
+        con.execute("SELECT COUNT(*) FROM s3_objects")
+        cursor_count = con.fetchone()
+        assert cursor_count is not None
+        assert cursor_count[0] == 0
+
+    with duckdb.connect(duckdb_filepath) as duckdb_connection:
+        assert_only_s3_objects_table(duckdb_connection)
+
+    # 空バケットのまま update を呼んでもエラーにならず、データテーブルも作成されない
+    update(args)
+
+    with duckdb.connect(duckdb_filepath) as duckdb_connection:
+        assert_only_s3_objects_table(duckdb_connection)
+
+
 def test_prepare_db_for_init_renames_broken_db_file(tmp_path):
     """壊れた DB を prepare_db_for_init が検出し、DB と WAL をリネームして退避したことを確認する。"""
     db_path = tmp_path / "broken.db"
@@ -873,6 +935,190 @@ def test_prepare_db_for_init_renames_broken_db_file(tmp_path):
     assert wal_path.exists() is False
     assert renamed_db_files[0].exists()
     assert renamed_wal_files[0].exists()
+
+
+def test_update_maximum_load_splits_batches(request, s3_client, rustfs_endpoint):
+    """update_maximum_load より多い新規ログを 1 回の update で取り込まず、複数回呼び出しで取り込み切ることを確認する。"""
+    # node.name を使用して DuckDB のファイル名を生成する
+    duckdb_filename = f"{request.node.name}.db"
+    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+
+    # テスト後に BUCKET と DuckDB ファイルを削除するためのクリーンアップ処理を追加する
+    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
+    request.addfinalizer(
+        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
+    )
+
+    assert s3_client.bucket_exists(BUCKET)
+
+    # 既存ログをすべて取り込んでカーソルを最新に揃える
+    args = Args(
+        db=duckdb_filepath,
+        s3_endpoint=rustfs_endpoint,
+        s3_access_key_id=ACCESS_KEY,
+        s3_secret_access_key=SECRET_KEY,
+        s3_use_ssl=False,
+        s3_region="ap-northeast-1",
+        s3_bucket=BUCKET,
+        s3_prefix=PREFIX,
+        initial_maximum_load=1000,
+    )
+    init(args)
+
+    def fetch_rtc_stats_count() -> int:
+        """rtc_stats の現在の件数を取得する。"""
+        with duckdb.connect(duckdb_filepath) as con:
+            con.execute("SELECT COUNT(*) FROM rtc_stats")
+            result = con.fetchone()
+            assert result is not None
+            return result[0]
+
+    # init で 1 件以上は取り込まれている前提
+    initial_count = fetch_rtc_stats_count()
+    assert initial_count > 0
+
+    # 新規ログを 5 件追加する
+    new_log_file = os.path.join(LOG_DIR, "rtc_stats.jsonl")
+    with open(new_log_file, "rb") as data:
+        new_lines = data.readlines()[:5]
+    assert len(new_lines) == 5
+
+    for line in new_lines:
+        now = datetime.datetime.now(datetime.timezone.utc)
+        directory = now.strftime("%Y/%m/%d")
+        s3_path = data_path(PREFIX, "rtc_stats", directory)
+        compressed_log_data = gzip.compress(line)
+        s3_client.put_object(
+            BUCKET,
+            s3_path,
+            io.BytesIO(compressed_log_data),
+            length=len(compressed_log_data),
+        )
+
+    # update_maximum_load=2 で update を呼び出すと、1 回あたり最大 2 件しか取り込まれない
+    batch_args = Args(
+        db=duckdb_filepath,
+        s3_endpoint=rustfs_endpoint,
+        s3_access_key_id=ACCESS_KEY,
+        s3_secret_access_key=SECRET_KEY,
+        s3_use_ssl=False,
+        s3_region="ap-northeast-1",
+        s3_bucket=BUCKET,
+        s3_prefix=PREFIX,
+        initial_maximum_load=1000,
+        update_maximum_load=2,
+    )
+
+    # 1 回目: 2 件取り込まれること
+    update(batch_args)
+    assert fetch_rtc_stats_count() == initial_count + 2
+
+    # 2 回目: さらに 2 件取り込まれて合計 4 件追加
+    update(batch_args)
+    assert fetch_rtc_stats_count() == initial_count + 4
+
+    # 3 回目: 残り 1 件取り込まれて合計 5 件追加
+    update(batch_args)
+    assert fetch_rtc_stats_count() == initial_count + 5
+
+    # 4 回目: 取り込むものが無いため件数が変わらない
+    update(batch_args)
+    assert fetch_rtc_stats_count() == initial_count + 5
+
+
+def test_update_maximum_load_one_takes_single_object_per_call(
+    request, s3_client, rustfs_endpoint
+):
+    """update_maximum_load=1 (positive_int の最小値) で 1 回あたり 1 件ずつ取り込むことを確認する。
+
+    target_log_objects[-args.update_maximum_load :] のスライスが [-1:] になる境界値で、
+    残件が複数あっても 1 件だけ取り込み、複数回呼び出しで取り込み切ることを確認する。
+    """
+    # node.name を使用して DuckDB のファイル名を生成する
+    duckdb_filename = f"{request.node.name}.db"
+    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+
+    # テスト後に BUCKET と DuckDB ファイルを削除するためのクリーンアップ処理を追加する
+    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
+    request.addfinalizer(
+        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
+    )
+
+    assert s3_client.bucket_exists(BUCKET)
+
+    # 既存ログをすべて取り込んでカーソルを最新に揃える
+    args = Args(
+        db=duckdb_filepath,
+        s3_endpoint=rustfs_endpoint,
+        s3_access_key_id=ACCESS_KEY,
+        s3_secret_access_key=SECRET_KEY,
+        s3_use_ssl=False,
+        s3_region="ap-northeast-1",
+        s3_bucket=BUCKET,
+        s3_prefix=PREFIX,
+        initial_maximum_load=1000,
+    )
+    init(args)
+
+    def fetch_rtc_stats_count() -> int:
+        """rtc_stats の現在の件数を取得する。"""
+        with duckdb.connect(duckdb_filepath) as con:
+            con.execute("SELECT COUNT(*) FROM rtc_stats")
+            result = con.fetchone()
+            assert result is not None
+            return result[0]
+
+    # init で 1 件以上は取り込まれている前提
+    initial_count = fetch_rtc_stats_count()
+    assert initial_count > 0
+
+    # 新規ログを 3 件追加する
+    new_log_file = os.path.join(LOG_DIR, "rtc_stats.jsonl")
+    with open(new_log_file, "rb") as data:
+        new_lines = data.readlines()[:3]
+    assert len(new_lines) == 3
+
+    for line in new_lines:
+        now = datetime.datetime.now(datetime.timezone.utc)
+        directory = now.strftime("%Y/%m/%d")
+        s3_path = data_path(PREFIX, "rtc_stats", directory)
+        compressed_log_data = gzip.compress(line)
+        s3_client.put_object(
+            BUCKET,
+            s3_path,
+            io.BytesIO(compressed_log_data),
+            length=len(compressed_log_data),
+        )
+
+    # update_maximum_load=1 で update を呼び出すと、1 回あたり 1 件しか取り込まれない
+    batch_args = Args(
+        db=duckdb_filepath,
+        s3_endpoint=rustfs_endpoint,
+        s3_access_key_id=ACCESS_KEY,
+        s3_secret_access_key=SECRET_KEY,
+        s3_use_ssl=False,
+        s3_region="ap-northeast-1",
+        s3_bucket=BUCKET,
+        s3_prefix=PREFIX,
+        initial_maximum_load=1000,
+        update_maximum_load=1,
+    )
+
+    # 1 回目: 1 件取り込まれること
+    update(batch_args)
+    assert fetch_rtc_stats_count() == initial_count + 1
+
+    # 2 回目: さらに 1 件取り込まれて合計 2 件追加
+    update(batch_args)
+    assert fetch_rtc_stats_count() == initial_count + 2
+
+    # 3 回目: 残り 1 件取り込まれて合計 3 件追加
+    update(batch_args)
+    assert fetch_rtc_stats_count() == initial_count + 3
+
+    # 4 回目: 取り込むものが無いため件数が変わらない
+    update(batch_args)
+    assert fetch_rtc_stats_count() == initial_count + 3
 
 
 def test_prepare_db_for_init_does_not_rename_on_permission_denied(tmp_path):

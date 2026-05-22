@@ -14,6 +14,11 @@ case "${SUBCOMMAND}" in
             --s3_prefix "${S3_PREFIX}" \
             --initial_maximum_load "${INITIAL_MAXIMUM_LOAD:-100}"
 
+        # update_maximum_load は update でのみ参照されるため、update の時だけ渡す
+        if [ "${SUBCOMMAND}" = "update" ]; then
+            set -- "$@" --update_maximum_load "${UPDATE_MAXIMUM_LOAD:-100}"
+        fi
+
         # --s3_use_ssl は action="store_true" のため、true の場合のみフラグを付与する
         if [ "${S3_USE_SSL:-}" = "true" ]; then
             set -- "$@" --s3_use_ssl

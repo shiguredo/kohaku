@@ -1,6 +1,8 @@
 import argparse
+import datetime
 import hashlib
 import os
+import stat
 from types import SimpleNamespace
 
 import duckdb
@@ -42,3 +44,197 @@ def test_delete_returns_without_copy_when_no_rows_deleted(tmp_path):
     assert after_stat.st_ino == before_stat.st_ino
     assert after_hash == before_hash
     assert os.path.exists(f"{db_path}.copy") is False
+
+
+def test_delete_handles_single_quote_in_db_path(tmp_path):
+    """シングルクォートを含む DB ファイルパスでも ATTACH 文が成立し、delete が完走することを確認する。
+
+    escape_sql_string_literal によるエスケープが実際の ATTACH 文で有効であることを、
+    実 DuckDB を相手にしたファイル操作経路で検証する。
+    """
+    # ファイル名にシングルクォートを含める。エスケープが効いていなければ ATTACH 文が
+    # 構文エラーになるか、別のパスを参照してしまう。
+    db_path = tmp_path / "test'delete.db"
+
+    # retention_period=1 で削除対象となるよう、2 日前の timestamp を持つ行を挿入する。
+    old_timestamp = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+        days=2
+    )
+    with duckdb.connect(str(db_path)) as con:
+        con.execute("CREATE TABLE rtc_stats (timestamp TIMESTAMPTZ)")
+        con.execute("CREATE TABLE session_webhook (timestamp TIMESTAMPTZ)")
+        con.execute("INSERT INTO rtc_stats VALUES (?)", (old_timestamp,))
+
+    args = SimpleNamespace(db=str(db_path), retention_period=1)
+    run.delete(args)
+
+    # delete 後、古い行が削除されていることを確認する。
+    # ATTACH/COPY 経路が破綻していればここまで到達せず、データも消えない。
+    with duckdb.connect(str(db_path)) as con:
+        result = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()
+        assert result is not None
+        assert result[0] == 0
+
+    # COPY 用の一時ファイルが残っていないことを確認する (ATTACH/COPY/move が完了している)。
+    assert os.path.exists(f"{db_path}.copy") is False
+
+
+def test_delete_restricts_db_file_permission(tmp_path):
+    """delete 完了後の DB ファイルのパーミッションが owner と group のみに縮小されることを確認する。
+
+    chmod 対象は COPY 先の copy ファイルだが、shutil.move 後に同じパーミッションが
+    args.db に反映される。other 読み書きと group 書き込み以外の権限が落ちることを保証する。
+    """
+    db_path = tmp_path / "delete_permission.db"
+
+    # retention_period=1 で削除対象となるよう、2 日前の timestamp を持つ行を挿入する。
+    old_timestamp = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+        days=2
+    )
+    with duckdb.connect(str(db_path)) as con:
+        con.execute("CREATE TABLE rtc_stats (timestamp TIMESTAMPTZ)")
+        con.execute("CREATE TABLE session_webhook (timestamp TIMESTAMPTZ)")
+        con.execute("INSERT INTO rtc_stats VALUES (?)", (old_timestamp,))
+
+    # 元 DB を過剰権限にしておき、delete が明示的に縮小していることを示せるようにする。
+    os.chmod(db_path, 0o666)
+
+    args = SimpleNamespace(db=str(db_path), retention_period=1)
+    run.delete(args)
+
+    # owner: rw, group: rw, other: なし
+    expected_mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP
+    actual_mode = stat.S_IMODE(db_path.stat().st_mode)
+    assert actual_mode == expected_mode
+
+
+# require_s3_credentials
+
+
+def test_require_s3_credentials_rejects_missing_access_key():
+    """access_key が未指定の場合に ValueError を送出することを確認する。"""
+    args = SimpleNamespace(s3_access_key_id=None, s3_secret_access_key="secret")
+    with pytest.raises(ValueError, match="S3 credentials are required"):
+        run.require_s3_credentials(args)
+
+
+def test_require_s3_credentials_rejects_missing_secret():
+    """secret が未指定の場合に ValueError を送出することを確認する。"""
+    args = SimpleNamespace(s3_access_key_id="access", s3_secret_access_key=None)
+    with pytest.raises(ValueError, match="S3 credentials are required"):
+        run.require_s3_credentials(args)
+
+
+def test_require_s3_credentials_accepts_valid_credentials():
+    """両方の値が指定されている場合は例外を送出しないことを確認する。"""
+    args = SimpleNamespace(s3_access_key_id="access", s3_secret_access_key="secret")
+    # 例外が発生しないことを確認する (戻り値は None)
+    assert run.require_s3_credentials(args) is None
+
+
+# escape_sql_string_literal
+
+
+def test_escape_sql_string_literal_doubles_single_quote():
+    """シングルクォートが 1 個含まれる場合に 2 個に変換することを確認する。"""
+    assert run.escape_sql_string_literal("a'b") == "a''b"
+
+
+def test_escape_sql_string_literal_handles_multiple_quotes():
+    """複数のシングルクォートをすべて二重化することを確認する。"""
+    assert run.escape_sql_string_literal("'a'b'c'") == "''a''b''c''"
+
+
+def test_escape_sql_string_literal_handles_consecutive_quotes():
+    """連続したシングルクォートも正しく二重化することを確認する。"""
+    assert run.escape_sql_string_literal("a''b") == "a''''b"
+
+
+def test_escape_sql_string_literal_passes_through_safe_string():
+    """シングルクォートを含まない文字列はそのまま返すことを確認する。"""
+    assert (
+        run.escape_sql_string_literal("/var/lib/kohaku/duck.db")
+        == "/var/lib/kohaku/duck.db"
+    )
+
+
+def test_escape_sql_string_literal_handles_empty_string():
+    """空文字列を渡しても例外なく空文字列を返すことを確認する。"""
+    assert run.escape_sql_string_literal("") == ""
+
+
+def test_escape_sql_string_literal_neutralizes_injection_payload():
+    """SQL インジェクション風の payload も単純なエスケープで無害化されることを確認する。"""
+    payload = "'; DROP TABLE x; --"
+    expected = "''; DROP TABLE x; --"
+    assert run.escape_sql_string_literal(payload) == expected
+
+
+# delete_log_by_timestamp の table_name 許可リスト検証
+
+
+def test_delete_log_by_timestamp_rejects_unknown_table():
+    """LOG_TARGETS 外のテーブル名を渡すと ValueError を送出することを確認する。"""
+    with duckdb.connect(":memory:") as con:
+        with pytest.raises(ValueError, match="Unknown table name"):
+            run.delete_log_by_timestamp(
+                con=con, table_name="evil_table", timestamp=None
+            )
+
+
+def test_delete_log_by_timestamp_rejects_sql_injection_attempt():
+    """SQL インジェクションを試みる文字列も許可リストではじかれることを確認する。"""
+    with duckdb.connect(":memory:") as con:
+        with pytest.raises(ValueError, match="Unknown table name"):
+            run.delete_log_by_timestamp(
+                con=con,
+                table_name="rtc_stats; DROP TABLE x",
+                timestamp=None,
+            )
+
+
+def test_delete_log_by_timestamp_rejects_empty_table_name():
+    """空文字のテーブル名も許可リストではじかれることを確認する。"""
+    with duckdb.connect(":memory:") as con:
+        with pytest.raises(ValueError, match="Unknown table name"):
+            run.delete_log_by_timestamp(con=con, table_name="", timestamp=None)
+
+
+# is_after_s3_cursor の比較ロジック
+
+
+def test_is_after_s3_cursor_newer_last_modified():
+    """last_modified がカーソルより新しければ True となることを確認する。"""
+    t_old = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+    t_new = datetime.datetime(2026, 1, 2, tzinfo=datetime.timezone.utc)
+    obj = SimpleNamespace(last_modified=t_new, object_name="a")
+    assert run.is_after_s3_cursor(obj, t_old, "a") is True
+
+
+def test_is_after_s3_cursor_older_last_modified():
+    """last_modified がカーソルより古ければ False となることを確認する。"""
+    t_old = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+    t_new = datetime.datetime(2026, 1, 2, tzinfo=datetime.timezone.utc)
+    obj = SimpleNamespace(last_modified=t_old, object_name="z")
+    assert run.is_after_s3_cursor(obj, t_new, "a") is False
+
+
+def test_is_after_s3_cursor_same_last_modified_newer_object_name():
+    """last_modified が同値なら object_name が大きい方を新しいと判定することを確認する。"""
+    t = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+    obj = SimpleNamespace(last_modified=t, object_name="b")
+    assert run.is_after_s3_cursor(obj, t, "a") is True
+
+
+def test_is_after_s3_cursor_same_last_modified_older_object_name():
+    """last_modified が同値で object_name が小さい場合は False となることを確認する。"""
+    t = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+    obj = SimpleNamespace(last_modified=t, object_name="a")
+    assert run.is_after_s3_cursor(obj, t, "b") is False
+
+
+def test_is_after_s3_cursor_same_last_modified_same_object_name():
+    """last_modified と object_name の両方が同値なら False となることを確認する (カーソル自身を除外)。"""
+    t = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+    obj = SimpleNamespace(last_modified=t, object_name="a")
+    assert run.is_after_s3_cursor(obj, t, "a") is False

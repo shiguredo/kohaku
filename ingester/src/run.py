@@ -1,4 +1,5 @@
 import argparse
+import enum
 import os
 import shutil
 import stat
@@ -10,8 +11,16 @@ import duckdb
 import minio
 from minio.error import S3Error
 
+
+class SyncMode(enum.Enum):
+    """sync_logs の動作モード。"""
+
+    INIT = "init"
+    UPDATE = "update"
+
+
 DEFAULT_DUCKDB_FILE = "duck.db"
-# /kohaku/log/connection/2025/06/01/a.gz のようなパスを想定
+# /kohaku/log/rtc_stats/2025/06/01/a.gz のようなパスを想定
 DEFAULT_S3_BUCKET_NAME = "kohaku"
 DEFAULT_S3_PREFIX = "log"
 
@@ -19,6 +28,9 @@ DEFAULT_S3_REGION = "ap-northeast-1"
 DEFAULT_RETENTION_PERIOD = 7
 # init 時に読み込むファイル数の上限
 DEFAULT_INITIAL_MAXIMUM_LOAD = 100
+# update 時に 1 回で取り込むファイル数の上限。停止後の復帰時に大量蓄積したログを
+# バッチ分割するために用いる。
+DEFAULT_UPDATE_MAXIMUM_LOAD = 100
 
 COLUMNS_DIR = "./DUCKDB_COLUMNS"
 # DB ファイルが破損していると判断するためのエラーメッセージのパターン
@@ -63,11 +75,21 @@ def load_columns():
     return duckdb_columns
 
 
+def require_s3_credentials(args):
+    if not args.s3_access_key_id or not args.s3_secret_access_key:
+        raise ValueError(
+            "S3 credentials are required: provide --s3_access_key_id and --s3_secret_access_key"
+        )
+
+
 def init(args):
     print("init")
     prepare_db_for_init(args.db)
     if is_initialized_db(args.db):
         return
+
+    # 初期化が必要なケースに限り S3 接続が必要なので、ここで認証情報を要求する。
+    require_s3_credentials(args)
 
     client = minio.Minio(
         args.s3_endpoint,
@@ -91,68 +113,58 @@ def init(args):
             args.s3_use_ssl,
             args.s3_region,
         )
-        sync_logs(con, client, args, "init")
+        sync_logs(con, client, args, SyncMode.INIT)
 
 
 def sync_logs(con, client, args, mode):
     for target in LOG_TARGETS:
-        if mode == "init":
+        if mode is SyncMode.INIT:
             sync_log_for_init(con, client, args, target)
-        elif mode == "update":
+        elif mode is SyncMode.UPDATE:
             sync_log_for_update(con, client, args, target)
         else:
             raise ValueError(f"Unknown mode: {mode}")
 
 
-def sync_log_for_init(con, client, args, target):
-    log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
-    log_urls = get_target_urls(args.s3_bucket, log_objects[: args.initial_maximum_load])
+def initialize_log_table(con, client, args, target):
+    """対象テーブルを初回作成する。
 
-    # 初期化対象のログが存在しない場合は、テーブル作成をスキップする
-    if len(log_urls) == 0:
+    S3 上のオブジェクト一覧を取得し、initial_maximum_load 件までを読み込んでテーブルを作成、
+    最新オブジェクトでカーソルを更新する。対象オブジェクトが無ければ何もしない。
+    """
+    log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
+    if len(log_objects) == 0:
         print(f"No log found for {target} in {args.s3_bucket}.")
         return
 
+    log_urls = get_target_urls(args.s3_bucket, log_objects[: args.initial_maximum_load])
+    create_log_table(con, target, log_urls)
+    # 先頭が最新
+    update_s3_object_table(con, target, log_objects[0])
+
+
+def sync_log_for_init(con, client, args, target):
     try:
-        create_log_table(con, target, log_urls)
-        if len(log_objects) > 0:
-            object = latest_object(log_objects)
-            update_s3_object_table(con, target, object)
+        initialize_log_table(con, client, args, target)
     except duckdb.InvalidInputException as e:
         # まだディレクトリがないため、エラーを表示して次へ
         print(f"InvalidInputException ({target}): {e}")
 
 
 def sync_log_for_update(con, client, args, target):
-    object = select_s3_object(con, target)
-    if object is None:
-        log_objects = list_objects(
-            client, args.s3_bucket, f"{args.s3_prefix}/{target}/"
-        )
-        if len(log_objects) == 0:
-            print(f"No log found for {target} in {args.s3_bucket}.")
-            # 対象のオブジェクトが存在しない場合はスキップする
-            return
-
-        log_urls = get_target_urls(
-            args.s3_bucket, log_objects[: args.initial_maximum_load]
-        )
-        create_log_table(con, target, log_urls)
-        if len(log_objects) > 0:
-            object = latest_object(log_objects)
-            update_s3_object_table(con, target, object)
+    cursor = select_s3_object(con, target)
+    if cursor is None:
+        initialize_log_table(con, client, args, target)
     else:
         # テーブルが存在しているのでログを追加する
-        insert_log_from_s3(con, client, target, args.s3_bucket, args.s3_prefix)
-
-
-def latest_object(objects):
-    if not objects:
-        return None
-
-    # 最後に更新されたオブジェクトを取得する
-    # last_modified が同値の場合は object_name で順序を決める
-    return max(objects, key=lambda obj: (obj.last_modified, obj.object_name))
+        insert_log_from_s3(
+            con,
+            client,
+            target,
+            args.s3_bucket,
+            args.s3_prefix,
+            args.update_maximum_load,
+        )
 
 
 def is_after_s3_cursor(obj, last_modified, object_name):
@@ -246,7 +258,7 @@ def is_initialized_db(db_path):
     return True
 
 
-def update_s3_object_table(con, log_type, object):
+def update_s3_object_table(con, log_type, obj):
     con.execute(
         """
         MERGE INTO s3_objects AS target
@@ -257,13 +269,24 @@ def update_s3_object_table(con, log_type, object):
         WHEN NOT MATCHED THEN
             INSERT (type, object_name, last_modified) VALUES (source.type, source.object_name, source.last_modified);
     """,
-        (log_type, object.object_name, object.last_modified),
+        (log_type, obj.object_name, obj.last_modified),
     )
 
 
 def list_objects(client, bucket, prefix):
+    """指定 prefix 配下のオブジェクトを (last_modified, object_name) の降順で返す。
+
+    戻り値の先頭が最新のオブジェクト、最後が最古のオブジェクトになる。
+    last_modified が同値の場合は object_name の辞書順降順で並ぶ
+    (is_after_s3_cursor のカーソル比較順序と一致させるため)。
+
+    オブジェクトキーが時系列順とは限らない (UUID 等を含むケースがある) ため、
+    MinIO の start_after でカーソル以降を絞り込むのは取り逃しのリスクがあり使用しない。
+    """
     objects = client.list_objects(bucket, prefix=prefix, recursive=True)
-    return list(sorted(objects, key=lambda obj: obj.last_modified, reverse=True))
+    return sorted(
+        objects, key=lambda obj: (obj.last_modified, obj.object_name), reverse=True
+    )
 
 
 def get_target_urls(bucket, objects):
@@ -273,6 +296,12 @@ def get_target_urls(bucket, objects):
         urls.append(f"s3://{bucket}/{obj.object_name}")
 
     return urls
+
+
+def escape_sql_string_literal(value):
+    # DuckDB の ATTACH はファイルパスを文字列リテラルとして受け取るが、
+    # プリペアドステートメントでバインドできないため、シングルクォートをエスケープして埋め込む。
+    return value.replace("'", "''")
 
 
 def remove_delete_incompleted_copy_files(copyfile):
@@ -326,6 +355,8 @@ def update(args):
     if not os.path.exists(args.db):
         raise Exception("DB-FILE-NOT-FOUND")
 
+    require_s3_credentials(args)
+
     client = minio.Minio(
         args.s3_endpoint,
         access_key=args.s3_access_key_id,
@@ -342,7 +373,7 @@ def update(args):
             args.s3_use_ssl,
             args.s3_region,
         )
-        sync_logs(con, client, args, "update")
+        sync_logs(con, client, args, SyncMode.UPDATE)
 
 
 def delete(args):
@@ -366,25 +397,15 @@ def delete(args):
     try:
         with duckdb.connect() as con:
             # DB サイズ削減のため、DB ファイルをコピーする
-            con.execute(f"ATTACH '{args.db}' AS db")
-            con.execute(f"ATTACH '{copy_file}' AS copy")
+            con.execute(f"ATTACH '{escape_sql_string_literal(args.db)}' AS db")
+            con.execute(f"ATTACH '{escape_sql_string_literal(copy_file)}' AS copy")
             con.execute("COPY FROM DATABASE db TO copy")
-    except Exception:
-        # 処理に失敗したときの残る可能性のあるファイルを削除する
-        remove_delete_incompleted_copy_files(copy_file)
-        # return code を 0 以外にするため例外を呼び出し元に投げる
-        raise
 
-    try:
         # コピーしたファイルを、元の DB ファイルに上書きする
+        # other の読み込み権限、書き込み権限は不要なので 0o660 に揃える
         os.chmod(
             copy_file,
-            stat.S_IRUSR
-            | stat.S_IWUSR
-            | stat.S_IRGRP
-            | stat.S_IWGRP
-            | stat.S_IROTH
-            | stat.S_IWOTH,
+            stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP,
         )
         shutil.move(copy_file, args.db)
     except Exception:
@@ -394,9 +415,9 @@ def delete(args):
         raise
 
 
-def insert_log_from_s3(con, client, table_name, bucket, prefix):
-    object = select_s3_object(con, table_name)
-    object_name, object_last_modified = object
+def insert_log_from_s3(con, client, table_name, bucket, prefix, update_maximum_load):
+    cursor = select_s3_object(con, table_name)
+    object_name, object_last_modified = cursor
 
     log_objects = list_objects(client, bucket, f"{prefix}/{table_name}/")
 
@@ -405,17 +426,25 @@ def insert_log_from_s3(con, client, table_name, bucket, prefix):
         for obj in log_objects
         if is_after_s3_cursor(obj, object_last_modified, object_name)
     ]
-    target_urls = get_target_urls(bucket, target_log_objects)
 
-    if len(target_log_objects) > 0:
-        con.begin()
-        try:
-            insert_log(con, table_name, target_urls)
-            update_s3_object_table(con, table_name, latest_object(target_log_objects))
-            con.commit()
-        except Exception:
-            con.rollback()
-            raise
+    # 長時間停止後に大量ファイルが蓄積したケースに備え、古い方からバッチで取り込む。
+    # 降順ソートされているため、末尾側 update_maximum_load 件が古い順のバッチになる。
+    if len(target_log_objects) > update_maximum_load:
+        target_log_objects = target_log_objects[-update_maximum_load:]
+
+    if len(target_log_objects) == 0:
+        return
+
+    target_urls = get_target_urls(bucket, target_log_objects)
+    con.begin()
+    try:
+        insert_log(con, table_name, target_urls)
+        # 先頭がこのバッチの最新
+        update_s3_object_table(con, table_name, target_log_objects[0])
+        con.commit()
+    except Exception:
+        con.rollback()
+        raise
 
 
 def insert_log(con, table_name, target_urls):
@@ -438,6 +467,12 @@ def select_s3_object(con, log_type):
 
 
 def delete_log_by_timestamp(con, table_name, timestamp):
+    # table_name は SQL に直接埋め込むため、許可リストで縛る
+    if table_name not in LOG_TARGETS:
+        raise ValueError(
+            f"Unknown table name: {table_name}. Available tables: {list(LOG_TARGETS)}"
+        )
+
     if not table_exists(con, table_name):
         # テーブルが存在しない場合はスキップする
         # delete サブコマンドはテーブル名を指定して実行ではないため、テーブルが存在しない場合もエラーにはしない
@@ -450,16 +485,36 @@ def delete_log_by_timestamp(con, table_name, timestamp):
     return result[0]
 
 
+def exit_with_stderr(message):
+    """エラーメッセージを stderr に書き出して exit code 1 で終了する。"""
+    print(message, file=sys.stderr)
+    sys.exit(1)
+
+
+def handle_storage_error(error, bucket):
+    """main からのトップレベル例外を分類して、ユーザー向けに整形する。
+
+    S3Error と ValueError は exit_with_stderr で終了し、それ以外は呼び出し元へ再送出する。
+    bucket は NoSuchBucket メッセージ用の表示値として受け取る。
+    """
+    if isinstance(error, S3Error):
+        if error.code == "NoSuchBucket":
+            exit_with_stderr(f"S3 bucket not found: {bucket}")
+        exit_with_stderr(f"S3 error occurred (code={error.code}): {error.message}")
+    if isinstance(error, ValueError):
+        # require_s3_credentials などの入力バリデーション失敗は、トレースバックなしで原因のみ表示して終了する
+        exit_with_stderr(str(error))
+    raise error
+
+
 def main():
     parser = argparse.ArgumentParser()
     # 共通オプション
     parser.add_argument("--db", default=DEFAULT_DUCKDB_FILE, help="DB file path")
     parser.add_argument("--s3_endpoint", default="s3.amazonaws.com", help="S3 endpoint")
+    parser.add_argument("--s3_access_key_id", default=None, help="S3 access key id")
     parser.add_argument(
-        "--s3_access_key_id", default="rootuser", help="S3 access key id"
-    )
-    parser.add_argument(
-        "--s3_secret_access_key", default="password", help="S3 secret access key"
+        "--s3_secret_access_key", default=None, help="S3 secret access key"
     )
     parser.add_argument("--s3_use_ssl", action="store_true", help="S3 use SSL")
     parser.add_argument("--s3_region", default=DEFAULT_S3_REGION, help="S3 region")
@@ -479,6 +534,12 @@ def main():
         help="Initial maximum load",
         type=positive_int,
     )
+    parser.add_argument(
+        "--update_maximum_load",
+        default=DEFAULT_UPDATE_MAXIMUM_LOAD,
+        help="Update maximum load",
+        type=positive_int,
+    )
 
     subparsers = parser.add_subparsers(required=True)
     subparsers_init = subparsers.add_parser("init")
@@ -493,23 +554,12 @@ def main():
     args = parser.parse_args()
     db = args.db
 
-    def exit_with_stderr(message):
-        print(message, file=sys.stderr)
-        sys.exit(1)
-
-    def handle_storage_error(error):
-        if isinstance(error, S3Error):
-            if error.code == "NoSuchBucket":
-                exit_with_stderr(f"S3 bucket not found: {args.s3_bucket}")
-            exit_with_stderr(f"S3 error occurred (code={error.code}): {error.message}")
-        raise error
-
     if args.func == init:
         # init は DB ファイルがない、または、DB にデータが入っていない場合のみ実行する想定のため、ファイル更新比較処理の対象外
         try:
             args.func(args)
         except Exception as error:
-            handle_storage_error(error)
+            handle_storage_error(error, args.s3_bucket)
     else:
         # DB ファイルがない場合は終了する
         if not os.path.exists(db):
@@ -523,7 +573,7 @@ def main():
             try:
                 args.func(args)
             except Exception as error:
-                handle_storage_error(error)
+                handle_storage_error(error, args.s3_bucket)
 
             statinfo = os.stat(db)
             if mtime == statinfo.st_mtime:
@@ -537,15 +587,10 @@ def main():
     tmp_file = ".".join([args.db, "bacon"])
     shutil.copyfile(args.db, tmp_file)
 
-    # grafana から読み込むために 666 に設定する
+    # other の読み込み権限、書き込み権限は不要なので 0o660 に揃える
     os.chmod(
         tmp_file,
-        stat.S_IRUSR
-        | stat.S_IWUSR
-        | stat.S_IRGRP
-        | stat.S_IWGRP
-        | stat.S_IROTH
-        | stat.S_IWOTH,
+        stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP,
     )
     readonly_file = ".".join([args.db, "readonly"])
     shutil.move(tmp_file, readonly_file)
