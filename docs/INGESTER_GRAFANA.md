@@ -109,6 +109,18 @@ systemd で Kohaku を実行するためのユーザを用意します
 sudo useradd -M -s /sbin/nologin kohaku
 ```
 
+現在の Kohaku の設定を行なっているユーザが kohaku ユーザ権限で、設定を行えるように /etc/sudoers.d/kohaku を作成して、下記を設定します
+
+```bash
+sudo EDITOR=vi visudo -f /etc/sudoers.d/kohaku
+```
+
+実行ユーザ は現在 Kohaku の設定を行なっているユーザに置き換えてください
+
+```/etc/sudoers.d/kohaku
+実行ユーザ ALL=(kohaku) NOPASSWD: ALL
+```
+
 また、Kohaku と Grafana で DB ファイルを共有するため、
 grafana ユーザを 上記で追加した kohaku ユーザのグループに追加して、DB ファイルにアクセスできるようにします
 
