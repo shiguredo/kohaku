@@ -46,6 +46,7 @@ Fluent Bit の設定に必要な項目は下記のとおりです
 - `AWS_SECRET_ACCESS_KEY` - S3 互換ストレージのシークレットキー
 - `S3_BUCKET` - バケット名
 - `S3_PREFIX` - S3 プレフィックス
+- `S3_USE_SSL` - Storage へ接続する際の TLS の利用の有無（true または false）
 
 ### Amazon S3 以外の S3 互換ストレージを利用する場合
 
