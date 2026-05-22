@@ -108,8 +108,9 @@ make down-external-s3
 
 `make down-external-s3` は `compose.external-s3.yml` のサービス（Fluent Bit, mc, Grafana, ingester）の Docker コンテナを削除します
 
-外部 S3 互換ストレージ は Lifecycle Management に対応している必要があります
-保持期間は `.env` の `RETENTION_PERIOD`（日）を使用します
+`mc` サービスが、`.env` の `RETENTION_PERIOD`（日）を保持期間として、バケットに Lifecycle Management ルールを登録します
+
+外部 S3 互換ストレージは Lifecycle Management に対応している必要があります
 
 ### Grafana の設定
 
