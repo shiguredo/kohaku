@@ -238,3 +238,18 @@ def test_is_after_s3_cursor_same_last_modified_same_object_name():
     t = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
     obj = SimpleNamespace(last_modified=t, object_name="a")
     assert run.is_after_s3_cursor(obj, t, "a") is False
+
+
+# update サブコマンドの初期化済み DB 必須チェック
+
+
+def test_update_rejects_uninitialized_db(tmp_path):
+    """s3_objects テーブルが無い DB に対して update が ValueError を送出することを確認する。"""
+    db_path = tmp_path / "uninitialized.db"
+    # init を経由せずに DB ファイルだけ作る。s3_objects テーブルは存在しない。
+    with duckdb.connect(str(db_path)) as con:
+        con.execute("CREATE TABLE dummy (id INTEGER)")
+
+    args = SimpleNamespace(db=str(db_path))
+    with pytest.raises(ValueError, match="DB file is not initialized"):
+        run.update(args)

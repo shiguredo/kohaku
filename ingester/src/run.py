@@ -355,6 +355,13 @@ def update(args):
     if not os.path.exists(args.db):
         raise Exception("DB-FILE-NOT-FOUND")
 
+    # s3_objects テーブル不在の DB に対しては update を拒否する。init が未実行のまま
+    # update を呼ぶと select_s3_object が CatalogException で落ちるため、明示的に弾く。
+    if not is_initialized_db(args.db):
+        raise ValueError(
+            f"DB file is not initialized: {args.db}. Run 'init' first."
+        )
+
     require_s3_credentials(args)
 
     client = minio.Minio(
