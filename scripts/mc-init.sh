@@ -16,7 +16,7 @@ while ! mc alias set "${S3_ALIAS}" "${endpoint_scheme}://${S3_ENDPOINT}" "${AWS_
    || ! mc ls "${S3_ALIAS}" >/dev/null 2>&1; do
   i=$((i + 1))
   if [ "${i}" -ge "${MC_INIT_MAX_RETRIES}" ]; then
-    echo "storage 接続待機がタイムアウトしました: ${endpoint_scheme}://${S3_ENDPOINT}" >&2
+    echo "Timed out waiting for storage endpoint: ${endpoint_scheme}://${S3_ENDPOINT}" >&2
     exit 1
   fi
   sleep "${MC_INIT_RETRY_INTERVAL}"
