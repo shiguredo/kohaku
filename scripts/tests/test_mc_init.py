@@ -3,7 +3,6 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-pytest.importorskip("testcontainers")
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.exceptions import ContainerStartException
 from testcontainers.core.network import Network
@@ -28,8 +27,12 @@ def run_and_assert_success(container: DockerContainer) -> None:
         result = wrapped.wait()
         status_code = result.get("StatusCode")
         if status_code != 0:
-            logs = wrapped.logs(stdout=True, stderr=True).decode("utf-8", errors="replace")
-            raise AssertionError(f"コンテナ実行に失敗しました (status={status_code}):\n{logs}")
+            logs = wrapped.logs(stdout=True, stderr=True).decode(
+                "utf-8", errors="replace"
+            )
+            raise AssertionError(
+                f"コンテナ実行に失敗しました (status={status_code}):\n{logs}"
+            )
     finally:
         container.stop()
 
@@ -57,7 +60,7 @@ def rustfs_env() -> dict[str, object]:
         rustfs_obj.start()
     except ContainerStartException as exc:
         network_obj.remove()
-        pytest.skip(f"Docker Engine へ接続できないためスキップします: {exc}")
+        pytest.fail(f"Docker Engine へ接続できないためテストを実行できません: {exc}")
 
     try:
         # yield でテスト本体へ実行コンテキストを渡す。
