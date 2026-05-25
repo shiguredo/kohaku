@@ -10,7 +10,6 @@ dependencies = [
   "minio>=7.2",
   "pytz>=2026.1",
   "pyyaml>=6.0",
-  "uuid>=1.30",
 ]
 
 [dependency-groups]
