@@ -108,6 +108,52 @@ def test_delete_restricts_db_file_permission(tmp_path):
     assert actual_mode == expected_mode
 
 
+# create_readonly_copy
+
+
+def test_create_readonly_copy_generates_readonly_with_restricted_permission(tmp_path):
+    """create_readonly_copy が .readonly を生成し、パーミッションを 0o660 に揃えることを確認する。"""
+    db_path = tmp_path / "source.db"
+    db_path.write_bytes(b"duckdb-file-payload")
+    # 元の DB を過剰権限にしておき、.readonly 側が必ず縮小されることを示せるようにする。
+    os.chmod(db_path, 0o666)
+
+    run.create_readonly_copy(str(db_path))
+
+    readonly_path = tmp_path / "source.db.readonly"
+    assert readonly_path.exists()
+    # 内容が元 DB と一致すること
+    assert readonly_path.read_bytes() == db_path.read_bytes()
+    # owner: rw, group: rw, other: なし
+    expected_mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP
+    assert stat.S_IMODE(readonly_path.stat().st_mode) == expected_mode
+
+
+def test_create_readonly_copy_overwrites_existing_readonly(tmp_path):
+    """既に .readonly が存在しても、最新の DB 内容で上書きされることを確認する。"""
+    db_path = tmp_path / "source.db"
+    db_path.write_bytes(b"new-payload")
+
+    readonly_path = tmp_path / "source.db.readonly"
+    # 既存の .readonly を別内容で配置しておく
+    readonly_path.write_bytes(b"stale-payload")
+
+    run.create_readonly_copy(str(db_path))
+
+    assert readonly_path.read_bytes() == b"new-payload"
+
+
+def test_create_readonly_copy_does_not_leave_tmp_file(tmp_path):
+    """create_readonly_copy が一時ファイル .tmp を後始末することを確認する。"""
+    db_path = tmp_path / "source.db"
+    db_path.write_bytes(b"payload")
+
+    run.create_readonly_copy(str(db_path))
+
+    tmp_file = tmp_path / "source.db.tmp"
+    assert not tmp_file.exists()
+
+
 # require_s3_credentials
 
 

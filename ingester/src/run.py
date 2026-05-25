@@ -358,9 +358,7 @@ def update(args):
     # s3_objects テーブル不在の DB に対しては update を拒否する。init が未実行のまま
     # update を呼ぶと select_s3_object が CatalogException で落ちるため、明示的に弾く。
     if not is_initialized_db(args.db):
-        raise ValueError(
-            f"DB file is not initialized: {args.db}. Run 'init' first."
-        )
+        raise ValueError(f"DB file is not initialized: {args.db}. Run 'init' first.")
 
     require_s3_credentials(args)
 
@@ -498,6 +496,22 @@ def exit_with_stderr(message):
     sys.exit(1)
 
 
+def create_readonly_copy(db_path):
+    """書き込み済みの DB ファイルから読み込み専用コピーを生成する。
+
+    DuckDB は書き込み中に他プロセスからアクセスできないため、書き込み終了後に同 FS 内で
+    一時ファイルを作成し、rename で .readonly に切り替えることでアトミックな差し替えにする。
+    Grafana は .readonly のみを参照する想定。
+    参考: https://github.com/motherduckdb/grafana-duckdb-datasource?tab=readme-ov-file#updating-data-in-the-duckdb-file
+    """
+    tmp_file = ".".join([db_path, "tmp"])
+    shutil.copyfile(db_path, tmp_file)
+    # other の読み込み権限、書き込み権限は不要なので 0o660 に揃える
+    os.chmod(tmp_file, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
+    readonly_file = ".".join([db_path, "readonly"])
+    shutil.move(tmp_file, readonly_file)
+
+
 def handle_storage_error(error, bucket):
     """main からのトップレベル例外を分類して、ユーザー向けに整形する。
 
@@ -572,35 +586,23 @@ def main():
         if not os.path.exists(db):
             parser.print_usage()
             sys.exit(1)
-        else:
-            # DB ファイルの最終更新時刻を取得する
-            statinfo = os.stat(db)
-            mtime = statinfo.st_mtime
 
-            try:
-                args.func(args)
-            except Exception as error:
-                handle_storage_error(error, args.s3_bucket)
+        # update / delete は DB ファイルが書き換わったかを mtime で判定し、変化が無ければ
+        # 末尾の .readonly 生成をスキップする
+        statinfo = os.stat(db)
+        mtime = statinfo.st_mtime
 
-            statinfo = os.stat(db)
-            if mtime == statinfo.st_mtime:
-                # DB ファイルが更新されていない場合は終了する
-                return
+        try:
+            args.func(args)
+        except Exception as error:
+            handle_storage_error(error, args.s3_bucket)
 
-    # DuckDB は、DB ファイルへの書き込み時には他のプロセスからアクセスできないため、
-    # 書き込み終了後に、DB ファイルのコピーを作成してから、読み込み専用の DB ファイルにリネームする
-    # 読み込みは、複数プロセスからアクセス可能なこの読み込み専用の DB ファイルに対しておこなう
-    # 参考: https://github.com/motherduckdb/grafana-duckdb-datasource?tab=readme-ov-file#updating-data-in-the-duckdb-file
-    tmp_file = ".".join([args.db, "bacon"])
-    shutil.copyfile(args.db, tmp_file)
+        statinfo = os.stat(db)
+        if mtime == statinfo.st_mtime:
+            # DB ファイルが更新されていない場合は終了する
+            return
 
-    # other の読み込み権限、書き込み権限は不要なので 0o660 に揃える
-    os.chmod(
-        tmp_file,
-        stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP,
-    )
-    readonly_file = ".".join([args.db, "readonly"])
-    shutil.move(tmp_file, readonly_file)
+    create_readonly_copy(args.db)
 
 
 if __name__ == "__main__":
