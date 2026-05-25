@@ -50,13 +50,14 @@ def rustfs_endpoint(rustfs_container: DockerContainer) -> str:
     return f"{rustfs_container.get_container_host_ip()}:{rustfs_container.get_exposed_port(RUSTFS_PORT)}"
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def init_grafana_plugin() -> None:
-    """pytest セッション開始時に 1 回だけ Grafana プラグイン取得用の make init を実行する。
+    """pytest セッション中に 1 回だけ Grafana プラグイン取得用の make init を実行する。
 
-    `make init` は plugins/ 配下に DuckDB datasource プラグインを配置する処理で、
-    test_grafana_integration.py が Grafana コンテナにマウントするときに必要。
-    idempotent なので tests/ 全体実行時に毎回走っても問題ない想定で autouse にしている。
+    `make init` は repo root の Makefile で plugins/motherduck-duckdb-datasource を取得し、
+    test_grafana_integration.py が Grafana コンテナにマウントするときに必要となる。
+    Grafana を使わないテスト (test_run_unit.py や test_ingester.py 等) で不要なネット越し
+    curl を走らせないよう、autouse にせず Grafana テスト側から明示的に依存させる。
     """
     repo_root = Path(__file__).resolve().parents[2]
     subprocess.run(["make", "init"], cwd=repo_root, check=True)

@@ -210,6 +210,7 @@ def wait_for_grafana(base_url: str, auth_header: Mapping[str, str]) -> None:
     wait_until(datasource_is_ready)
 
 
+@pytest.mark.usefixtures("init_grafana_plugin")
 def test_grafana_can_query_duckdb_data(tmp_path):
     """Grafana の datasource から DuckDB を実際に参照できることを確認する。"""
     repo_root = Path(__file__).resolve().parents[2]
