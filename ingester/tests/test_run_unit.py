@@ -286,6 +286,24 @@ def test_is_after_s3_cursor_same_last_modified_same_object_name():
     assert run.is_after_s3_cursor(obj, t, "a") is False
 
 
+def test_is_after_s3_cursor_rejects_tz_naive_obj_last_modified():
+    """obj.last_modified がタイムゾーン情報を含まないとき ValueError を送出することを確認する。"""
+    naive = datetime.datetime(2026, 1, 1)
+    aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+    obj = SimpleNamespace(last_modified=naive, object_name="a")
+    with pytest.raises(ValueError, match="tz-aware datetime"):
+        run.is_after_s3_cursor(obj, aware, "a")
+
+
+def test_is_after_s3_cursor_rejects_tz_naive_cursor_last_modified():
+    """カーソル側の last_modified がタイムゾーン情報を含まないとき ValueError を送出することを確認する。"""
+    naive = datetime.datetime(2026, 1, 1)
+    aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+    obj = SimpleNamespace(last_modified=aware, object_name="a")
+    with pytest.raises(ValueError, match="tz-aware datetime"):
+        run.is_after_s3_cursor(obj, naive, "a")
+
+
 # update サブコマンドの初期化済み DB 必須チェック
 
 

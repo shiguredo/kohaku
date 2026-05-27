@@ -169,8 +169,17 @@ def sync_log_for_update(con, client, args, target):
 
 def is_after_s3_cursor(obj, last_modified, object_name):
     """
-    s3_objects テーブルに保存したカーソルより新しいオブジェクトかを判定する
+    s3_objects テーブルに保存したカーソルより新しいオブジェクトかを判定する。
+
+    obj.last_modified と last_modified の両方がタイムゾーン情報を含んでいることを前提とする。
+    MinIO SDK の Object.last_modified と DuckDB の TIMESTAMPTZ カラムはどちらも
+    タイムゾーン情報を含む datetime を返すため、タイムゾーン情報を含まない datetime が
+    渡るのは設計違反として明示的に拒否する。
     """
+    if (obj.last_modified.tzinfo is None) or (last_modified.tzinfo is None):
+        raise ValueError(
+            "is_after_s3_cursor requires tz-aware datetime for both obj.last_modified and last_modified"
+        )
     if obj.last_modified > last_modified:
         return True
     if obj.last_modified < last_modified:
