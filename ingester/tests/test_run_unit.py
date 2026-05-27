@@ -216,6 +216,24 @@ def test_escape_sql_string_literal_neutralizes_injection_payload():
     assert run.escape_sql_string_literal(payload) == expected
 
 
+@pytest.mark.parametrize(
+    "control_char",
+    [
+        "\x00",  # NUL
+        "\n",  # LF
+        "\r",  # CR
+        "\t",  # TAB
+        "\x1f",  # 制御文字の上限
+        "\x7f",  # DEL
+    ],
+)
+def test_escape_sql_string_literal_rejects_control_characters(control_char):
+    """制御文字を含む値は ValueError で拒否されることを確認する。"""
+    value = f"/var/lib/kohaku/duck{control_char}.db"
+    with pytest.raises(ValueError, match="control characters"):
+        run.escape_sql_string_literal(value)
+
+
 # delete_log_by_timestamp の table_name 許可リスト検証
 
 

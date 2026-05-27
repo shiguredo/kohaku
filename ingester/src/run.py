@@ -307,9 +307,29 @@ def get_target_urls(bucket, objects):
     return urls
 
 
+def validate_sql_string_literal(value):
+    """SQL 文字列リテラルとして埋め込む value が安全か検証する。
+
+    制御文字 (0x00 から 0x1f および 0x7f) を含む場合は ValueError を送出する。
+    NUL バイトはファイルパスとして無効、改行や DEL 等は DuckDB パーサで予期せぬ挙動を
+    起こす可能性があるため、暗黙の補正でなく明示的に弾く。
+
+    別関数として切り出してあるのは、将来バリデーション基準を緩めたり厳しくしたりする
+    変更を escape_sql_string_literal 本体に波及させないため。
+    """
+    if any(ord(c) < 0x20 or ord(c) == 0x7F for c in value):
+        raise ValueError("SQL string literal must not contain control characters")
+
+
 def escape_sql_string_literal(value):
-    # DuckDB の ATTACH はファイルパスを文字列リテラルとして受け取るが、
-    # プリペアドステートメントでバインドできないため、シングルクォートをエスケープして埋め込む。
+    """DuckDB の ATTACH 等で使う SQL 文字列リテラルとして value を安全に埋め込めるよう
+    シングルクォートをエスケープする。
+
+    DuckDB はファイルパスをプリペアドステートメントでバインドできないため、ATTACH 等で
+    パス文字列を直接埋め込む必要がある。本関数は信頼された CLI 引数 (args.db 等) のみを
+    通す想定で、事前に validate_sql_string_literal で不正値を弾く。
+    """
+    validate_sql_string_literal(value)
     return value.replace("'", "''")
 
 
