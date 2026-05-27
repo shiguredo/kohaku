@@ -11,6 +11,7 @@ from run import init, update, delete, prepare_db_for_init
 import uuid
 import minio
 import pytest
+from minio.error import S3Error
 
 from .conftest import ACCESS_KEY, BUCKET, PREFIX, SECRET_KEY
 from .helpers import wait_until
@@ -761,34 +762,32 @@ def test_delete_within_retention_period(request, s3_client, rustfs_endpoint):
 
 
 def test_no_bucket(request, rustfs_endpoint):
-    """RustFS のバケットが存在しない場合に init が例外を送出することを確認する。"""
+    """RustFS のバケットが存在しない場合に init が S3Error(NoSuchBucket) を送出することを確認する。"""
+    duckdb_filename = f"{request.node.name}.db"
+    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
 
-    with pytest.raises(Exception):
-        duckdb_filename = f"{request.node.name}.db"
-        duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+    # テスト後に DuckDB のファイルを削除するためのクリーンアップ処理を追加
+    request.addfinalizer(
+        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
+    )
 
-        # テスト後に DuckDB のファイルを削除するためのクリーンアップ処理を追加
-        request.addfinalizer(
-            lambda: (
-                os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
-            )
-        )
+    # ingester/src/run.py の init 関数を呼び出すための引数を設定
+    args = Args(
+        db=duckdb_filepath,
+        s3_endpoint=rustfs_endpoint,
+        s3_access_key_id=ACCESS_KEY,
+        s3_secret_access_key=SECRET_KEY,
+        s3_use_ssl=False,
+        s3_region="ap-northeast-1",
+        # S3 バケット名規約に従いつつ、RustFS に存在しないバケット名を指定する
+        s3_bucket="non-existent-bucket",
+        s3_prefix=PREFIX,
+        initial_maximum_load=1000,
+    )
 
-        # ingester/src/run.py の init 関数を呼び出すための引数を設定
-        args = Args(
-            db=duckdb_filepath,
-            s3_endpoint=rustfs_endpoint,
-            s3_access_key_id=ACCESS_KEY,
-            s3_secret_access_key=SECRET_KEY,
-            s3_use_ssl=False,
-            s3_region="ap-northeast-1",
-            # 存在しないバケット名
-            s3_bucket="non_existent_bucket",
-            s3_prefix=PREFIX,
-            initial_maximum_load=1000,
-        )
-
+    with pytest.raises(S3Error) as exc_info:
         init(args)
+    assert exc_info.value.code == "NoSuchBucket"
 
 
 def test_init_skips_missing_session_webhook(
