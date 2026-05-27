@@ -26,7 +26,8 @@ DEFAULT_S3_PREFIX = "log"
 
 DEFAULT_S3_REGION = "ap-northeast-1"
 DEFAULT_RETENTION_PERIOD = 7
-# init 時に読み込むファイル数の上限
+# init 時に読み込むファイル数の上限。古すぎるデータを取り込まないために
+# ユーザーが指定する上限であり、超過した古い側オブジェクトは意図的に取り込まれない。
 DEFAULT_INITIAL_MAXIMUM_LOAD = 100
 # update 時に 1 回で取り込むファイル数の上限。停止後の復帰時に大量蓄積したログを
 # バッチ分割するために用いる。
@@ -129,17 +130,28 @@ def sync_logs(con, client, args, mode):
 def initialize_log_table(con, client, args, target):
     """対象テーブルを初回作成する。
 
-    S3 上のオブジェクト一覧を取得し、initial_maximum_load 件までを読み込んでテーブルを作成、
-    最新オブジェクトでカーソルを更新する。対象オブジェクトが無ければ何もしない。
+    list_objects は (last_modified, object_name) の降順 (新しい順) で並ぶため、先頭側
+    initial_maximum_load 件 = 新しい側 N 件のみを取り込んでテーブルを作成し、カーソルは
+    log_objects[0] (= 全体最新オブジェクト) に進める。対象オブジェクトが無ければ何もしない。
+
+    initial_maximum_load を超えるオブジェクトが S3 上に存在する場合、超過した古い側は
+    意図的に取り込まない。これは「古すぎるデータを取り込まない」ためにユーザーが指定する
+    上限であり、超過分は DB に取り込まれず S3 に残り続ける。カーソルを全体最新まで進める
+    ことで、以降の update では新たに到着したオブジェクトのみが取り込まれる。
+
+    insert_log_from_s3 は逆に「停止後の復帰時に大量蓄積したログを古い側からバッチで取り
+    込む」目的のため古い側 (末尾側) を取るが、init は新しい側 (先頭側) を取る。この非対称は
+    両関数の目的が異なるためで意図的なものである。
     """
     log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
     if len(log_objects) == 0:
         print(f"No log found for {target} in {args.s3_bucket}.")
         return
 
+    print(f"log_objects: {log_objects[: args.initial_maximum_load]}")
     log_urls = get_target_urls(args.s3_bucket, log_objects[: args.initial_maximum_load])
     create_log_table(con, target, log_urls)
-    # 先頭が最新
+    # 先頭が全体最新
     update_s3_object_table(con, target, log_objects[0])
 
 
@@ -463,6 +475,9 @@ def insert_log_from_s3(con, client, table_name, bucket, prefix, update_maximum_l
 
     # 長時間停止後に大量ファイルが蓄積したケースに備え、古い方からバッチで取り込む。
     # 降順ソートされているため、末尾側 update_maximum_load 件が古い順のバッチになる。
+    # update_maximum_load を超えた新しい側のオブジェクトは今回取り込まず、次回以降の
+    # update で残りを取得する。カーソルをバッチ内最新までしか進めないため、is_after_s3_cursor
+    # で次回 True と判定されて順次取り込まれる。
     if len(target_log_objects) > update_maximum_load:
         target_log_objects = target_log_objects[-update_maximum_load:]
 
@@ -581,13 +596,19 @@ def main():
     parser.add_argument(
         "--initial_maximum_load",
         default=DEFAULT_INITIAL_MAXIMUM_LOAD,
-        help="Initial maximum load",
+        help=(
+            "Maximum number of S3 objects to import in init. "
+            "Older objects beyond this limit are intentionally skipped."
+        ),
         type=positive_int,
     )
     parser.add_argument(
         "--update_maximum_load",
         default=DEFAULT_UPDATE_MAXIMUM_LOAD,
-        help="Update maximum load",
+        help=(
+            "Maximum number of S3 objects to import per update call. "
+            "Used to split a large backlog accumulated during downtime into batches."
+        ),
         type=positive_int,
     )
 
