@@ -262,7 +262,7 @@ def test_init(request, s3_client, rustfs_endpoint):
         initial_maximum_load=1000,
     )
 
-    # init関数を呼び出して初期化する
+    # init 関数を呼び出して初期化する
     init(args)
 
     # DB ファイルが存在することを確認する
@@ -324,7 +324,7 @@ def test_re_init(request, s3_client, rustfs_endpoint):
         initial_maximum_load=1000,
     )
 
-    # init関数を呼び出して初期化する
+    # init 関数を呼び出して初期化する
     init(args)
 
     # DB ファイルが存在することを確認する
@@ -410,7 +410,7 @@ def test_file_count_limit_for_init(request, s3_client, rustfs_endpoint):
         initial_maximum_load=initial_maximum_load,
     )
 
-    # init関数を呼び出して初期化する
+    # init 関数を呼び出して初期化する
     init(args)
 
     # DB ファイルが存在することを確認する
@@ -471,7 +471,7 @@ def test_update(request, s3_client, rustfs_endpoint):
         initial_maximum_load=1000,
     )
 
-    # init関数を呼び出して初期化する
+    # init 関数を呼び出して初期化する
     init(args)
 
     # DB ファイルが存在することを確認する
@@ -571,7 +571,7 @@ def test_all_delete(request, s3_client, rustfs_endpoint):
         initial_maximum_load=1000,
     )
 
-    # init関数を呼び出して初期化する
+    # init 関数を呼び出して初期化する
     init(args)
     # DB ファイルが存在することを確認する
     assert os.path.exists(duckdb_filepath)
@@ -639,7 +639,7 @@ def test_delete(request, s3_client, rustfs_endpoint):
         initial_maximum_load=1000,
     )
 
-    # init関数を呼び出して初期化する
+    # init 関数を呼び出して初期化する
     init(args)
     # DB ファイルが存在することを確認する
     assert os.path.exists(duckdb_filepath)
@@ -713,7 +713,7 @@ def test_delete_within_retention_period(request, s3_client, rustfs_endpoint):
         initial_maximum_load=1000,
     )
 
-    # init関数を呼び出して初期化する
+    # init 関数を呼び出して初期化する
     init(args)
     # DB ファイルが存在することを確認する
     assert os.path.exists(duckdb_filepath)
