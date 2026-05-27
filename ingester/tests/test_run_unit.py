@@ -335,3 +335,42 @@ def test_update_rejects_uninitialized_db(tmp_path):
     args = SimpleNamespace(db=str(db_path))
     with pytest.raises(ValueError, match="DB file is not initialized"):
         run.update(args)
+
+
+# is_broken_db_error のキーワード判定
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "Database file is corrupt",
+        "invalid database file",
+        "File is not a valid duckdb file",
+    ],
+)
+def test_is_broken_db_error_detects_known_patterns(message):
+    """BROKEN_DB_ERROR_PATTERNS の各パターンを含むメッセージが True 判定されることを確認する。"""
+    assert run.is_broken_db_error(Exception(message)) is True
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "Database file is CORRUPT",
+        "INVALID DATABASE file",
+        "File is NOT A VALID DUCKDB",
+    ],
+)
+def test_is_broken_db_error_is_case_insensitive(message):
+    """大文字を含むメッセージでもパターン検出されることを確認する。"""
+    assert run.is_broken_db_error(Exception(message)) is True
+
+
+def test_is_broken_db_error_returns_false_for_unrelated_message():
+    """破損とは無関係なエラーメッセージで False を返すことを確認する。"""
+    assert run.is_broken_db_error(Exception("Permission denied")) is False
+
+
+def test_is_broken_db_error_returns_false_for_empty_message():
+    """空のエラーメッセージで False を返すことを確認する。"""
+    assert run.is_broken_db_error(Exception("")) is False
