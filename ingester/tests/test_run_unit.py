@@ -374,3 +374,22 @@ def test_is_broken_db_error_returns_false_for_unrelated_message():
 def test_is_broken_db_error_returns_false_for_empty_message():
     """空のエラーメッセージで False を返すことを確認する。"""
     assert run.is_broken_db_error(Exception("")) is False
+
+
+# move_broken_db
+
+
+def test_move_broken_db_handles_db_without_wal(tmp_path):
+    """WAL ファイルが存在しない DB を退避できることを確認する。"""
+    db_path = tmp_path / "broken.db"
+    db_path.write_bytes(b"invalid db payload")
+
+    broken_db_path = run.move_broken_db(str(db_path))
+
+    # 元 DB が消えて、退避先が存在すること
+    assert not db_path.exists()
+    assert os.path.exists(broken_db_path)
+    # WAL は元から無いため、退避先 WAL も作られないこと
+    assert not os.path.exists(f"{broken_db_path}.wal")
+    # broken_db_path の命名規則 (元パス + ".broken." + timestamp) に従うこと
+    assert broken_db_path.startswith(f"{db_path}.broken.")
