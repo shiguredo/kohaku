@@ -97,6 +97,18 @@ def remove_bucket(s3_client: minio.Minio, bucket_name: str) -> None:
     s3_client.remove_bucket(bucket_name)
 
 
+def reset_bucket(s3_client: minio.Minio, bucket_name: str) -> None:
+    """テスト開始前に既存バケットを掃除してから作り直す。
+
+    セッションスコープの RustFS を複数 fixture / テストで共有しているため、前回テストの
+    後片付け (addfinalizer の remove_bucket) が落ちて残骸が残った場合に備え、必ず
+    バケットを空の状態から始められるようにする。
+    """
+    if s3_client.bucket_exists(bucket_name):
+        remove_bucket(s3_client, bucket_name)
+    s3_client.make_bucket(bucket_name)
+
+
 # rtc_stats の timestamp を period 日だけ過去にずらすヘルパー関数
 def update_timestamp_for_rtc_stats(
     con: duckdb.DuckDBPyConnection, obj: Sequence[Any], period: int
@@ -144,11 +156,7 @@ def s3_client(rustfs_endpoint: str) -> minio.Minio:
     )
     # RustFS が利用可能になるまで待機する
     wait_until(lambda: client.list_buckets() is not None)
-    # バケットの作成
-    found = client.bucket_exists(BUCKET)
-    # バケットは常に存在しない
-    assert found is False
-    client.make_bucket(BUCKET)
+    reset_bucket(client, BUCKET)
 
     now = datetime.datetime.now(datetime.timezone.utc)
     for root, dirs, filenames in os.walk(LOG_DIR):
@@ -189,11 +197,7 @@ def s3_client_without_session_webhook(rustfs_endpoint: str) -> minio.Minio:
     )
     # RustFS が利用可能になるまで待機する
     wait_until(lambda: client.list_buckets() is not None)
-    # バケットの作成
-    found = client.bucket_exists(BUCKET)
-    # バケットは常に存在しない
-    assert found is False
-    client.make_bucket(BUCKET)
+    reset_bucket(client, BUCKET)
 
     # rtc_stats のみアップロードし、session_webhook はアップロードしない
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -226,11 +230,7 @@ def s3_client_empty(rustfs_endpoint: str) -> minio.Minio:
     )
     # RustFS が利用可能になるまで待機する
     wait_until(lambda: client.list_buckets() is not None)
-    # バケットの作成
-    found = client.bucket_exists(BUCKET)
-    # バケットは常に存在しない
-    assert found is False
-    client.make_bucket(BUCKET)
+    reset_bucket(client, BUCKET)
     # オブジェクトは意図的に 1 件も置かない
     return client
 
