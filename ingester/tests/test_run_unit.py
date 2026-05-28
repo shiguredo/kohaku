@@ -393,3 +393,32 @@ def test_move_broken_db_handles_db_without_wal(tmp_path):
     assert not os.path.exists(f"{broken_db_path}.wal")
     # broken_db_path の命名規則 (元パス + ".broken." + timestamp) に従うこと
     assert broken_db_path.startswith(f"{db_path}.broken.")
+
+
+def test_move_broken_db_does_not_overwrite_when_called_in_quick_succession(tmp_path):
+    """短時間に複数回呼び出されても退避先が衝突せず、過去の破損ファイルを失わないことを確認する。
+
+    crash loop 等で同じ DB パスに対して連続して破損退避が走るケースで、退避先
+    (.broken.<timestamp>) が衝突して shutil.move による上書きで過去の破損ファイルが
+    消えないことを担保する。タイムスタンプにマイクロ秒を含める実装に依存する。
+    """
+    db_path = tmp_path / "broken.db"
+    wal_path = tmp_path / "broken.db.wal"
+
+    # 1 回目の破損退避
+    db_path.write_bytes(b"invalid db payload 1")
+    wal_path.write_bytes(b"wal payload 1")
+    broken_db_path_1 = run.move_broken_db(str(db_path))
+
+    # 同名 DB が再生成された直後に再び破損退避されるシナリオを再現する
+    db_path.write_bytes(b"invalid db payload 2")
+    wal_path.write_bytes(b"wal payload 2")
+    broken_db_path_2 = run.move_broken_db(str(db_path))
+
+    # 退避先パスが一意であること
+    assert broken_db_path_1 != broken_db_path_2
+    # 過去の破損 DB と WAL が上書きされず両方残っていること
+    assert os.path.exists(broken_db_path_1)
+    assert os.path.exists(broken_db_path_2)
+    assert os.path.exists(f"{broken_db_path_1}.wal")
+    assert os.path.exists(f"{broken_db_path_2}.wal")

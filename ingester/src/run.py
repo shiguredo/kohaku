@@ -225,9 +225,13 @@ def is_broken_db_error(error):
 
 def move_broken_db(db_path):
     """
-    DB ファイルが破損していると判断した場合、DB ファイルをリネームする
+    DB ファイルが破損していると判断した場合、DB ファイルをリネームする。
+
+    タイムスタンプにはマイクロ秒まで含める。crash loop 等で短時間に複数回 init が走り、
+    同じパスの DB を連続して破損退避するケースで、退避先 (.broken.<ts>) が衝突して
+    shutil.move による上書きでフォレンジック情報を失うことを防ぐ。
     """
-    timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
+    timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S%f")
     broken_db_path = f"{db_path}.broken.{timestamp}"
     shutil.move(db_path, broken_db_path)
 
