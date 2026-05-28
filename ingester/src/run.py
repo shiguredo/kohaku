@@ -401,7 +401,7 @@ def create_log_table(con, table_name, target_urls):
 
 def update(args):
     if not os.path.exists(args.db):
-        raise Exception("DB-FILE-NOT-FOUND")
+        raise FileNotFoundError(f"DB file not found: {args.db}")
 
     # s3_objects テーブル不在の DB に対しては update を拒否する。init が未実行のまま
     # update を呼ぶと select_s3_object が CatalogException で落ちるため、明示的に弾く。
@@ -431,7 +431,7 @@ def update(args):
 
 def delete(args):
     if not os.path.exists(args.db):
-        raise Exception("DB-FILE-NOT-FOUND")
+        raise FileNotFoundError(f"DB file not found: {args.db}")
 
     copy_file = ".".join([args.db, "copy"])
 
