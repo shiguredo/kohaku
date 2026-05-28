@@ -634,31 +634,27 @@ def main():
     db = args.db
 
     if args.func == init:
-        # init は DB ファイルがない、または、DB にデータが入っていない場合のみ実行する想定のため、ファイル更新比較処理の対象外
-        try:
-            args.func(args)
-        except Exception as error:
-            handle_storage_error(error, args.s3_bucket)
+        # init は DB ファイルが無い状態からの新規作成も扱うため、初期 mtime は存在する場合のみ取得する
+        initial_mtime = os.stat(db).st_mtime if os.path.exists(db) else None
     else:
-        # DB ファイルがない場合は終了する
+        # update / delete は DB ファイルが存在することが前提
         if not os.path.exists(db):
             parser.print_usage()
             sys.exit(1)
+        initial_mtime = os.stat(db).st_mtime
 
-        # update / delete は DB ファイルが書き換わったかを mtime で判定し、変化が無ければ
-        # 末尾の .readonly 生成をスキップする
-        statinfo = os.stat(db)
-        mtime = statinfo.st_mtime
+    try:
+        args.func(args)
+    except Exception as error:
+        handle_storage_error(error, args.s3_bucket)
 
-        try:
-            args.func(args)
-        except Exception as error:
-            handle_storage_error(error, args.s3_bucket)
-
-        statinfo = os.stat(db)
-        if mtime == statinfo.st_mtime:
-            # DB ファイルが更新されていない場合は終了する
-            return
+    # DB ファイルが書き換わったかを mtime で判定し、変化が無ければ .readonly 生成をスキップする。
+    # init で何もしなかったケース (既に初期化済み) は initial_mtime と一致してスキップされる。
+    # init で DB を新規作成したケースは initial_mtime=None と新 mtime が一致せず readonly を生成する。
+    if not os.path.exists(db):
+        return
+    if initial_mtime == os.stat(db).st_mtime:
+        return
 
     create_readonly_copy(args.db)
 
