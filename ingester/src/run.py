@@ -535,10 +535,11 @@ def delete_log_by_timestamp(con, table_name, timestamp):
         print(f"Table {table_name} does not exist.")
         return 0
 
-    print(f"DELETE FROM {table_name} WHERE timestamp < '{timestamp}'")
     con.execute(f"DELETE FROM {table_name} WHERE timestamp < ?", (timestamp,))
     result = con.fetchone()
-    return result[0]
+    deleted_rows = result[0]
+    print(f"Deleted {deleted_rows} rows from {table_name}.")
+    return deleted_rows
 
 
 def exit_with_stderr(message):
