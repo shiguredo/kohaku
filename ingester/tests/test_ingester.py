@@ -55,7 +55,7 @@ class Args:
         # init サブコマンド用: 一度に取り込む S3 オブジェクト件数の上限
         initial_maximum_load: int | None = None,
         # update サブコマンド用: 一度に取り込む S3 オブジェクト件数の上限
-        update_maximum_load: int = 1000,
+        update_maximum_load: int | None = None,
     ) -> None:
         self.db = db
         self.s3_endpoint = s3_endpoint
@@ -470,6 +470,7 @@ def test_update(request, s3_client, rustfs_endpoint):
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
+        update_maximum_load=1000,
     )
 
     # init 関数を呼び出して初期化する
@@ -874,6 +875,7 @@ def test_init_and_update_on_empty_bucket(request, s3_client_empty, rustfs_endpoi
         s3_bucket=BUCKET,
         s3_prefix=PREFIX,
         initial_maximum_load=1000,
+        update_maximum_load=1000,
     )
 
     # 空バケットでも init は完走し、DB ファイルが作成される
