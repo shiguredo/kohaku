@@ -12,12 +12,16 @@ case "${SUBCOMMAND}" in
             --s3_secret_access_key "${AWS_SECRET_ACCESS_KEY}" \
             --s3_bucket "${S3_BUCKET}" \
             --s3_prefix "${S3_PREFIX}" \
-            --s3_region "${S3_REGION:-ap-northeast-1}" \
-            --initial_maximum_load "${INITIAL_MAXIMUM_LOAD:-100}"
+            --s3_region "${S3_REGION:-ap-northeast-1}"
+
+        # 未設定なら引数自体を渡さず run.py の argparse デフォルトに委ねる
+        if [ -n "${INITIAL_MAXIMUM_LOAD:-}" ]; then
+            set -- "$@" --initial_maximum_load "${INITIAL_MAXIMUM_LOAD}"
+        fi
 
         # update_maximum_load は update でのみ参照されるため、update の時だけ渡す
-        if [ "${SUBCOMMAND}" = "update" ]; then
-            set -- "$@" --update_maximum_load "${UPDATE_MAXIMUM_LOAD:-100}"
+        if [ "${SUBCOMMAND}" = "update" ] && [ -n "${UPDATE_MAXIMUM_LOAD:-}" ]; then
+            set -- "$@" --update_maximum_load "${UPDATE_MAXIMUM_LOAD}"
         fi
 
         # --s3_use_ssl は action="store_true" のため、true の場合のみフラグを付与する
