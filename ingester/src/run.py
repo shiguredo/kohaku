@@ -580,8 +580,12 @@ def create_readonly_copy(db_path):
     shutil.move(tmp_file, readonly_file)
 
 
-def handle_storage_error(error, bucket):
-    """main からのトップレベル例外を分類して、ユーザー向けに整形する。
+def handle_cli_error(error, bucket):
+    """CLI トップレベル例外ハンドラ。main から呼び出された関数の例外を分類して整形する。
+
+    ストレージ系の S3Error だけでなく、require_s3_credentials などの入力バリデーション
+    失敗で送出される ValueError も併せて受けるため、命名は storage 限定にせず CLI 全般の
+    エラーハンドラとして扱う。
 
     S3Error と ValueError は exit_with_stderr で終了し、それ以外は呼び出し元へ再送出する。
     bucket は NoSuchBucket メッセージ用の表示値として受け取る。
@@ -662,7 +666,7 @@ def main():
     try:
         args.func(args)
     except Exception as error:
-        handle_storage_error(error, args.s3_bucket)
+        handle_cli_error(error, args.s3_bucket)
 
     # DB ファイルが書き換わったかを mtime で判定し、変化が無ければ .readonly 生成をスキップする。
     # init で何もしなかったケース (既に初期化済み) は initial_mtime と一致してスキップされる。
