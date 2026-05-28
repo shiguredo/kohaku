@@ -166,6 +166,10 @@ def sync_log_for_init(con, client, args, target):
 def sync_log_for_update(con, client, args, target):
     cursor = select_s3_object(con, target)
     if cursor is None:
+        # 対象 log_type が初登場するケース (init 時点で該当ターゲットの S3 オブジェクトが
+        # 1 件も無く、s3_objects にも行が作られなかった状況であとから登場した場合)。
+        # update 経路でも新規初期化として initialize_log_table を呼ぶ。取り込み件数の上限は
+        # initialize_log_table の仕様通り initial_maximum_load を用いる。
         initialize_log_table(con, client, args, target)
     else:
         # テーブルが存在しているのでログを追加する
