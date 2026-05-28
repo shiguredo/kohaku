@@ -88,7 +88,9 @@ def run_fluent_bit_and_wait(
                 )
         except WaitTimeoutError as error:
             fluent_bit_logs = decode_logs(fluent_bit.get_logs())
-            pytest.fail(f"{error}\n\nfluent-bit logs:\n{fluent_bit_logs}")
+            pytest.fail(
+                f"fluent-bit の待機に失敗しました: {error}\n\nfluent-bit のログ:\n{fluent_bit_logs}"
+            )
 
 
 def run_ingester_cli(
@@ -202,7 +204,7 @@ def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path):
             )
 
             run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
-            assert run.returncode == 0, run.stderr
+            assert run.returncode == 0, f"init が失敗しました: {run.stderr}"
             assert duckdb_path.exists()
 
             with duckdb.connect(str(duckdb_path)) as con:
@@ -268,7 +270,7 @@ def test_runpy_init_skips_missing_target_without_invalid_input_exception(tmp_pat
 
             run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
             # 欠損ターゲットがあっても init 全体は成功すること
-            assert run.returncode == 0, run.stderr
+            assert run.returncode == 0, f"init が失敗しました: {run.stderr}"
             # 旧挙動で出ていた InvalidInputException が消えていること
             assert "InvalidInputException" not in run.stdout
             assert "InvalidInputException" not in run.stderr
@@ -290,7 +292,9 @@ def test_runpy_init_skips_missing_target_without_invalid_input_exception(tmp_pat
 
             # 未作成ターゲット (session_webhook) が欠損していても update 全体が成功すること
             update_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
-            assert update_run.returncode == 0, update_run.stderr
+            assert update_run.returncode == 0, (
+                f"update が失敗しました: {update_run.stderr}"
+            )
 
             with duckdb.connect(str(duckdb_path)) as con:
                 rtc_stats_count_after_update = fetch_scalar(
@@ -354,7 +358,7 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
             )
 
             init_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
-            assert init_run.returncode == 0, init_run.stderr
+            assert init_run.returncode == 0, f"init が失敗しました: {init_run.stderr}"
 
             with duckdb.connect(str(duckdb_path)) as con:
                 before_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
@@ -374,7 +378,9 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
             )
 
             update_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
-            assert update_run.returncode == 0, update_run.stderr
+            assert update_run.returncode == 0, (
+                f"update が失敗しました: {update_run.stderr}"
+            )
 
             with duckdb.connect(str(duckdb_path)) as con:
                 after_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
@@ -390,7 +396,9 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
             update_run_again = run_ingester_cli(
                 ingester_dir, duckdb_path, endpoint, "update"
             )
-            assert update_run_again.returncode == 0, update_run_again.stderr
+            assert update_run_again.returncode == 0, (
+                f"update (再実行) が失敗しました: {update_run_again.stderr}"
+            )
 
             with duckdb.connect(str(duckdb_path)) as con:
                 final_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
