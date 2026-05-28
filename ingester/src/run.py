@@ -244,7 +244,13 @@ def move_broken_db(db_path):
 
 def prepare_db_for_init(db_path):
     """
-    DB ファイルが存在する場合に、DB ファイルが破損していないかを確認する
+    DB ファイルが存在する場合に、DB ファイルが破損していないかを確認する。
+
+    DB が正常な状態であれば何もしない。破損と判定された場合のみ .broken.<timestamp>
+    に退避する。それ以外の接続エラー (ロック競合、権限不足等) は呼び出し元へ伝播
+    させる。握りつぶして return すると直後の is_initialized_db が同じパスへ再
+    connect して同じ例外を再発させ、ユーザーに二重出力を見せてしまうため、明示的に
+    raise する。
     """
 
     if not os.path.exists(db_path):
@@ -258,14 +264,11 @@ def prepare_db_for_init(db_path):
         duckdb.InternalException,
         duckdb.FatalException,
     ) as error:
-        print(f"Error occurred while connecting to DB: {error}")
-        if is_broken_db_error(error):
-            broken_db_path = move_broken_db(db_path)
-            print(f"Detected broken DB file. moved to {broken_db_path}")
-            return
-    except Exception as error:
-        print(f"Unexpected error occurred while connecting to DB: {error}")
-        raise
+        if not is_broken_db_error(error):
+            # 破損以外のエラー (ロック競合、権限不足等) は退避せず呼び出し元へ伝播させる
+            raise
+        broken_db_path = move_broken_db(db_path)
+        print(f"Detected broken DB file. moved to {broken_db_path}")
 
 
 def is_initialized_db(db_path):

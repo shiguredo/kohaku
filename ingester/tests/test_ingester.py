@@ -1120,8 +1120,13 @@ def test_update_maximum_load_one_takes_single_object_per_call(
     assert fetch_rtc_stats_count() == initial_count + 3
 
 
-def test_prepare_db_for_init_does_not_rename_on_permission_denied(tmp_path):
-    """Permission denied の場合は破損 DB ではないため、リネームしないことを確認する"""
+def test_prepare_db_for_init_raises_on_permission_denied(tmp_path):
+    """Permission denied のような破損ではない接続エラーは握りつぶさず再 raise することを確認する。
+
+    握りつぶして return すると直後の is_initialized_db が同じパスへ再 connect して
+    同じ例外を再発させ、ユーザーに二重出力を見せてしまうため、明示的に raise させる。
+    破損ではないので退避ファイルも作られないことを併せて確認する。
+    """
     db_path = tmp_path / "permission.db"
     wal_path = tmp_path / "permission.db.wal"
     with duckdb.connect(str(db_path)) as con:
@@ -1130,10 +1135,13 @@ def test_prepare_db_for_init_does_not_rename_on_permission_denied(tmp_path):
     os.chmod(db_path, 0)
 
     try:
-        prepare_db_for_init(str(db_path))
+        with pytest.raises(
+            (duckdb.IOException, duckdb.InternalException, duckdb.FatalException)
+        ):
+            prepare_db_for_init(str(db_path))
 
         renamed_files = list(tmp_path.glob("permission.db.broken.*"))
-        # Permission denied は破損 DB ではないため、リネームされないことを確認する
+        # Permission denied は破損 DB ではないため、退避ファイルは作られない
         assert len(renamed_files) == 0
         assert db_path.exists()
         assert wal_path.exists()
