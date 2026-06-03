@@ -392,9 +392,11 @@ def s3_setup(
 
 
 def create_log_table(con, table_name, target_urls):
-    # s3://log/connection/2021/06/01/a.gz, s3://log/connection/2021/06/02/b.gz, ... のようなパスを想定
-    # テーブル作成時は全てのファイルを読み込む
-    # TODO: 指定した時間以降にするかは別途検討する
+    """指定された S3 オブジェクト URL から DuckDB テーブルを新規作成する。
+
+    target_urls の JSON 内容を読み込み、DUCKDB_COLUMNS で定義したスキーマでテーブル化する。
+    既にテーブルが存在する場合は何もしない。LOG_TARGETS 外のテーブル名は ValueError で弾く。
+    """
     duckdb_columns = load_columns()
     if table_name not in duckdb_columns:
         raise ValueError(
