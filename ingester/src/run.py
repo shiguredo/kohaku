@@ -96,7 +96,6 @@ def require_s3_credentials(args):
 
 
 def init(args):
-    print("init")
     prepare_db_for_init(args.db)
     if is_initialized_db(args.db):
         return
@@ -160,7 +159,6 @@ def initialize_log_table(con, client, args, target):
         print(f"No log found for {target} in {args.s3_bucket}.")
         return
 
-    print(f"log_objects: {log_objects[: args.initial_maximum_load]}")
     log_urls = get_target_urls(args.s3_bucket, log_objects[: args.initial_maximum_load])
     create_log_table(con, target, log_urls)
     # 先頭が全体最新
@@ -409,7 +407,7 @@ def create_log_table(con, table_name, target_urls):
         return
 
     # テーブルを作成する
-    print(target_urls)
+    print(f"Creating table {table_name} from {len(target_urls)} object(s).")
     columns = duckdb_columns[table_name]
     rel = con.read_json(target_urls, union_by_name=True, columns=columns)
     rel.create(table_name)
