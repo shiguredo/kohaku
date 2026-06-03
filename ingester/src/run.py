@@ -583,19 +583,20 @@ def create_readonly_copy(db_path):
 def handle_cli_error(error, bucket):
     """CLI トップレベル例外ハンドラ。main から呼び出された関数の例外を分類して整形する。
 
-    ストレージ系の S3Error だけでなく、require_s3_credentials などの入力バリデーション
-    失敗で送出される ValueError も併せて受けるため、命名は storage 限定にせず CLI 全般の
-    エラーハンドラとして扱う。
+    ストレージ系の S3Error だけでなく、DB ファイル不在の FileNotFoundError や
+    require_s3_credentials などの入力バリデーション失敗で送出される ValueError も
+    併せて受けるため、命名は storage 限定にせず CLI 全般のエラーハンドラとして扱う。
 
-    S3Error と ValueError は exit_with_stderr で終了し、それ以外は呼び出し元へ再送出する。
+    既知の例外は exit_with_stderr で終了し、それ以外は呼び出し元へ再送出する。
     bucket は NoSuchBucket メッセージ用の表示値として受け取る。
     """
     if isinstance(error, S3Error):
         if error.code == "NoSuchBucket":
             exit_with_stderr(f"S3 bucket not found: {bucket}")
         exit_with_stderr(f"S3 error occurred (code={error.code}): {error.message}")
-    if isinstance(error, ValueError):
-        # require_s3_credentials などの入力バリデーション失敗は、トレースバックなしで原因のみ表示して終了する
+    if isinstance(error, (FileNotFoundError, ValueError)):
+        # DB ファイル不在 (FileNotFoundError) や require_s3_credentials などの入力
+        # バリデーション失敗 (ValueError) は、トレースバックなしで原因のみ表示して終了する
         exit_with_stderr(str(error))
     raise error
 

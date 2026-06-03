@@ -7,6 +7,8 @@ from types import SimpleNamespace
 
 import duckdb
 import pytest
+import urllib3
+from minio.error import S3Error
 
 import run
 
@@ -422,3 +424,83 @@ def test_move_broken_db_does_not_overwrite_when_called_in_quick_succession(tmp_p
     assert os.path.exists(broken_db_path_2)
     assert os.path.exists(f"{broken_db_path_1}.wal")
     assert os.path.exists(f"{broken_db_path_2}.wal")
+
+
+# exit_with_stderr
+
+
+def test_exit_with_stderr_writes_message_to_stderr_and_exits_with_code_1(capsys):
+    """exit_with_stderr がメッセージを stderr に書き、exit code 1 で終了することを確認する。"""
+    with pytest.raises(SystemExit) as exc_info:
+        run.exit_with_stderr("failure message")
+    assert exc_info.value.code == 1
+    # stderr を取得する
+    captured = capsys.readouterr()
+    assert captured.err.strip() == "failure message"
+
+
+# handle_cli_error
+
+
+def _make_s3_error(code: str, message: str = "boom") -> S3Error:
+    """テスト用の最小限の S3Error を生成する。"""
+    return S3Error(
+        code=code,
+        message=message,
+        resource="/test",
+        request_id="req-id",
+        host_id="host-id",
+        response=urllib3.HTTPResponse(),
+        bucket_name="test-bucket",
+    )
+
+
+def test_handle_cli_error_exits_for_s3_no_such_bucket(capsys):
+    """S3Error(NoSuchBucket) のとき bucket 名を含むメッセージで exit code 1 終了することを確認する。"""
+    error = _make_s3_error("NoSuchBucket")
+    with pytest.raises(SystemExit) as exc_info:
+        run.handle_cli_error(error, "my-bucket")
+    assert exc_info.value.code == 1
+    # stderr を取得する
+    captured = capsys.readouterr()
+    assert "S3 bucket not found: my-bucket" in captured.err
+
+
+def test_handle_cli_error_exits_for_other_s3_error(capsys):
+    """S3Error(NoSuchBucket 以外) のとき code と message を含むメッセージで exit code 1 終了することを確認する。"""
+    error = _make_s3_error("AccessDenied", message="access denied")
+    with pytest.raises(SystemExit) as exc_info:
+        run.handle_cli_error(error, "my-bucket")
+    assert exc_info.value.code == 1
+    # stderr を取得する
+    captured = capsys.readouterr()
+    assert "S3 error occurred (code=AccessDenied): access denied" in captured.err
+
+
+def test_handle_cli_error_exits_for_file_not_found_error(capsys):
+    """FileNotFoundError のとき str(error) を stderr に書いて exit code 1 終了することを確認する。"""
+    error = FileNotFoundError("DB file not found: /tmp/missing.db")
+    with pytest.raises(SystemExit) as exc_info:
+        run.handle_cli_error(error, "my-bucket")
+    assert exc_info.value.code == 1
+    # stderr を取得する
+    captured = capsys.readouterr()
+    assert "DB file not found: /tmp/missing.db" in captured.err
+
+
+def test_handle_cli_error_exits_for_value_error(capsys):
+    """ValueError のとき str(error) を stderr に書いて exit code 1 終了することを確認する。"""
+    error = ValueError("invalid input")
+    with pytest.raises(SystemExit) as exc_info:
+        run.handle_cli_error(error, "my-bucket")
+    assert exc_info.value.code == 1
+    # stderr を取得する
+    captured = capsys.readouterr()
+    assert "invalid input" in captured.err
+
+
+def test_handle_cli_error_reraises_unknown_error():
+    """未知のエラータイプはそのまま再送出することを確認する。"""
+    error = RuntimeError("unexpected")
+    with pytest.raises(RuntimeError, match="unexpected"):
+        run.handle_cli_error(error, "my-bucket")
