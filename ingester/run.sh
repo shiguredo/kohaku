@@ -2,6 +2,17 @@
 
 set -euo pipefail
 
+# 必須環境変数を事前検証する。compose.yml の env や systemd EnvironmentFile の編集忘れに
+# よる unbound variable をスクリプト冒頭で一度に特定できるようにする。
+: "${DUCKDB_DB_PATH:?DUCKDB_DB_PATH is required}"
+: "${S3_ENDPOINT:?S3_ENDPOINT is required}"
+: "${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID is required}"
+: "${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY is required}"
+: "${S3_BUCKET:?S3_BUCKET is required}"
+: "${S3_PREFIX:?S3_PREFIX is required}"
+: "${RETENTION_PERIOD:?RETENTION_PERIOD is required}"
+: "${UPDATE_INTERVAL:?UPDATE_INTERVAL is required}"
+
 # grafana グループ (GID=0) と DB ファイルを共有するためグループ書き込みを許可する
 umask 0002
 

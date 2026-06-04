@@ -3,8 +3,19 @@ set -eu
 
 SUBCOMMAND="${1:-}"
 
+# サブコマンド共通で DB パスは必須
+: "${DUCKDB_DB_PATH:?DUCKDB_DB_PATH is required}"
+
 case "${SUBCOMMAND}" in
     init|update)
+        # init / update では S3 接続に関わる環境変数を事前検証する。systemd EnvironmentFile
+        # の編集忘れによる unbound variable をここで一度に特定できるようにする。
+        : "${S3_ENDPOINT:?S3_ENDPOINT is required}"
+        : "${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID is required}"
+        : "${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY is required}"
+        : "${S3_BUCKET:?S3_BUCKET is required}"
+        : "${S3_PREFIX:?S3_PREFIX is required}"
+
         set -- \
             --db "${DUCKDB_DB_PATH}" \
             --s3_endpoint "${S3_ENDPOINT}" \
@@ -31,6 +42,7 @@ case "${SUBCOMMAND}" in
         ;;
     delete)
         # delete は S3 接続を行わないため S3 オプションは不要
+        : "${RETENTION_PERIOD:?RETENTION_PERIOD is required}"
         set -- \
             --db "${DUCKDB_DB_PATH}" \
             --retention_period "${RETENTION_PERIOD}"
