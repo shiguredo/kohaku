@@ -201,6 +201,11 @@ def is_after_s3_cursor(obj, last_modified, object_name):
     MinIO SDK の Object.last_modified と DuckDB の TIMESTAMPTZ カラムはどちらも
     タイムゾーン情報を含む datetime を返すため、タイムゾーン情報を含まない datetime が
     渡るのは設計違反として明示的に拒否する。
+
+    MinIO SDK の last_modified と DuckDB の TIMESTAMPTZ はどちらも現状マイクロ秒精度のため
+    精度差による誤判定は起きないが、将来 DuckDB や MinIO SDK の精度が変わると、同一オブジェクト
+    がカーソルより僅かに古いと判定されて重複取り込みが起きる可能性がある。実害が確認されたら
+    比較前に明示的に切り捨てる等の対策を検討する。
     """
     if (obj.last_modified.tzinfo is None) or (last_modified.tzinfo is None):
         raise ValueError(
