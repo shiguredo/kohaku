@@ -312,19 +312,19 @@ def is_initialized_db(db_path):
     return True
 
 
+_UPSERT_S3_OBJECT_SQL = """
+MERGE INTO s3_objects AS target
+USING (SELECT ? AS type, ? AS object_name, ? AS last_modified) AS source
+ON target.type = source.type
+WHEN MATCHED THEN
+    UPDATE SET object_name = source.object_name, last_modified = source.last_modified
+WHEN NOT MATCHED THEN
+    INSERT (type, object_name, last_modified) VALUES (source.type, source.object_name, source.last_modified);
+"""
+
+
 def update_s3_object_table(con, log_type, obj):
-    con.execute(
-        """
-        MERGE INTO s3_objects AS target
-        USING (SELECT ? AS type, ? AS object_name, ? AS last_modified) AS source
-        ON target.type = source.type
-        WHEN MATCHED THEN
-            UPDATE SET object_name = source.object_name, last_modified = source.last_modified
-        WHEN NOT MATCHED THEN
-            INSERT (type, object_name, last_modified) VALUES (source.type, source.object_name, source.last_modified);
-    """,
-        (log_type, obj.object_name, obj.last_modified),
-    )
+    con.execute(_UPSERT_S3_OBJECT_SQL, (log_type, obj.object_name, obj.last_modified))
 
 
 def list_objects(client, bucket, prefix):
