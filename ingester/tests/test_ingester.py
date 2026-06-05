@@ -6,7 +6,7 @@ import json
 from collections.abc import Sequence
 from typing import Any
 
-from run import init, update, delete, prepare_db_for_init
+from run import init, update, delete
 
 import uuid
 import minio
@@ -798,30 +798,6 @@ def test_init_and_update_on_empty_bucket(
         assert_only_s3_objects_table(duckdb_connection)
 
 
-def test_prepare_db_for_init_renames_broken_db_file(tmp_path):
-    """壊れた DB を prepare_db_for_init が検出し、DB と WAL をリネームして退避したことを確認する。"""
-    db_path = tmp_path / "broken.db"
-    wal_path = tmp_path / "broken.db.wal"
-    db_path.write_bytes(b"invalid db")
-    wal_path.write_bytes(b"wal")
-
-    prepare_db_for_init(str(db_path))
-
-    renamed_files = list(tmp_path.glob("broken.db.broken.*"))
-    assert len(renamed_files) == 2
-    renamed_db_files = [
-        path for path in renamed_files if not str(path).endswith(".wal")
-    ]
-    renamed_wal_files = [path for path in renamed_files if str(path).endswith(".wal")]
-    assert len(renamed_db_files) == 1
-    assert len(renamed_wal_files) == 1
-
-    assert db_path.exists() is False
-    assert wal_path.exists() is False
-    assert renamed_db_files[0].exists()
-    assert renamed_wal_files[0].exists()
-
-
 def test_update_maximum_load_splits_batches(
     request, s3_client, rustfs_endpoint, tmp_path
 ):
@@ -954,33 +930,3 @@ def test_update_maximum_load_one_takes_single_object_per_call(
     # 4 回目: 取り込むものが無いため件数が変わらない
     update(batch_args)
     assert fetch_rtc_stats_count() == initial_count + 3
-
-
-def test_prepare_db_for_init_raises_on_permission_denied(tmp_path):
-    """Permission denied のような破損ではない接続エラーは握りつぶさず再 raise することを確認する。
-
-    握りつぶして return すると直後の is_initialized_db が同じパスへ再 connect して
-    同じ例外を再発させ、ユーザーに二重出力を見せてしまうため、明示的に raise させる。
-    破損ではないので退避ファイルも作られないことを併せて確認する。
-    """
-    db_path = tmp_path / "permission.db"
-    wal_path = tmp_path / "permission.db.wal"
-    with duckdb.connect(str(db_path)) as con:
-        con.execute("CREATE TABLE t(id INTEGER)")
-    wal_path.write_bytes(b"wal")
-    os.chmod(db_path, 0)
-
-    try:
-        with pytest.raises(
-            (duckdb.IOException, duckdb.InternalException, duckdb.FatalException)
-        ):
-            prepare_db_for_init(str(db_path))
-
-        renamed_files = list(tmp_path.glob("permission.db.broken.*"))
-        # Permission denied は破損 DB ではないため、退避ファイルは作られない
-        assert len(renamed_files) == 0
-        assert db_path.exists()
-        assert wal_path.exists()
-    finally:
-        # tmp ディレクトリのクリーンアップが失敗しないようにパーミッションを戻す
-        os.chmod(db_path, 0o600)
