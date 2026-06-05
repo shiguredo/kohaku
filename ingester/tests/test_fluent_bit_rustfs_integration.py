@@ -30,11 +30,12 @@ def count_objects(client: minio.Minio, prefix: str) -> int:
     return len(list(client.list_objects(BUCKET, prefix=prefix, recursive=True)))
 
 
-def decode_logs(logs: Any) -> str:
-    """ログ出力を文字列へ正規化する。bytes は UTF-8 で復号する。"""
-    if isinstance(logs, bytes):
-        return logs.decode("utf-8", errors="replace")
-    return str(logs)
+def decode_logs(logs: tuple[bytes, bytes]) -> str:
+    """fluent-bit コンテナの (stdout, stderr) を UTF-8 で復号して結合する。"""
+    stdout, stderr = logs
+    return stdout.decode("utf-8", errors="replace") + stderr.decode(
+        "utf-8", errors="replace"
+    )
 
 
 def create_test_log_dir(
