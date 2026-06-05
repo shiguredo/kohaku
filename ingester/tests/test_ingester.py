@@ -558,11 +558,14 @@ def test_all_delete(request, s3_client, rustfs_endpoint, tmp_path):
         for _, obj in enumerate(objects):
             update_timestamp_for_rtc_stats(duckdb_connection, obj, 2)
 
-        # delete 関数を呼び出すための引数を設定
-        # retention_period を 1 日に設定して、2 日前のデータが削除されることを確認する
-        args = make_args(duckdb_filepath, retention_period=1)
-        # delete 関数を呼び出して、データが削除されることを確認する
-        delete(args)
+    # delete 関数を呼び出すための引数を設定
+    # retention_period を 1 日に設定して、2 日前のデータが削除されることを確認する
+    # delete は内部で同じファイルを ATTACH するため、duckdb_connection を閉じてから呼び出す
+    args = make_args(duckdb_filepath, retention_period=1)
+    delete(args)
+
+    # delete 後のデータ件数を確認する
+    with duckdb.connect(duckdb_filepath) as duckdb_connection:
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
         assert result is not None
@@ -613,12 +616,14 @@ def test_delete(request, s3_client, rustfs_endpoint, tmp_path):
                 # 奇数番目のオブジェクトは今の日時に更新
                 update_timestamp_for_rtc_stats(duckdb_connection, obj, 0)
 
-        # delete 関数を呼び出すための引数を設定
-        # retention_period を 1 日に設定して、2 日前のデータが削除されることを確認する
-        # delete 関数を呼び出すための引数を設定
-        args = make_args(duckdb_filepath, retention_period=1)
-        # delete 関数を呼び出して、データが削除されることを確認する
-        delete(args)
+    # delete 関数を呼び出すための引数を設定
+    # retention_period を 1 日に設定して、2 日前のデータが削除されることを確認する
+    # delete は内部で同じファイルを ATTACH するため、duckdb_connection を閉じてから呼び出す
+    args = make_args(duckdb_filepath, retention_period=1)
+    delete(args)
+
+    # delete 後のデータ件数を確認する
+    with duckdb.connect(duckdb_filepath) as duckdb_connection:
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
         assert result is not None
@@ -669,12 +674,14 @@ def test_delete_within_retention_period(request, s3_client, rustfs_endpoint, tmp
                 # 奇数番目のオブジェクトは今の日時に更新
                 update_timestamp_for_rtc_stats(duckdb_connection, obj, 0)
 
-        # delete 関数を呼び出すための引数を設定
-        # retention_period を 3 日に設定して、対象のオブジェクトがないため、データが削除されないことを確認する
-        # delete 関数を呼び出すための引数を設定
-        args = make_args(duckdb_filepath, retention_period=3)
-        # delete 関数を呼び出して、データが削除されることを確認する
-        delete(args)
+    # delete 関数を呼び出すための引数を設定
+    # retention_period を 3 日に設定して、対象のオブジェクトがないため、データが削除されないことを確認する
+    # delete は内部で同じファイルを ATTACH するため、duckdb_connection を閉じてから呼び出す
+    args = make_args(duckdb_filepath, retention_period=3)
+    delete(args)
+
+    # delete 後のデータ件数を確認する
+    with duckdb.connect(duckdb_filepath) as duckdb_connection:
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
         assert result is not None
