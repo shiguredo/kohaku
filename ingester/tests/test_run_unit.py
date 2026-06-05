@@ -575,3 +575,58 @@ def test_prepare_db_for_init_raises_on_permission_denied(tmp_path):
     finally:
         # tmp ディレクトリのクリーンアップが失敗しないようにパーミッションを戻す
         os.chmod(db_path, 0o600)
+
+
+# check_db_not_broken
+
+
+def test_check_db_not_broken_returns_for_non_existent_db(tmp_path):
+    """DB ファイルが存在しないときは何もせずに return することを確認する。"""
+    missing = tmp_path / "missing.db"
+    assert run.check_db_not_broken(str(missing)) is None
+
+
+def test_check_db_not_broken_returns_for_healthy_db(tmp_path):
+    """正常な DB に対しては何もせずに return することを確認する。"""
+    db_path = tmp_path / "healthy.db"
+    with duckdb.connect(str(db_path)) as con:
+        con.execute("CREATE TABLE t(id INTEGER)")
+    assert run.check_db_not_broken(str(db_path)) is None
+
+
+def test_check_db_not_broken_exits_for_broken_db(tmp_path, capsys):
+    """破損 DB に対しては自動退避せず exit_with_stderr で終了することを確認する。
+
+    update / delete では運用者の判断を優先するため、検出のみ行ってメッセージで
+    init 再実行を促す B 案の挙動を担保する。
+    """
+    db_path = tmp_path / "broken.db"
+    db_path.write_bytes(b"invalid db")
+
+    with pytest.raises(SystemExit) as exc_info:
+        run.check_db_not_broken(str(db_path))
+    assert exc_info.value.code == 1
+    captured = capsys.readouterr()
+    assert "DB file is broken" in captured.err
+    assert str(db_path) in captured.err
+    assert "init" in captured.err
+    # 退避ファイルは作られないことを確認する
+    renamed_files = list(tmp_path.glob("broken.db.broken.*"))
+    assert len(renamed_files) == 0
+
+
+def test_check_db_not_broken_propagates_non_broken_errors(tmp_path):
+    """Permission denied のような破損ではない接続エラーは再 raise することを確認する。"""
+    db_path = tmp_path / "permission.db"
+    with duckdb.connect(str(db_path)) as con:
+        con.execute("CREATE TABLE t(id INTEGER)")
+    os.chmod(db_path, 0)
+
+    try:
+        with pytest.raises(
+            (duckdb.IOException, duckdb.InternalException, duckdb.FatalException)
+        ):
+            run.check_db_not_broken(str(db_path))
+    finally:
+        # tmp ディレクトリのクリーンアップが失敗しないようにパーミッションを戻す
+        os.chmod(db_path, 0o600)

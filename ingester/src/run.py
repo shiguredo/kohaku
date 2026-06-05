@@ -312,6 +312,31 @@ def is_initialized_db(db_path):
     return True
 
 
+def check_db_not_broken(db_path):
+    """update / delete の前処理として DB 破損を検出する。
+
+    破損と判定したら exit_with_stderr で終了し、運用者に init 再実行を促す。
+    init は prepare_db_for_init で自動退避するが、update / delete では運用者の判断を
+    優先するため自動退避せず、エラーメッセージで意思決定の主導権を運用者に残す。
+    破損以外 (ロック競合、権限不足等) は呼び出し元へ伝播させる。
+    """
+    if not os.path.exists(db_path):
+        return
+    try:
+        with duckdb.connect(db_path) as con:
+            con.execute("SELECT 1")
+    except (
+        duckdb.IOException,
+        duckdb.InternalException,
+        duckdb.FatalException,
+    ) as error:
+        if is_broken_db_error(error):
+            exit_with_stderr(
+                f"DB file is broken: {db_path}. Move or remove the file and run 'init' to re-initialize."
+            )
+        raise
+
+
 _UPSERT_S3_OBJECT_SQL = """
 MERGE INTO s3_objects AS target
 USING (SELECT ? AS type, ? AS object_name, ? AS last_modified) AS source
@@ -430,6 +455,8 @@ def update(args):
     if not os.path.exists(args.db):
         raise FileNotFoundError(f"DB file not found: {args.db}")
 
+    check_db_not_broken(args.db)
+
     # s3_objects テーブル不在の DB に対しては update を拒否する。init が未実行のまま
     # update を呼ぶと select_s3_object が CatalogException で落ちるため、明示的に弾く。
     if not is_initialized_db(args.db):
@@ -459,6 +486,8 @@ def update(args):
 def delete(args):
     if not os.path.exists(args.db):
         raise FileNotFoundError(f"DB file not found: {args.db}")
+
+    check_db_not_broken(args.db)
 
     copy_file = ".".join([args.db, "copy"])
 
