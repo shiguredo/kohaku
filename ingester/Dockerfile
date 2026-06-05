@@ -7,13 +7,11 @@ RUN apt-get update \
     && ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /var/lib/kohaku/duckdb
-
 RUN useradd --no-create-home --gid 0 kohaku
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | UV_INSTALL_DIR=/usr/local/bin sh
 
-RUN mkdir -p /ingester \
+RUN mkdir -p /var/lib/kohaku/duckdb /ingester \
     && chown -R kohaku:root /var/lib/kohaku \
     && chmod -R g+rw /var/lib/kohaku \
     && chown -R kohaku /ingester
