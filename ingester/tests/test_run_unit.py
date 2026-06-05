@@ -236,6 +236,20 @@ def test_escape_sql_string_literal_rejects_control_characters(control_char):
         run.escape_sql_string_literal(value)
 
 
+@pytest.mark.parametrize(
+    "boundary_char",
+    [
+        " ",  # 0x20 (空白): 制御文字範囲の直後
+        "~",  # 0x7E (チルダ): DEL の直前
+    ],
+)
+def test_escape_sql_string_literal_accepts_boundary_characters(boundary_char):
+    """制御文字範囲の境界 (0x20 と 0x7E) は受容することを確認する。"""
+    value = f"/var/lib/kohaku/duck{boundary_char}.db"
+    # シングルクォートを含まないので元の値がそのまま返る
+    assert run.escape_sql_string_literal(value) == value
+
+
 # delete_log_by_timestamp の table_name 許可リスト検証
 
 
