@@ -216,7 +216,6 @@ def test_grafana_can_query_duckdb_data(tmp_path):
     repo_root = Path(__file__).resolve().parents[2]
     grafana_datasources_dir = repo_root / "grafana" / "datasources"
     grafana_dashboards_dir = repo_root / "grafana" / "dashboards"
-    plugin_dir = PLUGIN_DIR
     duckdb_dir = create_duckdb_readonly_copy(tmp_path)
 
     # Grafana コンテナに、設定ファイルと plugin ディレクトリをそのままマウントする。
@@ -249,7 +248,7 @@ def test_grafana_can_query_duckdb_data(tmp_path):
             mode="ro",
         )
         .with_volume_mapping(
-            str(plugin_dir),
+            str(PLUGIN_DIR),
             "/var/lib/grafana/plugins/motherduck-duckdb-datasource",
             mode="ro",
         )
