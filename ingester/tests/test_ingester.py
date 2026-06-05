@@ -20,8 +20,6 @@ import duckdb
 
 # 出力されたままのログファイルを保存するディレクトリ
 LOG_DIR = "./tests/log"
-# テスト中に DuckDB ファイルを置くディレクトリ (カレント直下)
-DUCKDB_DIR_PATH = "."
 
 
 class Args:
@@ -270,17 +268,12 @@ def s3_client_empty(rustfs_endpoint: str) -> minio.Minio:
     return client
 
 
-def test_init(request, s3_client, rustfs_endpoint):
+def test_init(request, s3_client, rustfs_endpoint, tmp_path):
     """init 実行でログを取り込み、DuckDB とオブジェクトカーソルが作成されることを確認する。"""
-    # node.name を使用して DuckDB のファイル名を生成する
-    duckdb_filename = f"{request.node.name}.db"
-    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+    duckdb_filepath = str(tmp_path / "duck.db")
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加する
     request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
-    request.addfinalizer(
-        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
-    )
 
     # テスト開始時に BUCKET が存在することを確認
     assert s3_client.bucket_exists(BUCKET)
@@ -322,17 +315,12 @@ def test_init(request, s3_client, rustfs_endpoint):
         assert result[0] == 1
 
 
-def test_re_init(request, s3_client, rustfs_endpoint):
+def test_re_init(request, s3_client, rustfs_endpoint, tmp_path):
     """init を再実行してもデータ件数とカーソル情報が変化しないことを確認する。"""
-    # node.name を使用して DuckDB のファイル名を生成する
-    duckdb_filename = f"{request.node.name}.db"
-    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+    duckdb_filepath = str(tmp_path / "duck.db")
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
     request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
-    request.addfinalizer(
-        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
-    )
 
     # テスト開始時に BUCKET が存在することを確認
     assert s3_client.bucket_exists(BUCKET)
@@ -395,17 +383,12 @@ def test_re_init(request, s3_client, rustfs_endpoint):
         assert result[0] == 1
 
 
-def test_file_count_limit_for_init(request, s3_client, rustfs_endpoint):
+def test_file_count_limit_for_init(request, s3_client, rustfs_endpoint, tmp_path):
     """init の初期読み込み上限で取り込み件数が制限されることを確認する。"""
-    # node.name を使用して DuckDB のファイル名を生成する
-    duckdb_filename = f"{request.node.name}.db"
-    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+    duckdb_filepath = str(tmp_path / "duck.db")
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加する
     request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
-    request.addfinalizer(
-        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
-    )
 
     # テスト開始時に BUCKET が存在することを確認
     assert s3_client.bucket_exists(BUCKET)
@@ -451,17 +434,12 @@ def test_file_count_limit_for_init(request, s3_client, rustfs_endpoint):
         assert result[0] == 1
 
 
-def test_update(request, s3_client, rustfs_endpoint):
+def test_update(request, s3_client, rustfs_endpoint, tmp_path):
     """update 実行時に差分ログのみが追加され、件数とカーソルが更新されることを確認する。"""
-    # node.name を使用して DuckDB のファイル名を生成する
-    duckdb_filename = f"{request.node.name}.db"
-    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+    duckdb_filepath = str(tmp_path / "duck.db")
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
     request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
-    request.addfinalizer(
-        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
-    )
 
     # テスト開始時に BUCKET が存在することを確認
     assert s3_client.bucket_exists(BUCKET)
@@ -542,17 +520,12 @@ def test_update(request, s3_client, rustfs_endpoint):
         assert result[0] == 1
 
 
-def test_all_delete(request, s3_client, rustfs_endpoint):
+def test_all_delete(request, s3_client, rustfs_endpoint, tmp_path):
     """保持期間外のデータだけで構成された場合に delete で全件削除されることを確認する。"""
-    # node.name を使用して DuckDB のファイル名を生成する
-    duckdb_filename = f"{request.node.name}.db"
-    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+    duckdb_filepath = str(tmp_path / "duck.db")
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
     request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
-    request.addfinalizer(
-        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
-    )
     # テスト開始時に BUCKET が存在することを確認
 
     assert s3_client.bucket_exists(BUCKET)
@@ -597,17 +570,12 @@ def test_all_delete(request, s3_client, rustfs_endpoint):
         assert result[0] == 0
 
 
-def test_delete(request, s3_client, rustfs_endpoint):
+def test_delete(request, s3_client, rustfs_endpoint, tmp_path):
     """保持期間外と期間内が混在する場合に delete で期間外のみ削除されることを確認する。"""
-    # node.name を使用して DuckDB のファイル名を生成する
-    duckdb_filename = f"{request.node.name}.db"
-    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+    duckdb_filepath = str(tmp_path / "duck.db")
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
     request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
-    request.addfinalizer(
-        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
-    )
     # テスト開始時に BUCKET が存在することを確認
 
     assert s3_client.bucket_exists(BUCKET)
@@ -658,17 +626,12 @@ def test_delete(request, s3_client, rustfs_endpoint):
         assert result[0] == len(objects) // 2
 
 
-def test_delete_within_retention_period(request, s3_client, rustfs_endpoint):
+def test_delete_within_retention_period(request, s3_client, rustfs_endpoint, tmp_path):
     """保持期間内のデータのみの場合に delete を実行しても削除されないことを確認する。"""
-    # node.name を使用して DuckDB のファイル名を生成する
-    duckdb_filename = f"{request.node.name}.db"
-    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+    duckdb_filepath = str(tmp_path / "duck.db")
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
     request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
-    request.addfinalizer(
-        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
-    )
     # テスト開始時に BUCKET が存在することを確認
 
     assert s3_client.bucket_exists(BUCKET)
@@ -719,15 +682,11 @@ def test_delete_within_retention_period(request, s3_client, rustfs_endpoint):
         assert result[0] == len(objects)
 
 
-def test_no_bucket(request, rustfs_endpoint):
+def test_no_bucket(request, rustfs_endpoint, tmp_path):
     """RustFS のバケットが存在しない場合に init が S3Error(NoSuchBucket) を送出することを確認する。"""
-    duckdb_filename = f"{request.node.name}.db"
-    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+    duckdb_filepath = str(tmp_path / "duck.db")
 
     # テスト後に DuckDB のファイルを削除するためのクリーンアップ処理を追加
-    request.addfinalizer(
-        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
-    )
 
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
     # S3 バケット名規約に従いつつ、RustFS に存在しないバケット名を指定する
@@ -739,19 +698,14 @@ def test_no_bucket(request, rustfs_endpoint):
 
 
 def test_init_skips_missing_session_webhook(
-    request, s3_client_without_session_webhook, rustfs_endpoint
+    request, s3_client_without_session_webhook, rustfs_endpoint, tmp_path
 ):
     """session_webhook が S3 に存在しない場合でも init が成功し、rtc_stats のみ取り込まれることを確認する。"""
-    # node.name を使用して DuckDB のファイル名を生成する
-    duckdb_filename = f"{request.node.name}.db"
-    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+    duckdb_filepath = str(tmp_path / "duck.db")
 
     # テスト後に BUCKET を削除するためのクリーンアップ処理を追加する
     request.addfinalizer(
         lambda: remove_bucket(s3_client_without_session_webhook, BUCKET)
-    )
-    request.addfinalizer(
-        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
     )
 
     # テスト開始時に BUCKET が存在することを確認
@@ -788,17 +742,14 @@ def test_init_skips_missing_session_webhook(
         assert cursor_count[0] == 1
 
 
-def test_init_and_update_on_empty_bucket(request, s3_client_empty, rustfs_endpoint):
+def test_init_and_update_on_empty_bucket(
+    request, s3_client_empty, rustfs_endpoint, tmp_path
+):
     """全ターゲットが空のバケットに対して init/update がエラーなく完走し、データテーブルが作成されないことを確認する。"""
-    # node.name を使用して DuckDB のファイル名を生成する
-    duckdb_filename = f"{request.node.name}.db"
-    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+    duckdb_filepath = str(tmp_path / "duck.db")
 
     # テスト後に BUCKET と DuckDB ファイルを削除するためのクリーンアップ処理を追加する
     request.addfinalizer(lambda: remove_bucket(s3_client_empty, BUCKET))
-    request.addfinalizer(
-        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
-    )
 
     assert s3_client_empty.bucket_exists(BUCKET)
 
@@ -864,17 +815,14 @@ def test_prepare_db_for_init_renames_broken_db_file(tmp_path):
     assert renamed_wal_files[0].exists()
 
 
-def test_update_maximum_load_splits_batches(request, s3_client, rustfs_endpoint):
+def test_update_maximum_load_splits_batches(
+    request, s3_client, rustfs_endpoint, tmp_path
+):
     """update_maximum_load より多い新規ログを 1 回の update で取り込まず、複数回呼び出しで取り込み切ることを確認する。"""
-    # node.name を使用して DuckDB のファイル名を生成する
-    duckdb_filename = f"{request.node.name}.db"
-    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+    duckdb_filepath = str(tmp_path / "duck.db")
 
     # テスト後に BUCKET と DuckDB ファイルを削除するためのクリーンアップ処理を追加する
     request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
-    request.addfinalizer(
-        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
-    )
 
     assert s3_client.bucket_exists(BUCKET)
 
@@ -933,22 +881,17 @@ def test_update_maximum_load_splits_batches(request, s3_client, rustfs_endpoint)
 
 
 def test_update_maximum_load_one_takes_single_object_per_call(
-    request, s3_client, rustfs_endpoint
+    request, s3_client, rustfs_endpoint, tmp_path
 ):
     """update_maximum_load=1 (positive_int の最小値) で 1 回あたり 1 件ずつ取り込むことを確認する。
 
     target_log_objects[-args.update_maximum_load :] のスライスが [-1:] になる境界値で、
     残件が複数あっても 1 件だけ取り込み、複数回呼び出しで取り込み切ることを確認する。
     """
-    # node.name を使用して DuckDB のファイル名を生成する
-    duckdb_filename = f"{request.node.name}.db"
-    duckdb_filepath = os.path.join(DUCKDB_DIR_PATH, duckdb_filename)
+    duckdb_filepath = str(tmp_path / "duck.db")
 
     # テスト後に BUCKET と DuckDB ファイルを削除するためのクリーンアップ処理を追加する
     request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
-    request.addfinalizer(
-        lambda: os.remove(duckdb_filepath) if os.path.exists(duckdb_filepath) else None
-    )
 
     assert s3_client.bucket_exists(BUCKET)
 
