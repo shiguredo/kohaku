@@ -382,8 +382,7 @@ def remove_delete_incompleted_copy_files(copyfile):
     """
     削除処理が失敗した時に残る可能性があるコピー先の .copy ファイルと .copy.wal ファイルを削除する
     """
-    files = [copyfile, ".".join([copyfile, "wal"])]
-    for file in files:
+    for file in (copyfile, f"{copyfile}.wal"):
         try:
             os.remove(file)
         except FileNotFoundError:

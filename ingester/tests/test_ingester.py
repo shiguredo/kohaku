@@ -112,10 +112,7 @@ def update_timestamp_for_rtc_stats(
     con: duckdb.DuckDBPyConnection, obj: Sequence[Any], period: int
 ) -> None:
     """rtc_stats の timestamp を現在時刻から period 日だけ過去に更新する。"""
-    org_timestamp = obj[0]
-    connection_id = obj[1]
-    rtc_id = obj[2]
-    rtc_type = obj[3]
+    org_timestamp, connection_id, rtc_id, rtc_type = obj
 
     now = datetime.datetime.now(datetime.timezone.utc)
     # 指定された期間だけ過去に更新
