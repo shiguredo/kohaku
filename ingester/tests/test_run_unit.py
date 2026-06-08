@@ -325,7 +325,7 @@ def test_is_after_s3_cursor_rejects_tz_naive_obj_last_modified():
     naive = datetime.datetime(2026, 1, 1)
     aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
     obj = SimpleNamespace(last_modified=naive, object_name="a")
-    with pytest.raises(ValueError, match="tz-aware datetime"):
+    with pytest.raises(ValueError, match="timezone-naive last_modified"):
         run.is_after_s3_cursor(obj, aware, "a")
 
 
@@ -334,8 +334,28 @@ def test_is_after_s3_cursor_rejects_tz_naive_cursor_last_modified():
     naive = datetime.datetime(2026, 1, 1)
     aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
     obj = SimpleNamespace(last_modified=aware, object_name="a")
-    with pytest.raises(ValueError, match="tz-aware datetime"):
+    with pytest.raises(ValueError, match="timezone-naive last_modified"):
         run.is_after_s3_cursor(obj, naive, "a")
+
+
+def test_is_after_s3_cursor_rejects_none_obj_last_modified():
+    """obj.last_modified が None のとき ValueError を送出することを確認する。
+
+    minio SDK の Object.last_modified は Optional[datetime] のため、tzinfo を参照する前に
+    None を ValueError として明示的に拒否し、AttributeError を表出させない。
+    """
+    aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+    obj = SimpleNamespace(last_modified=None, object_name="a")
+    with pytest.raises(ValueError, match="missing last_modified"):
+        run.is_after_s3_cursor(obj, aware, "a")
+
+
+def test_is_after_s3_cursor_rejects_none_cursor_last_modified():
+    """カーソル側の last_modified が None のとき ValueError を送出することを確認する。"""
+    aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+    obj = SimpleNamespace(last_modified=aware, object_name="a")
+    with pytest.raises(ValueError, match="missing last_modified"):
+        run.is_after_s3_cursor(obj, None, "a")
 
 
 # update サブコマンドの初期化済み DB 必須チェック

@@ -214,9 +214,11 @@ def is_after_s3_cursor(obj, last_modified, object_name):
     がカーソルより僅かに古いと判定されて重複取り込みが起きる可能性がある。実害が確認されたら
     比較前に明示的に切り捨てる等の対策を検討する。
     """
+    if obj.last_modified is None or last_modified is None:
+        raise ValueError("S3 object cursor has a missing last_modified timestamp")
     if (obj.last_modified.tzinfo is None) or (last_modified.tzinfo is None):
         raise ValueError(
-            "is_after_s3_cursor requires tz-aware datetime for both obj.last_modified and last_modified"
+            "S3 object cursor has a timezone-naive last_modified timestamp"
         )
     if obj.last_modified > last_modified:
         return True
