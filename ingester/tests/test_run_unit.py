@@ -654,8 +654,8 @@ def test_check_db_not_broken_returns_for_healthy_db(tmp_path):
 def test_check_db_not_broken_exits_for_broken_db(tmp_path, capsys):
     """破損 DB に対しては自動退避せず exit_with_stderr で終了することを確認する。
 
-    update / delete では運用者の判断を優先するため、検出のみ行ってメッセージで
-    init 再実行を促す B 案の挙動を担保する。
+    update / delete では運用者の判断を優先するため、検出のみ行い、メッセージで
+    init の再実行を促す挙動を担保する。
     """
     db_path = tmp_path / "broken.db"
     db_path.write_bytes(b"invalid db")
