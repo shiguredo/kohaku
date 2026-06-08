@@ -390,6 +390,26 @@ def test_update_rejects_uninitialized_db(tmp_path):
         run.update(args)
 
 
+def test_update_raises_file_not_found_when_db_missing(tmp_path):
+    """DB ファイルが存在しないとき update が FileNotFoundError を送出することを確認する。
+
+    main 側の事前チェックを削った後、update 自身でファイル不在を検出して
+    handle_cli_error 経由でメッセージを統一する経路を担保する。
+    """
+    missing = tmp_path / "missing.db"
+    args = SimpleNamespace(db=str(missing))
+    with pytest.raises(FileNotFoundError, match="DB file not found"):
+        run.update(args)
+
+
+def test_delete_raises_file_not_found_when_db_missing(tmp_path):
+    """DB ファイルが存在しないとき delete が FileNotFoundError を送出することを確認する。"""
+    missing = tmp_path / "missing.db"
+    args = SimpleNamespace(db=str(missing))
+    with pytest.raises(FileNotFoundError, match="DB file not found"):
+        run.delete(args)
+
+
 # is_broken_db_error のキーワード判定
 
 

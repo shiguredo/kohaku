@@ -688,15 +688,10 @@ def main():
     args = parser.parse_args()
     db = args.db
 
-    if args.func is init:
-        # init は DB ファイルが無い状態からの新規作成も扱うため、初期 mtime は存在する場合のみ取得する
-        initial_mtime = os.stat(db).st_mtime if os.path.exists(db) else None
-    else:
-        # update / delete は DB ファイルが存在することが前提
-        if not os.path.exists(db):
-            parser.print_usage()
-            sys.exit(1)
-        initial_mtime = os.stat(db).st_mtime
+    # update / delete の DB 不在チェックは args.func 内で FileNotFoundError を送出して
+    # handle_cli_error に集約する。init は DB 不在からの新規作成も扱うため、いずれの
+    # サブコマンドでも「存在すれば mtime、無ければ None」を共通で initial_mtime に入れる。
+    initial_mtime = os.stat(db).st_mtime if os.path.exists(db) else None
 
     try:
         args.func(args)
