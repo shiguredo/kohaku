@@ -20,18 +20,6 @@ class SyncMode(enum.Enum):
     UPDATE = "update"
 
 
-class Command(enum.Enum):
-    """CLI サブコマンドの種別。
-
-    main の中で「どのサブコマンドが選ばれたか」を判定するために用いる。args.func は
-    実際に呼び出す関数オブジェクトを保持するため、用途を分けてある。
-    """
-
-    INIT = "init"
-    UPDATE = "update"
-    DELETE = "delete"
-
-
 DEFAULT_DUCKDB_FILE = "duck.db"
 # /kohaku/log/rtc_stats/2025/06/01/a.gz のようなパスを想定
 DEFAULT_S3_BUCKET_NAME = "kohaku"
@@ -687,18 +675,18 @@ def main():
 
     subparsers = parser.add_subparsers(required=True)
     subparsers_init = subparsers.add_parser("init")
-    subparsers_init.set_defaults(func=init, command=Command.INIT)
+    subparsers_init.set_defaults(func=init)
 
     subparsers_update = subparsers.add_parser("update")
-    subparsers_update.set_defaults(func=update, command=Command.UPDATE)
+    subparsers_update.set_defaults(func=update)
 
     subparsers_delete = subparsers.add_parser("delete")
-    subparsers_delete.set_defaults(func=delete, command=Command.DELETE)
+    subparsers_delete.set_defaults(func=delete)
 
     args = parser.parse_args()
     db = args.db
 
-    if args.command is Command.INIT:
+    if args.func is init:
         # init は DB ファイルが無い状態からの新規作成も扱うため、初期 mtime は存在する場合のみ取得する
         initial_mtime = os.stat(db).st_mtime if os.path.exists(db) else None
     else:
