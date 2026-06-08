@@ -635,12 +635,14 @@ def handle_cli_error(error, bucket):
     if isinstance(error, S3Error):
         if error.code == "NoSuchBucket":
             exit_with_stderr(f"S3 bucket not found: {bucket}")
-        exit_with_stderr(f"S3 error occurred (code={error.code}): {error.message}")
-    if isinstance(error, (FileNotFoundError, ValueError)):
+        else:
+            exit_with_stderr(f"S3 error occurred (code={error.code}): {error.message}")
+    elif isinstance(error, (FileNotFoundError, ValueError)):
         # DB ファイル不在 (FileNotFoundError) や require_s3_credentials などの入力
         # バリデーション失敗 (ValueError) は、トレースバックなしで原因のみ表示して終了する
         exit_with_stderr(str(error))
-    raise error
+    else:
+        raise error
 
 
 def main():
