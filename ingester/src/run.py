@@ -515,6 +515,8 @@ def delete(args):
 
 
 def insert_log_from_s3(con, client, table_name, bucket, prefix, update_maximum_load):
+    if update_maximum_load is None:
+        raise ValueError("update_maximum_load is required but got None")
     cursor = select_s3_object(con, table_name)
     object_name, object_last_modified = cursor
 

@@ -25,6 +25,23 @@ def test_sync_logs_raises_for_unknown_mode():
         run.sync_logs(con=None, client=None, args=None, mode="invalid")
 
 
+def test_insert_log_from_s3_rejects_none_update_maximum_load():
+    """update_maximum_load が None のとき ValueError を送出することを確認する。
+
+    本体に到達する前に弾くことで、len(target_log_objects) > None の TypeError を
+    回避し、診断しやすいメッセージで早期に失敗させる。
+    """
+    with pytest.raises(ValueError, match="update_maximum_load is required"):
+        run.insert_log_from_s3(
+            con=None,
+            client=None,
+            table_name="rtc_stats",
+            bucket="kohaku",
+            prefix="log",
+            update_maximum_load=None,
+        )
+
+
 def test_delete_returns_without_copy_when_no_rows_deleted(tmp_path):
     """削除件数が 0 件の場合に DB コピー処理へ進まず、元 DB も変化しないことを確認する。"""
     db_path = tmp_path / "delete_no_rows.db"

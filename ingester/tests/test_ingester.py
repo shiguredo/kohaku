@@ -135,7 +135,7 @@ def make_args(
     *,
     s3_bucket: str = BUCKET,
     initial_maximum_load: int | None = 1000,
-    update_maximum_load: int | None = None,
+    update_maximum_load: int | None = 1000,
     retention_period: int | None = None,
 ) -> "Args":
     """テスト用 Args を共通設定で組み立てる。
