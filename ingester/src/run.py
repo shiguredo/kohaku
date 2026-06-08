@@ -585,6 +585,8 @@ def delete_log_by_timestamp(con, table_name, timestamp):
 
     con.execute(f"DELETE FROM {table_name} WHERE timestamp < ?", (timestamp,))
     result = con.fetchone()
+    if result is None:
+        raise RuntimeError(f"DELETE on {table_name} returned no row")
     deleted_rows = result[0]
     print(f"Deleted {deleted_rows} rows from {table_name}.")
     return deleted_rows
