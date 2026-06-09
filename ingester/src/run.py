@@ -106,14 +106,7 @@ def init(args):
         # 取得済みの最後のオブジェクト情報を保存するテーブルを作成
         create_s3_object_table(con)
 
-        s3_setup(
-            con,
-            args.s3_endpoint,
-            args.s3_access_key_id,
-            args.s3_secret_access_key,
-            args.s3_use_ssl,
-            args.s3_region,
-        )
+        s3_setup(con, args)
         sync_logs(con, client, args, SyncMode.INIT)
 
 
@@ -387,17 +380,15 @@ def remove_delete_incompleted_copy_files(copyfile):
             pass
 
 
-def s3_setup(
-    con, s3_endpoint, s3_access_key_id, s3_secret_access_key, s3_use_ssl, s3_region
-):
+def s3_setup(con, args):
     con.execute("INSTALL httpfs")
     con.execute("LOAD httpfs")
     con.execute("SET s3_url_style='path'")
-    con.execute("SET s3_endpoint=?", (s3_endpoint,))
-    con.execute("SET s3_access_key_id=?", (s3_access_key_id,))
-    con.execute("SET s3_secret_access_key=?", (s3_secret_access_key,))
-    con.execute("SET s3_use_ssl=?", (s3_use_ssl,))
-    con.execute("SET s3_region=?", (s3_region,))
+    con.execute("SET s3_endpoint=?", (args.s3_endpoint,))
+    con.execute("SET s3_access_key_id=?", (args.s3_access_key_id,))
+    con.execute("SET s3_secret_access_key=?", (args.s3_secret_access_key,))
+    con.execute("SET s3_use_ssl=?", (args.s3_use_ssl,))
+    con.execute("SET s3_region=?", (args.s3_region,))
 
 
 def create_log_table(con, table_name, target_urls):
@@ -445,14 +436,7 @@ def update(args):
     )
 
     with duckdb.connect(args.db) as con:
-        s3_setup(
-            con,
-            args.s3_endpoint,
-            args.s3_access_key_id,
-            args.s3_secret_access_key,
-            args.s3_use_ssl,
-            args.s3_region,
-        )
+        s3_setup(con, args)
         sync_logs(con, client, args, SyncMode.UPDATE)
 
 
