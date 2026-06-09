@@ -1,9 +1,10 @@
 import os
 import io
+import sys
 import datetime
 import gzip
 import json
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from typing import Any
 
 from run import init, update, delete
@@ -98,11 +99,17 @@ def remove_bucket(s3_client: minio.Minio, bucket_name: str) -> None:
 def reset_bucket(s3_client: minio.Minio, bucket_name: str) -> None:
     """テスト開始前に既存バケットを掃除してから作り直す。
 
-    セッションスコープの RustFS を複数 fixture / テストで共有しているため、前回テストの
-    後片付け (addfinalizer の remove_bucket) が落ちて残骸が残った場合に備え、必ず
-    バケットを空の状態から始められるようにする。
+    セッションスコープの RustFS を function スコープの s3_client 系 fixture で共有して
+    いるため、前テストの teardown (fixture 内の remove_bucket) が落ちて残骸が残った場合
+    でも次のテストを空のバケットから始められるようにする。残骸を検出したときは黙って
+    吸収せず stderr に警告を出し、teardown 失敗を見える化する。
     """
     if s3_client.bucket_exists(bucket_name):
+        print(
+            f"reset_bucket: pre-existing {bucket_name} detected;"
+            " previous test teardown may have failed",
+            file=sys.stderr,
+        )
         remove_bucket(s3_client, bucket_name)
     s3_client.make_bucket(bucket_name)
 
@@ -176,7 +183,7 @@ def get_latest_object(s3_client: minio.Minio, bucket: str, prefix: str) -> Any:
 
 
 @pytest.fixture
-def s3_client(rustfs_endpoint: str) -> minio.Minio:
+def s3_client(rustfs_endpoint: str) -> Iterator[minio.Minio]:
     # RustFS に接続する MinIO クライアントを作成する
     client = minio.Minio(
         rustfs_endpoint,
@@ -212,11 +219,12 @@ def s3_client(rustfs_endpoint: str) -> minio.Minio:
                             length=len(compressed_log_data),
                         )
 
-    return client
+    yield client
+    remove_bucket(client, BUCKET)
 
 
 @pytest.fixture
-def s3_client_without_session_webhook(rustfs_endpoint: str) -> minio.Minio:
+def s3_client_without_session_webhook(rustfs_endpoint: str) -> Iterator[minio.Minio]:
     # session_webhook を意図的に除外し、ログ種別が欠損した状態を再現する S3 クライアントを作成する
     # RustFS に接続する MinIO クライアントを作成する
     client = minio.Minio(
@@ -246,11 +254,12 @@ def s3_client_without_session_webhook(rustfs_endpoint: str) -> minio.Minio:
                 length=len(compressed_log_data),
             )
 
-    return client
+    yield client
+    remove_bucket(client, BUCKET)
 
 
 @pytest.fixture
-def s3_client_empty(rustfs_endpoint: str) -> minio.Minio:
+def s3_client_empty(rustfs_endpoint: str) -> Iterator[minio.Minio]:
     """ログオブジェクトを 1 件もアップロードしない空バケットを準備する S3 クライアント。"""
     client = minio.Minio(
         rustfs_endpoint,
@@ -262,15 +271,13 @@ def s3_client_empty(rustfs_endpoint: str) -> minio.Minio:
     wait_until(lambda: client.list_buckets() is not None)
     reset_bucket(client, BUCKET)
     # オブジェクトは意図的に 1 件も置かない
-    return client
+    yield client
+    remove_bucket(client, BUCKET)
 
 
-def test_init(request, s3_client, rustfs_endpoint, tmp_path):
+def test_init(s3_client, rustfs_endpoint, tmp_path):
     """init 実行でログを取り込み、DuckDB とオブジェクトカーソルが作成されることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
-
-    # テスト後に BUCKET を削除するためのクリーンアップ処理を追加する
-    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
 
     # テスト開始時に BUCKET が存在することを確認
     assert s3_client.bucket_exists(BUCKET)
@@ -312,12 +319,9 @@ def test_init(request, s3_client, rustfs_endpoint, tmp_path):
         assert result[0] == 1
 
 
-def test_re_init(request, s3_client, rustfs_endpoint, tmp_path):
+def test_re_init(s3_client, rustfs_endpoint, tmp_path):
     """init を再実行してもデータ件数とカーソル情報が変化しないことを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
-
-    # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
-    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
 
     # テスト開始時に BUCKET が存在することを確認
     assert s3_client.bucket_exists(BUCKET)
@@ -380,12 +384,9 @@ def test_re_init(request, s3_client, rustfs_endpoint, tmp_path):
         assert result[0] == 1
 
 
-def test_file_count_limit_for_init(request, s3_client, rustfs_endpoint, tmp_path):
+def test_file_count_limit_for_init(s3_client, rustfs_endpoint, tmp_path):
     """init の初期読み込み上限で取り込み件数が制限されることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
-
-    # テスト後に BUCKET を削除するためのクリーンアップ処理を追加する
-    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
 
     # テスト開始時に BUCKET が存在することを確認
     assert s3_client.bucket_exists(BUCKET)
@@ -431,12 +432,9 @@ def test_file_count_limit_for_init(request, s3_client, rustfs_endpoint, tmp_path
         assert result[0] == 1
 
 
-def test_update(request, s3_client, rustfs_endpoint, tmp_path):
+def test_update(s3_client, rustfs_endpoint, tmp_path):
     """update 実行時に差分ログのみが追加され、件数とカーソルが更新されることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
-
-    # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
-    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
 
     # テスト開始時に BUCKET が存在することを確認
     assert s3_client.bucket_exists(BUCKET)
@@ -517,12 +515,9 @@ def test_update(request, s3_client, rustfs_endpoint, tmp_path):
         assert result[0] == 1
 
 
-def test_all_delete(request, s3_client, rustfs_endpoint, tmp_path):
+def test_all_delete(s3_client, rustfs_endpoint, tmp_path):
     """保持期間外のデータだけで構成された場合に delete で全件削除されることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
-
-    # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
-    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
     # テスト開始時に BUCKET が存在することを確認
 
     assert s3_client.bucket_exists(BUCKET)
@@ -570,12 +565,9 @@ def test_all_delete(request, s3_client, rustfs_endpoint, tmp_path):
         assert result[0] == 0
 
 
-def test_delete(request, s3_client, rustfs_endpoint, tmp_path):
+def test_delete(s3_client, rustfs_endpoint, tmp_path):
     """保持期間外と期間内が混在する場合に delete で期間外のみ削除されることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
-
-    # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
-    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
     # テスト開始時に BUCKET が存在することを確認
 
     assert s3_client.bucket_exists(BUCKET)
@@ -628,12 +620,9 @@ def test_delete(request, s3_client, rustfs_endpoint, tmp_path):
         assert result[0] == len(objects) // 2
 
 
-def test_delete_within_retention_period(request, s3_client, rustfs_endpoint, tmp_path):
+def test_delete_within_retention_period(s3_client, rustfs_endpoint, tmp_path):
     """保持期間内のデータのみの場合に delete を実行しても削除されないことを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
-
-    # テスト後に BUCKET を削除するためのクリーンアップ処理を追加
-    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
     # テスト開始時に BUCKET が存在することを確認
 
     assert s3_client.bucket_exists(BUCKET)
@@ -686,11 +675,9 @@ def test_delete_within_retention_period(request, s3_client, rustfs_endpoint, tmp
         assert result[0] == len(objects)
 
 
-def test_no_bucket(request, rustfs_endpoint, tmp_path):
+def test_no_bucket(rustfs_endpoint, tmp_path):
     """RustFS のバケットが存在しない場合に init が S3Error(NoSuchBucket) を送出することを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
-
-    # テスト後に DuckDB のファイルを削除するためのクリーンアップ処理を追加
 
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
     # S3 バケット名規約に従いつつ、RustFS に存在しないバケット名を指定する
@@ -702,15 +689,10 @@ def test_no_bucket(request, rustfs_endpoint, tmp_path):
 
 
 def test_init_skips_missing_session_webhook(
-    request, s3_client_without_session_webhook, rustfs_endpoint, tmp_path
+    s3_client_without_session_webhook, rustfs_endpoint, tmp_path
 ):
     """session_webhook が S3 に存在しない場合でも init が成功し、rtc_stats のみ取り込まれることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
-
-    # テスト後に BUCKET を削除するためのクリーンアップ処理を追加する
-    request.addfinalizer(
-        lambda: remove_bucket(s3_client_without_session_webhook, BUCKET)
-    )
 
     # テスト開始時に BUCKET が存在することを確認
     assert s3_client_without_session_webhook.bucket_exists(BUCKET)
@@ -746,14 +728,9 @@ def test_init_skips_missing_session_webhook(
         assert cursor_count[0] == 1
 
 
-def test_init_and_update_on_empty_bucket(
-    request, s3_client_empty, rustfs_endpoint, tmp_path
-):
+def test_init_and_update_on_empty_bucket(s3_client_empty, rustfs_endpoint, tmp_path):
     """全ターゲットが空のバケットに対して init/update がエラーなく完走し、データテーブルが作成されないことを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
-
-    # テスト後に BUCKET と DuckDB ファイルを削除するためのクリーンアップ処理を追加する
-    request.addfinalizer(lambda: remove_bucket(s3_client_empty, BUCKET))
 
     assert s3_client_empty.bucket_exists(BUCKET)
 
@@ -795,14 +772,9 @@ def test_init_and_update_on_empty_bucket(
         assert_only_s3_objects_table(duckdb_connection)
 
 
-def test_update_maximum_load_splits_batches(
-    request, s3_client, rustfs_endpoint, tmp_path
-):
+def test_update_maximum_load_splits_batches(s3_client, rustfs_endpoint, tmp_path):
     """update_maximum_load より多い新規ログを 1 回の update で取り込まず、複数回呼び出しで取り込み切ることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
-
-    # テスト後に BUCKET と DuckDB ファイルを削除するためのクリーンアップ処理を追加する
-    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
 
     assert s3_client.bucket_exists(BUCKET)
 
@@ -861,7 +833,7 @@ def test_update_maximum_load_splits_batches(
 
 
 def test_update_maximum_load_one_takes_single_object_per_call(
-    request, s3_client, rustfs_endpoint, tmp_path
+    s3_client, rustfs_endpoint, tmp_path
 ):
     """update_maximum_load=1 (positive_int の最小値) で 1 回あたり 1 件ずつ取り込むことを確認する。
 
@@ -869,9 +841,6 @@ def test_update_maximum_load_one_takes_single_object_per_call(
     残件が複数あっても 1 件だけ取り込み、複数回呼び出しで取り込み切ることを確認する。
     """
     duckdb_filepath = str(tmp_path / "duck.db")
-
-    # テスト後に BUCKET と DuckDB ファイルを削除するためのクリーンアップ処理を追加する
-    request.addfinalizer(lambda: remove_bucket(s3_client, BUCKET))
 
     assert s3_client.bucket_exists(BUCKET)
 
