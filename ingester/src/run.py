@@ -1,6 +1,5 @@
 import argparse
 import enum
-import functools
 import os
 import shutil
 import stat
@@ -58,13 +57,8 @@ def positive_int(value):
     return int_value
 
 
-@functools.lru_cache(maxsize=1)
 def load_columns():
-    """LOG_TARGETS 各テーブルのカラム定義 YAML をロードして辞書として返す。
-
-    プロセス寿命中に YAML が変わる前提はないため、初回呼び出し時の結果をキャッシュして
-    create_log_table / insert_log の呼び出しごとに再読み込みするコストを避ける。
-    """
+    """LOG_TARGETS 各テーブルのカラム定義 YAML をロードして辞書として返す。"""
     duckdb_columns = {}
     for target in LOG_TARGETS:
         file_path = os.path.join(COLUMNS_DIR, f"{target}.yml")
