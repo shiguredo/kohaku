@@ -215,6 +215,7 @@ test = [
     { name = "jinja2" },
     { name = "pytest" },
     { name = "testcontainers", extra = ["minio"] },
+    { name = "urllib3" },
 ]
 
 [package.metadata]
@@ -234,6 +235,7 @@ test = [
     { name = "jinja2" },
     { name = "pytest" },
     { name = "testcontainers", extras = ["minio"] },
+    { name = "urllib3", specifier = ">=2,<3" },
 ]
 
 [[package]]

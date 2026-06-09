@@ -22,6 +22,10 @@ test = [
   "jinja2",
   "pytest",
   "testcontainers[minio]",
+  # _make_s3_error が urllib3.HTTPResponse() を引数なしで構築するため、
+  # 間接依存にせずテスト依存として明示する。3.x で HTTPResponse の API が
+  # 変わる可能性があるので上限を切っておく。
+  "urllib3>=2,<3",
 ]
 
 [tool.ruff.lint]
