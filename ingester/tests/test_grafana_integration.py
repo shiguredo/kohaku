@@ -40,7 +40,7 @@ DATA_SOURCE_NAME = "motherduck-duckdb-datasource"
 
 def build_auth_header(user: str, password: str) -> dict[str, str]:
     """Grafana の Basic 認証ヘッダーを生成する。"""
-    token = base64.b64encode(f"{user}:{password}".encode("utf-8")).decode("ascii")
+    token = base64.b64encode(f"{user}:{password}".encode()).decode("ascii")
     return {"Authorization": f"Basic {token}"}
 
 

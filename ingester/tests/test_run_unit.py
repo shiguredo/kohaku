@@ -76,9 +76,7 @@ def test_delete_handles_single_quote_in_db_path(tmp_path):
     db_path = tmp_path / "test'delete.db"
 
     # retention_period=1 で削除対象となるよう、2 日前の timestamp を持つ行を挿入する。
-    old_timestamp = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
-        days=2
-    )
+    old_timestamp = datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=2)
     with duckdb.connect(str(db_path)) as con:
         con.execute("CREATE TABLE rtc_stats (timestamp TIMESTAMPTZ)")
         con.execute("CREATE TABLE session_webhook (timestamp TIMESTAMPTZ)")
@@ -107,9 +105,7 @@ def test_delete_restricts_db_file_permission(tmp_path):
     db_path = tmp_path / "delete_permission.db"
 
     # retention_period=1 で削除対象となるよう、2 日前の timestamp を持つ行を挿入する。
-    old_timestamp = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
-        days=2
-    )
+    old_timestamp = datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=2)
     with duckdb.connect(str(db_path)) as con:
         con.execute("CREATE TABLE rtc_stats (timestamp TIMESTAMPTZ)")
         con.execute("CREATE TABLE session_webhook (timestamp TIMESTAMPTZ)")
@@ -302,37 +298,37 @@ def test_delete_log_by_timestamp_rejects_empty_table_name():
 
 def test_is_after_s3_cursor_newer_last_modified():
     """last_modified がカーソルより新しければ True となることを確認する。"""
-    t_old = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
-    t_new = datetime.datetime(2026, 1, 2, tzinfo=datetime.timezone.utc)
+    t_old = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
+    t_new = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
     obj = SimpleNamespace(last_modified=t_new, object_name="a")
     assert run.is_after_s3_cursor(obj, t_old, "a") is True
 
 
 def test_is_after_s3_cursor_older_last_modified():
     """last_modified がカーソルより古ければ False となることを確認する。"""
-    t_old = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
-    t_new = datetime.datetime(2026, 1, 2, tzinfo=datetime.timezone.utc)
+    t_old = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
+    t_new = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
     obj = SimpleNamespace(last_modified=t_old, object_name="z")
     assert run.is_after_s3_cursor(obj, t_new, "a") is False
 
 
 def test_is_after_s3_cursor_same_last_modified_newer_object_name():
     """last_modified が同値なら object_name が大きい方を新しいと判定することを確認する。"""
-    t = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+    t = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
     obj = SimpleNamespace(last_modified=t, object_name="b")
     assert run.is_after_s3_cursor(obj, t, "a") is True
 
 
 def test_is_after_s3_cursor_same_last_modified_older_object_name():
     """last_modified が同値で object_name が小さい場合は False となることを確認する。"""
-    t = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+    t = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
     obj = SimpleNamespace(last_modified=t, object_name="a")
     assert run.is_after_s3_cursor(obj, t, "b") is False
 
 
 def test_is_after_s3_cursor_same_last_modified_same_object_name():
     """last_modified と object_name の両方が同値なら False となることを確認する (カーソル自身を除外)。"""
-    t = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+    t = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
     obj = SimpleNamespace(last_modified=t, object_name="a")
     assert run.is_after_s3_cursor(obj, t, "a") is False
 
@@ -340,7 +336,7 @@ def test_is_after_s3_cursor_same_last_modified_same_object_name():
 def test_is_after_s3_cursor_rejects_tz_naive_obj_last_modified():
     """obj.last_modified がタイムゾーン情報を含まないとき ValueError を送出することを確認する。"""
     naive = datetime.datetime(2026, 1, 1)
-    aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+    aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
     obj = SimpleNamespace(last_modified=naive, object_name="a")
     with pytest.raises(ValueError, match="timezone-naive last_modified"):
         run.is_after_s3_cursor(obj, aware, "a")
@@ -349,7 +345,7 @@ def test_is_after_s3_cursor_rejects_tz_naive_obj_last_modified():
 def test_is_after_s3_cursor_rejects_tz_naive_cursor_last_modified():
     """カーソル側の last_modified がタイムゾーン情報を含まないとき ValueError を送出することを確認する。"""
     naive = datetime.datetime(2026, 1, 1)
-    aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+    aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
     obj = SimpleNamespace(last_modified=aware, object_name="a")
     with pytest.raises(ValueError, match="timezone-naive last_modified"):
         run.is_after_s3_cursor(obj, naive, "a")
@@ -361,7 +357,7 @@ def test_is_after_s3_cursor_rejects_none_obj_last_modified():
     minio SDK の Object.last_modified は Optional[datetime] のため、tzinfo を参照する前に
     None を ValueError として明示的に拒否し、AttributeError を表出させない。
     """
-    aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+    aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
     obj = SimpleNamespace(last_modified=None, object_name="a")
     with pytest.raises(ValueError, match="missing last_modified"):
         run.is_after_s3_cursor(obj, aware, "a")
@@ -369,7 +365,7 @@ def test_is_after_s3_cursor_rejects_none_obj_last_modified():
 
 def test_is_after_s3_cursor_rejects_none_cursor_last_modified():
     """カーソル側の last_modified が None のとき ValueError を送出することを確認する。"""
-    aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+    aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
     obj = SimpleNamespace(last_modified=aware, object_name="a")
     with pytest.raises(ValueError, match="missing last_modified"):
         run.is_after_s3_cursor(obj, None, "a")

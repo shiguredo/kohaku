@@ -120,7 +120,7 @@ def update_timestamp_for_rtc_stats(
     """rtc_stats の timestamp を現在時刻から period 日だけ過去に更新する。"""
     org_timestamp, connection_id, rtc_id, rtc_type = obj
 
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
     # 指定された期間だけ過去に更新
     timestamp = now - datetime.timedelta(days=period)
 
@@ -197,7 +197,7 @@ def s3_client(rustfs_endpoint: str) -> Iterator[minio.Minio]:
     wait_until(lambda: client.list_buckets() is not None)
     reset_bucket(client, BUCKET)
 
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
     for root, dirs, filenames in os.walk(LOG_DIR):
         for filename in filenames:
             file_path = os.path.join(root, filename)
@@ -240,7 +240,7 @@ def s3_client_without_session_webhook(rustfs_endpoint: str) -> Iterator[minio.Mi
     reset_bucket(client, BUCKET)
 
     # rtc_stats のみアップロードし、session_webhook はアップロードしない
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
     log_file_path = os.path.join(LOG_DIR, "rtc_stats.jsonl")
     with open(log_file_path, "rb") as data:
         for line in data:
@@ -450,7 +450,7 @@ def test_update(s3_client, rustfs_endpoint, tmp_path):
         with open(new_log_file, "rb") as data:
             for line in data:
                 parsed_log = json.loads(line)
-                now = datetime.datetime.now(datetime.timezone.utc)
+                now = datetime.datetime.now(datetime.UTC)
                 log_data = json.dumps(parsed_log).encode("utf-8")
                 compressed_log_data = gzip.compress(log_data)
 
@@ -757,7 +757,7 @@ def test_update_maximum_load_splits_batches(s3_client, rustfs_endpoint, tmp_path
     assert len(new_lines) == 5
 
     for line in new_lines:
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         directory = now.strftime("%Y/%m/%d")
         s3_path = data_path(PREFIX, "rtc_stats", directory)
         compressed_log_data = gzip.compress(line)
@@ -825,7 +825,7 @@ def test_update_maximum_load_one_takes_single_object_per_call(
     assert len(new_lines) == 3
 
     for line in new_lines:
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         directory = now.strftime("%Y/%m/%d")
         s3_path = data_path(PREFIX, "rtc_stats", directory)
         compressed_log_data = gzip.compress(line)

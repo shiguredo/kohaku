@@ -65,7 +65,7 @@ def load_columns():
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Column definition file not found: {file_path}")
 
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             # YAML ファイルを読み込んで辞書に変換
             columns = yaml.safe_load(f)
             if not isinstance(columns, dict):
@@ -234,7 +234,7 @@ def move_broken_db(db_path):
     同じパスの DB を連続して破損退避するケースで、退避先 (.broken.<ts>) が衝突して
     shutil.move による上書きでフォレンジック情報を失うことを防ぐ。
     """
-    timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S%f")
+    timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%d%H%M%S%f")
     broken_db_path = f"{db_path}.broken.{timestamp}"
     shutil.move(db_path, broken_db_path)
 
@@ -453,7 +453,7 @@ def delete(args):
 
     deleted_rows = 0
     with duckdb.connect(args.db) as con:
-        timestamp = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+        timestamp = datetime.datetime.now(datetime.UTC) - datetime.timedelta(
             days=args.retention_period
         )
         for target in LOG_TARGETS:
