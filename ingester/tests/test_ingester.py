@@ -282,24 +282,18 @@ def test_init(s3_client, rustfs_endpoint, tmp_path):
     """init 実行でログを取り込み、DuckDB とオブジェクトカーソルが作成されることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
-    # テスト開始時に BUCKET が存在することを確認
     assert s3_client.bucket_exists(BUCKET)
 
-    # ingester/src/run.py の init 関数を呼び出すための引数を設定
     args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
-    # init 関数を呼び出して初期化する
     init(args)
 
-    # DB ファイルが存在することを確認する
     assert os.path.exists(duckdb_filepath)
 
-    # DB に保存したデータ数を確認する
     with duckdb.connect(duckdb_filepath) as duckdb_connection:
         objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
-        # データが取得できていることを確認する
         assert result is not None
         # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
         assert result[0] > 0
@@ -326,24 +320,18 @@ def test_re_init(s3_client, rustfs_endpoint, tmp_path):
     """init を再実行してもデータ件数とカーソル情報が変化しないことを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
-    # テスト開始時に BUCKET が存在することを確認
     assert s3_client.bucket_exists(BUCKET)
 
-    # ingester/src/run.py の init 関数を呼び出すための引数を設定
     args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
-    # init 関数を呼び出して初期化する
     init(args)
 
-    # DB ファイルが存在することを確認する
     assert os.path.exists(duckdb_filepath)
 
-    # DB に保存したデータ数を確認する
     with duckdb.connect(duckdb_filepath) as duckdb_connection:
         objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
-        # データが取得できていることを確認する
         assert result is not None
         # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
         assert result[0] > 0
@@ -391,30 +379,23 @@ def test_file_count_limit_for_init(s3_client, rustfs_endpoint, tmp_path):
     """init の初期読み込み上限で取り込み件数が制限されることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
-    # テスト開始時に BUCKET が存在することを確認
     assert s3_client.bucket_exists(BUCKET)
 
     # 初期最大読み込み数を設定する
     initial_maximum_load = 50
 
-    # ingester/src/run.py の init 関数を呼び出すための引数を設定
     args = make_args_for_s3(
         duckdb_filepath, rustfs_endpoint, initial_maximum_load=initial_maximum_load
     )
 
-    # init 関数を呼び出して初期化する
     init(args)
 
-    # DB ファイルが存在することを確認する
     assert os.path.exists(duckdb_filepath)
 
-    # DB に保存したデータ数を確認する
     with duckdb.connect(duckdb_filepath) as duckdb_connection:
         objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
-        # 取得したデータ数が正しいことを確認する
-        # データが取得できていることを確認する
         assert result is not None
         # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
         assert result[0] > 0
@@ -439,24 +420,18 @@ def test_update(s3_client, rustfs_endpoint, tmp_path):
     """update 実行時に差分ログのみが追加され、件数とカーソルが更新されることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
-    # テスト開始時に BUCKET が存在することを確認
     assert s3_client.bucket_exists(BUCKET)
 
-    # ingester/src/run.py の init 関数を呼び出すための引数を設定
     args = make_args_for_s3(duckdb_filepath, rustfs_endpoint, update_maximum_load=1000)
 
-    # init 関数を呼び出して初期化する
     init(args)
 
-    # DB ファイルが存在することを確認する
     assert os.path.exists(duckdb_filepath)
 
-    # DB に保存したデータ数を確認する
     with duckdb.connect(duckdb_filepath) as duckdb_connection:
         objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
-        # 取得したデータ数が正しいことを確認する
         assert result is not None
         # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
         assert result[0] > 0
@@ -498,7 +473,6 @@ def test_update(s3_client, rustfs_endpoint, tmp_path):
         assert result is not None
         assert result[0] > len(objects)
 
-        # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
         objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
         assert result[0] == len(objects)
 
@@ -521,23 +495,17 @@ def test_update(s3_client, rustfs_endpoint, tmp_path):
 def test_all_delete(s3_client, rustfs_endpoint, tmp_path):
     """保持期間外のデータだけで構成された場合に delete で全件削除されることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
-    # テスト開始時に BUCKET が存在することを確認
 
     assert s3_client.bucket_exists(BUCKET)
-    # ingester/src/run.py の init 関数を呼び出すための引数を設定
     args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
-    # init 関数を呼び出して初期化する
     init(args)
-    # DB ファイルが存在することを確認する
     assert os.path.exists(duckdb_filepath)
 
-    # DB に保存したデータ数を確認する
     with duckdb.connect(duckdb_filepath) as duckdb_connection:
         objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
-        # 取得したデータ数が正しいことを確認する
         assert result is not None
         # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
         assert result[0] > 0
@@ -571,23 +539,17 @@ def test_all_delete(s3_client, rustfs_endpoint, tmp_path):
 def test_delete(s3_client, rustfs_endpoint, tmp_path):
     """保持期間外と期間内が混在する場合に delete で期間外のみ削除されることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
-    # テスト開始時に BUCKET が存在することを確認
 
     assert s3_client.bucket_exists(BUCKET)
-    # ingester/src/run.py の init 関数を呼び出すための引数を設定
     args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
-    # init 関数を呼び出して初期化する
     init(args)
-    # DB ファイルが存在することを確認する
     assert os.path.exists(duckdb_filepath)
 
-    # DB に保存したデータ数を確認する
     with duckdb.connect(duckdb_filepath) as duckdb_connection:
         objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
-        # 取得したデータ数が正しいことを確認する
         assert result is not None
         # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
         assert result[0] > 0
@@ -626,23 +588,17 @@ def test_delete(s3_client, rustfs_endpoint, tmp_path):
 def test_delete_within_retention_period(s3_client, rustfs_endpoint, tmp_path):
     """保持期間内のデータのみの場合に delete を実行しても削除されないことを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
-    # テスト開始時に BUCKET が存在することを確認
 
     assert s3_client.bucket_exists(BUCKET)
-    # ingester/src/run.py の init 関数を呼び出すための引数を設定
     args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
-    # init 関数を呼び出して初期化する
     init(args)
-    # DB ファイルが存在することを確認する
     assert os.path.exists(duckdb_filepath)
 
-    # DB に保存したデータ数を確認する
     with duckdb.connect(duckdb_filepath) as duckdb_connection:
         objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
-        # 取得したデータ数が正しいことを確認する
         assert result is not None
         # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
         assert result[0] > 0
@@ -682,7 +638,6 @@ def test_no_bucket(rustfs_endpoint, tmp_path):
     """RustFS のバケットが存在しない場合に init が S3Error(NoSuchBucket) を送出することを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
-    # ingester/src/run.py の init 関数を呼び出すための引数を設定
     # S3 バケット名規約に従いつつ、RustFS に存在しないバケット名を指定する
     args = make_args_for_s3(
         duckdb_filepath, rustfs_endpoint, s3_bucket="non-existent-bucket"
@@ -699,16 +654,13 @@ def test_init_skips_missing_session_webhook(
     """session_webhook が S3 に存在しない場合でも init が成功し、rtc_stats のみ取り込まれることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
-    # テスト開始時に BUCKET が存在することを確認
     assert s3_client_without_session_webhook.bucket_exists(BUCKET)
 
-    # ingester/src/run.py の init 関数を呼び出すための引数を設定
     args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
     # session_webhook が欠損していても init が例外を送出しないことを確認する
     init(args)
 
-    # DB ファイルが存在することを確認する
     assert os.path.exists(duckdb_filepath)
 
     with duckdb.connect(duckdb_filepath) as duckdb_connection:
