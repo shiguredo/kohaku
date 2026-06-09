@@ -35,6 +35,9 @@ extend-select = [
   # except 内の raise e を bare raise に置き換えるルール
   # https://docs.astral.sh/ruff/rules/verbose-raise/
   "TRY201",
+  # PEP 8 準拠の import 順序を強制するルール (isort 相当)
+  # https://docs.astral.sh/ruff/rules/#isort-i
+  "I",
 ]
 
 [tool.pytest.ini_options]

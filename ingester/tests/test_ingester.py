@@ -1,23 +1,22 @@
-import os
-import io
-import sys
 import datetime
 import gzip
+import io
 import json
+import os
+import sys
+import uuid
 from collections.abc import Iterator, Sequence
 from typing import Any
 
-from run import init, update, delete
-
-import uuid
+import duckdb
 import minio
 import pytest
 from minio.error import S3Error
 
+from run import delete, init, update
+
 from .conftest import ACCESS_KEY, BUCKET, PREFIX, SECRET_KEY
 from .helpers import wait_until
-
-import duckdb
 
 # 出力されたままのログファイルを保存するディレクトリ
 LOG_DIR = "./tests/log"

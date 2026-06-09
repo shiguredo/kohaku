@@ -1,14 +1,14 @@
 import argparse
+import datetime
 import enum
 import os
 import shutil
 import stat
-import datetime
 import sys
 
-import yaml
 import duckdb
 import minio
+import yaml
 from minio.error import S3Error
 
 

@@ -12,7 +12,6 @@ from pathlib import Path
 import pytest
 from testcontainers.core.container import DockerContainer
 
-
 # テスト用に作成する S3 バケット名 (test_ingester / test_fluent_bit で共通利用)
 BUCKET = "kohaku"
 # RustFS コンテナのアクセスキー (テスト専用)

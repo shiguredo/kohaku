@@ -16,7 +16,6 @@ from testcontainers.core.exceptions import ContainerStartException
 
 from .helpers import wait_until
 
-
 # 使用する Grafana の Docker イメージタグ
 GRAFANA_IMAGE = "grafana/grafana:12.4.3-ubuntu"
 # 一時ファイルの group を gid=0 に揃えるための軽量イメージ
