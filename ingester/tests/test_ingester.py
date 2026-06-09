@@ -136,35 +136,38 @@ def update_timestamp_for_rtc_stats(
     )
 
 
-def make_args(
+def make_args_for_s3(
     duckdb_filepath: str,
-    rustfs_endpoint: str | None = None,
+    rustfs_endpoint: str,
     *,
     s3_bucket: str = BUCKET,
     initial_maximum_load: int | None = 1000,
     update_maximum_load: int | None = 1000,
-    retention_period: int | None = None,
-) -> "Args":
-    """テスト用 Args を共通設定で組み立てる。
+) -> Args:
+    """init / update テスト用 Args を共通設定で組み立てる。
 
-    rustfs_endpoint を渡したときは init/update 用 S3 接続情報も含む完全な Args を返し、
-    渡さないときは delete 用の最小構成 (db と retention_period のみ) を返す。
     各テストではこの関数を呼んで個別差分だけキーワード引数で上書きする。
     """
-    if rustfs_endpoint is not None:
-        return Args(
-            db=duckdb_filepath,
-            s3_endpoint=rustfs_endpoint,
-            s3_access_key_id=ACCESS_KEY,
-            s3_secret_access_key=SECRET_KEY,
-            s3_use_ssl=False,
-            s3_region="ap-northeast-1",
-            s3_bucket=s3_bucket,
-            s3_prefix=PREFIX,
-            initial_maximum_load=initial_maximum_load,
-            update_maximum_load=update_maximum_load,
-            retention_period=retention_period,
-        )
+    return Args(
+        db=duckdb_filepath,
+        s3_endpoint=rustfs_endpoint,
+        s3_access_key_id=ACCESS_KEY,
+        s3_secret_access_key=SECRET_KEY,
+        s3_use_ssl=False,
+        s3_region="ap-northeast-1",
+        s3_bucket=s3_bucket,
+        s3_prefix=PREFIX,
+        initial_maximum_load=initial_maximum_load,
+        update_maximum_load=update_maximum_load,
+    )
+
+
+def make_args_for_delete(
+    duckdb_filepath: str,
+    *,
+    retention_period: int,
+) -> Args:
+    """delete テスト用 Args を db と retention_period のみで組み立てる。"""
     return Args(
         db=duckdb_filepath,
         retention_period=retention_period,
@@ -283,7 +286,7 @@ def test_init(s3_client, rustfs_endpoint, tmp_path):
     assert s3_client.bucket_exists(BUCKET)
 
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
-    args = make_args(duckdb_filepath, rustfs_endpoint)
+    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
     # init 関数を呼び出して初期化する
     init(args)
@@ -327,7 +330,7 @@ def test_re_init(s3_client, rustfs_endpoint, tmp_path):
     assert s3_client.bucket_exists(BUCKET)
 
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
-    args = make_args(duckdb_filepath, rustfs_endpoint)
+    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
     # init 関数を呼び出して初期化する
     init(args)
@@ -395,7 +398,7 @@ def test_file_count_limit_for_init(s3_client, rustfs_endpoint, tmp_path):
     initial_maximum_load = 50
 
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
-    args = make_args(
+    args = make_args_for_s3(
         duckdb_filepath, rustfs_endpoint, initial_maximum_load=initial_maximum_load
     )
 
@@ -440,7 +443,7 @@ def test_update(s3_client, rustfs_endpoint, tmp_path):
     assert s3_client.bucket_exists(BUCKET)
 
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
-    args = make_args(duckdb_filepath, rustfs_endpoint, update_maximum_load=1000)
+    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint, update_maximum_load=1000)
 
     # init 関数を呼び出して初期化する
     init(args)
@@ -522,7 +525,7 @@ def test_all_delete(s3_client, rustfs_endpoint, tmp_path):
 
     assert s3_client.bucket_exists(BUCKET)
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
-    args = make_args(duckdb_filepath, rustfs_endpoint)
+    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
     # init 関数を呼び出して初期化する
     init(args)
@@ -553,7 +556,7 @@ def test_all_delete(s3_client, rustfs_endpoint, tmp_path):
     # delete 関数を呼び出すための引数を設定
     # retention_period を 1 日に設定して、2 日前のデータが削除されることを確認する
     # delete は内部で同じファイルを ATTACH するため、duckdb_connection を閉じてから呼び出す
-    args = make_args(duckdb_filepath, retention_period=1)
+    args = make_args_for_delete(duckdb_filepath, retention_period=1)
     delete(args)
 
     # delete 後のデータ件数を確認する
@@ -572,7 +575,7 @@ def test_delete(s3_client, rustfs_endpoint, tmp_path):
 
     assert s3_client.bucket_exists(BUCKET)
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
-    args = make_args(duckdb_filepath, rustfs_endpoint)
+    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
     # init 関数を呼び出して初期化する
     init(args)
@@ -608,7 +611,7 @@ def test_delete(s3_client, rustfs_endpoint, tmp_path):
     # delete 関数を呼び出すための引数を設定
     # retention_period を 1 日に設定して、2 日前のデータが削除されることを確認する
     # delete は内部で同じファイルを ATTACH するため、duckdb_connection を閉じてから呼び出す
-    args = make_args(duckdb_filepath, retention_period=1)
+    args = make_args_for_delete(duckdb_filepath, retention_period=1)
     delete(args)
 
     # delete 後のデータ件数を確認する
@@ -627,7 +630,7 @@ def test_delete_within_retention_period(s3_client, rustfs_endpoint, tmp_path):
 
     assert s3_client.bucket_exists(BUCKET)
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
-    args = make_args(duckdb_filepath, rustfs_endpoint)
+    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
     # init 関数を呼び出して初期化する
     init(args)
@@ -663,7 +666,7 @@ def test_delete_within_retention_period(s3_client, rustfs_endpoint, tmp_path):
     # delete 関数を呼び出すための引数を設定
     # retention_period を 3 日に設定して、対象のオブジェクトがないため、データが削除されないことを確認する
     # delete は内部で同じファイルを ATTACH するため、duckdb_connection を閉じてから呼び出す
-    args = make_args(duckdb_filepath, retention_period=3)
+    args = make_args_for_delete(duckdb_filepath, retention_period=3)
     delete(args)
 
     # delete 後のデータ件数を確認する
@@ -681,7 +684,9 @@ def test_no_bucket(rustfs_endpoint, tmp_path):
 
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
     # S3 バケット名規約に従いつつ、RustFS に存在しないバケット名を指定する
-    args = make_args(duckdb_filepath, rustfs_endpoint, s3_bucket="non-existent-bucket")
+    args = make_args_for_s3(
+        duckdb_filepath, rustfs_endpoint, s3_bucket="non-existent-bucket"
+    )
 
     with pytest.raises(S3Error) as exc_info:
         init(args)
@@ -698,7 +703,7 @@ def test_init_skips_missing_session_webhook(
     assert s3_client_without_session_webhook.bucket_exists(BUCKET)
 
     # ingester/src/run.py の init 関数を呼び出すための引数を設定
-    args = make_args(duckdb_filepath, rustfs_endpoint)
+    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
     # session_webhook が欠損していても init が例外を送出しないことを確認する
     init(args)
@@ -734,7 +739,7 @@ def test_init_and_update_on_empty_bucket(s3_client_empty, rustfs_endpoint, tmp_p
 
     assert s3_client_empty.bucket_exists(BUCKET)
 
-    args = make_args(duckdb_filepath, rustfs_endpoint, update_maximum_load=1000)
+    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint, update_maximum_load=1000)
 
     # 空バケットでも init は完走し、DB ファイルが作成される
     init(args)
@@ -779,7 +784,7 @@ def test_update_maximum_load_splits_batches(s3_client, rustfs_endpoint, tmp_path
     assert s3_client.bucket_exists(BUCKET)
 
     # 既存ログをすべて取り込んでカーソルを最新に揃える
-    args = make_args(duckdb_filepath, rustfs_endpoint)
+    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
     init(args)
 
     def fetch_rtc_stats_count() -> int:
@@ -813,7 +818,9 @@ def test_update_maximum_load_splits_batches(s3_client, rustfs_endpoint, tmp_path
         )
 
     # update_maximum_load=2 で update を呼び出すと、1 回あたり最大 2 件しか取り込まれない
-    batch_args = make_args(duckdb_filepath, rustfs_endpoint, update_maximum_load=2)
+    batch_args = make_args_for_s3(
+        duckdb_filepath, rustfs_endpoint, update_maximum_load=2
+    )
 
     # 1 回目: 2 件取り込まれること
     update(batch_args)
@@ -845,7 +852,7 @@ def test_update_maximum_load_one_takes_single_object_per_call(
     assert s3_client.bucket_exists(BUCKET)
 
     # 既存ログをすべて取り込んでカーソルを最新に揃える
-    args = make_args(duckdb_filepath, rustfs_endpoint)
+    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
     init(args)
 
     def fetch_rtc_stats_count() -> int:
@@ -879,7 +886,9 @@ def test_update_maximum_load_one_takes_single_object_per_call(
         )
 
     # update_maximum_load=1 で update を呼び出すと、1 回あたり 1 件しか取り込まれない
-    batch_args = make_args(duckdb_filepath, rustfs_endpoint, update_maximum_load=1)
+    batch_args = make_args_for_s3(
+        duckdb_filepath, rustfs_endpoint, update_maximum_load=1
+    )
 
     # 1 回目: 1 件取り込まれること
     update(batch_args)
