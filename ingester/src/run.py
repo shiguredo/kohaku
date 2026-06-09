@@ -271,7 +271,10 @@ def prepare_db_for_init(db_path):
             # 破損以外のエラー (ロック競合、権限不足等) は退避せず呼び出し元へ伝播させる
             raise
         broken_db_path = move_broken_db(db_path)
-        print(f"Detected broken DB file. moved to {broken_db_path}")
+        print(
+            f"Detected broken DB file. moved to {broken_db_path}",
+            file=sys.stderr,
+        )
 
 
 def is_initialized_db(db_path):
