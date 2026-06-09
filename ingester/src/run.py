@@ -412,10 +412,10 @@ def create_log_table(con, table_name, target_urls):
         return
 
     # テーブルを作成する
-    print(f"Creating table {table_name} from {len(target_urls)} object(s).")
     columns = duckdb_columns[table_name]
     rel = con.read_json(target_urls, union_by_name=True, columns=columns)
     rel.create(table_name)
+    print(f"Created table {table_name} from {len(target_urls)} object(s).")
 
 
 def update(args):
