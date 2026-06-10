@@ -12,6 +12,16 @@ import yaml
 from minio.error import S3Error
 
 
+class CliUsageError(Exception):
+    """CLI ユーザーの入力・操作順序の不備を表す例外。
+
+    handle_cli_error はこの例外を「ユーザー向け 1 行メッセージで exit 1」 として扱う。
+    内部呼び出しのプログラマエラー (Unknown mode / Unknown table name) やデータ整合性異常
+    (is_after_s3_cursor の None/naive last_modified) や設定ファイル異常 (load_columns) は
+    本例外に含めず、 ValueError のままトレースバック付きで上位に伝播させる。
+    """
+
+
 class SyncMode(enum.Enum):
     """sync_logs の動作モード。"""
 
@@ -79,7 +89,7 @@ def load_columns():
 
 def require_s3_credentials(args):
     if not args.s3_access_key_id or not args.s3_secret_access_key:
-        raise ValueError(
+        raise CliUsageError(
             "S3 credentials are required: provide --s3_access_key_id and --s3_secret_access_key"
         )
 
@@ -363,12 +373,12 @@ def escape_sql_string_literal(value):
 
     DuckDB はファイルパスをプリペアドステートメントでバインドできないため、ATTACH 等で
     パス文字列を直接埋め込む必要がある。本関数は信頼された CLI 引数 (args.db 等) のみを
-    通す想定で、制御文字 (0x00 から 0x1f および 0x7f) を含む値は ValueError で拒否する。
+    通す想定で、制御文字 (0x00 から 0x1f および 0x7f) を含む値は CliUsageError で拒否する。
     NUL バイトはファイルパスとして無効、改行や DEL 等は DuckDB パーサで予期せぬ挙動を
     起こす可能性があるため、暗黙の補正でなく明示的に弾く。
     """
     if any(ord(c) < 0x20 or ord(c) == 0x7F for c in value):
-        raise ValueError("SQL string literal must not contain control characters")
+        raise CliUsageError("SQL string literal must not contain control characters")
     return value.replace("'", "''")
 
 
@@ -427,7 +437,7 @@ def update(args):
     # s3_objects テーブル不在の DB に対しては update を拒否する。init が未実行のまま
     # update を呼ぶと select_s3_object が CatalogException で落ちるため、明示的に弾く。
     if not is_initialized_db(args.db):
-        raise ValueError(f"DB file is not initialized: {args.db}. Run 'init' first.")
+        raise CliUsageError(f"DB file is not initialized: {args.db}. Run 'init' first.")
 
     require_s3_credentials(args)
 
@@ -600,11 +610,15 @@ def create_readonly_copy(db_path):
 def handle_cli_error(error, bucket):
     """CLI トップレベル例外ハンドラ。main から呼び出された関数の例外を分類して整形する。
 
-    ストレージ系の S3Error だけでなく、DB ファイル不在の FileNotFoundError や
-    require_s3_credentials などの入力バリデーション失敗で送出される ValueError も
-    併せて受けるため、命名は storage 限定にせず CLI 全般のエラーハンドラとして扱う。
+    ストレージ系の S3Error、 DB ファイル不在の FileNotFoundError、 CLI ユーザーの入力
+    バリデーション失敗で送出される CliUsageError を「ユーザー向け 1 行メッセージで exit 1」
+    として扱う。
 
-    既知の例外は exit_with_stderr で終了し、それ以外は呼び出し元へ再送出する。
+    プログラマエラー (sync_logs の Unknown mode / delete_log_by_timestamp の Unknown
+    table name) やデータ整合性異常 (is_after_s3_cursor の None/naive last_modified) や
+    設定ファイル異常 (load_columns の Invalid format) は ValueError のまま上位に伝播
+    させ、 トレースバックで原因究明できるようにする。
+
     bucket は NoSuchBucket メッセージ用の表示値として受け取る。
     """
     if isinstance(error, S3Error):
@@ -612,9 +626,7 @@ def handle_cli_error(error, bucket):
             exit_with_stderr(f"S3 bucket not found: {bucket}")
         else:
             exit_with_stderr(f"S3 error occurred (code={error.code}): {error.message}")
-    elif isinstance(error, (FileNotFoundError, ValueError)):
-        # DB ファイル不在 (FileNotFoundError) や require_s3_credentials などの入力
-        # バリデーション失敗 (ValueError) は、トレースバックなしで原因のみ表示して終了する
+    elif isinstance(error, (FileNotFoundError, CliUsageError)):
         exit_with_stderr(str(error))
     else:
         raise error

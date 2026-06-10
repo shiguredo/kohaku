@@ -213,16 +213,16 @@ def test_create_readonly_copy_does_not_leave_tmp_file(tmp_path):
 
 
 def test_require_s3_credentials_rejects_missing_access_key():
-    """access_key が未指定の場合に ValueError を送出することを確認する。"""
+    """access_key が未指定の場合に CliUsageError を送出することを確認する。"""
     args = SimpleNamespace(s3_access_key_id=None, s3_secret_access_key="secret")
-    with pytest.raises(ValueError, match="S3 credentials are required"):
+    with pytest.raises(run.CliUsageError, match="S3 credentials are required"):
         run.require_s3_credentials(args)
 
 
 def test_require_s3_credentials_rejects_missing_secret():
-    """secret が未指定の場合に ValueError を送出することを確認する。"""
+    """secret が未指定の場合に CliUsageError を送出することを確認する。"""
     args = SimpleNamespace(s3_access_key_id="access", s3_secret_access_key=None)
-    with pytest.raises(ValueError, match="S3 credentials are required"):
+    with pytest.raises(run.CliUsageError, match="S3 credentials are required"):
         run.require_s3_credentials(args)
 
 
@@ -283,9 +283,9 @@ def test_escape_sql_string_literal_neutralizes_injection_payload():
     ],
 )
 def test_escape_sql_string_literal_rejects_control_characters(control_char):
-    """制御文字を含む値は ValueError で拒否されることを確認する。"""
+    """制御文字を含む値は CliUsageError で拒否されることを確認する。"""
     value = f"/var/lib/kohaku/duck{control_char}.db"
-    with pytest.raises(ValueError, match="control characters"):
+    with pytest.raises(run.CliUsageError, match="control characters"):
         run.escape_sql_string_literal(value)
 
 
@@ -441,14 +441,14 @@ def test_init_returns_without_s3_credentials_when_db_initialized(tmp_path):
 
 
 def test_update_rejects_uninitialized_db(tmp_path):
-    """s3_objects テーブルが無い DB に対して update が ValueError を送出することを確認する。"""
+    """s3_objects テーブルが無い DB に対して update が CliUsageError を送出することを確認する。"""
     db_path = tmp_path / "uninitialized.db"
     # init を経由せずに DB ファイルだけ作る。s3_objects テーブルは存在しない。
     with duckdb.connect(str(db_path)) as con:
         con.execute("CREATE TABLE dummy (id INTEGER)")
 
     args = SimpleNamespace(db=str(db_path))
-    with pytest.raises(ValueError, match="DB file is not initialized"):
+    with pytest.raises(run.CliUsageError, match="DB file is not initialized"):
         run.update(args)
 
 
@@ -621,15 +621,26 @@ def test_handle_cli_error_exits_for_file_not_found_error(capsys):
     assert "DB file not found: /tmp/missing.db" in captured.err
 
 
-def test_handle_cli_error_exits_for_value_error(capsys):
-    """ValueError のとき str(error) を stderr に書いて exit code 1 終了することを確認する。"""
-    error = ValueError("invalid input")
+def test_handle_cli_error_exits_for_cli_usage_error(capsys):
+    """CliUsageError のとき str(error) を stderr に書いて exit code 1 終了することを確認する。"""
+    error = run.CliUsageError("invalid input")
     with pytest.raises(SystemExit) as exc_info:
         run.handle_cli_error(error, "my-bucket")
     assert exc_info.value.code == 1
     # stderr を取得する
     captured = capsys.readouterr()
     assert "invalid input" in captured.err
+
+
+def test_handle_cli_error_reraises_value_error():
+    """内部用 ValueError (Unknown mode / Unknown table name 等) はそのまま再送出することを確認する。
+
+    プログラマエラーやデータ整合性異常はトレースバック付きで上位に飛ばし、 原因究明できる
+    ようにする方針。 CLI ユーザー入力エラーは CliUsageError で別経路に分離している。
+    """
+    error = ValueError("Unknown mode: invalid")
+    with pytest.raises(ValueError, match="Unknown mode"):
+        run.handle_cli_error(error, "my-bucket")
 
 
 def test_handle_cli_error_reraises_unknown_error():
