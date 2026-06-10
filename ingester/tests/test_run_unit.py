@@ -413,6 +413,30 @@ def test_is_after_s3_cursor_rejects_none_cursor_last_modified():
         run.is_after_s3_cursor(obj, None, "a")
 
 
+# init サブコマンドの初期化済み DB 早期 return
+
+
+def test_init_returns_without_s3_credentials_when_db_initialized(tmp_path):
+    """s3_objects テーブルがある DB に対して init を呼ぶと、S3 認証情報がなくても return することを確認する。
+
+    require_s3_credentials の呼び出し順序が変わって早期 return より先に認証チェックが
+    走るようになるリグレッションを直接検出するため、S3 認証なしの args で例外が出ない
+    ことを確認する。
+    """
+    db_path = tmp_path / "initialized.db"
+    # init を経由せずに s3_objects テーブルだけ手で作る。これで is_initialized_db が True になる。
+    with duckdb.connect(str(db_path)) as con:
+        con.execute(
+            "CREATE TABLE s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)"
+        )
+
+    # s3_* 系を持たない最小構成の args。require_s3_credentials が呼ばれれば AttributeError か ValueError で落ちる。
+    args = SimpleNamespace(db=str(db_path))
+
+    # 例外なく完走し、戻り値が None であることを確認する
+    assert run.init(args) is None
+
+
 # update サブコマンドの初期化済み DB 必須チェック
 
 
