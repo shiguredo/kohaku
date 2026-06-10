@@ -123,6 +123,46 @@ def test_delete_restricts_db_file_permission(tmp_path):
     assert actual_mode == expected_mode
 
 
+# should_create_readonly
+
+
+def test_should_create_readonly_returns_false_when_db_missing(tmp_path):
+    """DB ファイルが存在しないとき False を返すことを確認する。"""
+    missing = tmp_path / "missing.db"
+    assert run.should_create_readonly(str(missing), initial_mtime=0.0) is False
+
+
+def test_should_create_readonly_returns_false_when_mtime_unchanged(tmp_path):
+    """initial_mtime と現在の mtime が一致するとき False を返すことを確認する。"""
+    db_path = tmp_path / "db.db"
+    db_path.write_bytes(b"payload")
+    mtime = db_path.stat().st_mtime
+    assert run.should_create_readonly(str(db_path), initial_mtime=mtime) is False
+
+
+def test_should_create_readonly_returns_true_when_mtime_changed(tmp_path):
+    """initial_mtime と現在の mtime が異なるとき True を返すことを確認する。"""
+    db_path = tmp_path / "db.db"
+    db_path.write_bytes(b"payload")
+    initial = db_path.stat().st_mtime
+    # mtime を未来日時に更新して initial と差をつける
+    future = initial + 100.0
+    os.utime(db_path, (future, future))
+    assert run.should_create_readonly(str(db_path), initial_mtime=initial) is True
+
+
+def test_should_create_readonly_returns_true_when_initial_mtime_is_none_and_db_created(
+    tmp_path,
+):
+    """initial_mtime=None かつ DB ファイルが存在するとき True を返すことを確認する。
+
+    init で DB ファイルを新規作成したケース (主要呼び出し経路) を担保する。
+    """
+    db_path = tmp_path / "db.db"
+    db_path.write_bytes(b"payload")
+    assert run.should_create_readonly(str(db_path), initial_mtime=None) is True
+
+
 # create_readonly_copy
 
 
