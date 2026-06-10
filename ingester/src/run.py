@@ -568,6 +568,19 @@ def exit_with_stderr(message):
     sys.exit(1)
 
 
+def should_create_readonly(db_path, initial_mtime):
+    """initial_mtime と現在の mtime を比較して、readonly コピーを生成すべきかを返す。
+
+    DB ファイルが書き換わったかを mtime で判定し、変化が無ければ .readonly 生成を
+    スキップする。init で何もしなかったケース (既に初期化済み) は initial_mtime と
+    一致してスキップされる。init で DB を新規作成したケースは initial_mtime=None と
+    新 mtime が一致せず readonly を生成する。
+    """
+    if not os.path.exists(db_path):
+        return False
+    return initial_mtime != os.stat(db_path).st_mtime
+
+
 def create_readonly_copy(db_path):
     """書き込み済みの DB ファイルから読み込み専用コピーを生成する。
 
@@ -670,15 +683,8 @@ def main():
     except Exception as error:
         handle_cli_error(error, args.s3_bucket)
 
-    # DB ファイルが書き換わったかを mtime で判定し、変化が無ければ .readonly 生成をスキップする。
-    # init で何もしなかったケース (既に初期化済み) は initial_mtime と一致してスキップされる。
-    # init で DB を新規作成したケースは initial_mtime=None と新 mtime が一致せず readonly を生成する。
-    if not os.path.exists(db):
-        return
-    if initial_mtime == os.stat(db).st_mtime:
-        return
-
-    create_readonly_copy(args.db)
+    if should_create_readonly(db, initial_mtime):
+        create_readonly_copy(args.db)
 
 
 if __name__ == "__main__":
