@@ -635,8 +635,7 @@ def test_handle_cli_error_exits_for_cli_usage_error(capsys):
 def test_handle_cli_error_reraises_value_error():
     """内部用 ValueError (Unknown mode / Unknown table name 等) はそのまま再送出することを確認する。
 
-    プログラマエラーやデータ整合性異常はトレースバック付きで上位に飛ばし、 原因究明できる
-    ようにする方針。 CLI ユーザー入力エラーは CliUsageError で別経路に分離している。
+    CLI ユーザー入力エラーは CliUsageError で別経路に分離している。
     """
     error = ValueError("Unknown mode: invalid")
     with pytest.raises(ValueError, match="Unknown mode"):

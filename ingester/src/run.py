@@ -16,8 +16,8 @@ class CliUsageError(Exception):
     """CLI ユーザーの入力・操作順序の不備を表す例外。
 
     handle_cli_error はこの例外を「ユーザー向け 1 行メッセージで exit 1」 として扱う。
-    内部呼び出しのプログラマエラー (Unknown mode / Unknown table name) やデータ整合性異常
-    (is_after_s3_cursor の None/naive last_modified) や設定ファイル異常 (load_columns) は
+    内部呼び出しのエラー (Unknown mode / Unknown table name) やデータ整合性異常
+    (is_after_s3_cursor の None/naive last_modified)、設定ファイル異常 (load_columns) は
     本例外に含めず、 ValueError のままトレースバック付きで上位に伝播させる。
     """
 
@@ -614,8 +614,8 @@ def handle_cli_error(error, bucket):
     バリデーション失敗で送出される CliUsageError を「ユーザー向け 1 行メッセージで exit 1」
     として扱う。
 
-    プログラマエラー (sync_logs の Unknown mode / delete_log_by_timestamp の Unknown
-    table name) やデータ整合性異常 (is_after_s3_cursor の None/naive last_modified) や
+    sync_logs の Unknown mode や delete_log_by_timestamp の Unknown table name、
+    データ整合性異常 (is_after_s3_cursor の None/naive last_modified) や
     設定ファイル異常 (load_columns の Invalid format) は ValueError のまま上位に伝播
     させ、 トレースバックで原因究明できるようにする。
 
