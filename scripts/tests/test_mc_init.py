@@ -1,4 +1,5 @@
 import os
+from collections.abc import Iterator
 from pathlib import Path
 from uuid import uuid4
 
@@ -38,7 +39,7 @@ def run_and_assert_success(container: DockerContainer) -> None:
 
 
 @pytest.fixture
-def rustfs_env() -> dict[str, object]:
+def rustfs_env() -> Iterator[dict[str, object]]:
     run_id = os.getenv("GITHUB_RUN_ID", "local")
     run_attempt = os.getenv("GITHUB_RUN_ATTEMPT", "0")
     suffix = uuid4().hex[:8]
