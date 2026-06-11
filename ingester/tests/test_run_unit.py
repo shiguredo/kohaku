@@ -695,6 +695,10 @@ def test_prepare_db_for_init_raises_on_permission_denied(tmp_path):
     同じ例外を再発させ、ユーザーに二重出力を見せてしまうため、明示的に raise させる。
     破損ではないので退避ファイルも作られないことを併せて確認する。
     """
+    # root 実行時は chmod 0 が無視されて Permission denied を再現できないため、
+    # 偽通過を避けるためにテストを明示的に失敗させる。
+    if os.geteuid() == 0:
+        pytest.fail("root では chmod 0 を強制できないためテスト不能です")
     db_path = tmp_path / "permission.db"
     wal_path = tmp_path / "permission.db.wal"
     with duckdb.connect(str(db_path)) as con:
@@ -758,6 +762,10 @@ def test_check_db_not_broken_exits_for_broken_db(tmp_path, capsys):
 
 def test_check_db_not_broken_propagates_non_broken_errors(tmp_path):
     """Permission denied のような破損ではない接続エラーは再 raise することを確認する。"""
+    # root 実行時は chmod 0 が無視されて Permission denied を再現できないため、
+    # 偽通過を避けるためにテストを明示的に失敗させる。
+    if os.geteuid() == 0:
+        pytest.fail("root では chmod 0 を強制できないためテスト不能です")
     db_path = tmp_path / "permission.db"
     with duckdb.connect(str(db_path)) as con:
         con.execute("CREATE TABLE t(id INTEGER)")
