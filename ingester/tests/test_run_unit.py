@@ -416,15 +416,15 @@ def test_is_after_s3_cursor_rejects_none_cursor_last_modified():
 # init サブコマンドの初期化済み DB 早期 return
 
 
-def test_init_returns_without_s3_credentials_when_db_initialized(tmp_path):
+def test_init_skips_when_s3_objects_table_exists(tmp_path, capsys):
     """s3_objects テーブルがある DB に対して init を呼ぶと、S3 認証情報がなくても return することを確認する。
 
     require_s3_credentials の呼び出し順序が変わって早期 return より先に認証チェックが
     走るようになるリグレッションを直接検出するため、S3 認証なしの args で例外が出ない
-    ことを確認する。
+    ことを確認する。 stderr に「init skipped」 メッセージが出ることも併せて確認する。
     """
     db_path = tmp_path / "initialized.db"
-    # init を経由せずに s3_objects テーブルだけ手で作る。これで is_initialized_db が True になる。
+    # init を経由せずに s3_objects テーブルだけ手で作る。これで has_s3_objects_table が True になる。
     with duckdb.connect(str(db_path)) as con:
         con.execute(
             "CREATE TABLE s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)"
@@ -436,12 +436,20 @@ def test_init_returns_without_s3_credentials_when_db_initialized(tmp_path):
     # 例外なく完走し、戻り値が None であることを確認する
     assert run.init(args) is None
 
+    # 早期 return 時に stderr へ「init skipped」 メッセージが出ることを確認する。
+    captured = capsys.readouterr()
+    assert "init skipped" in captured.err
+    assert str(db_path) in captured.err
+
 
 # update サブコマンドの初期化済み DB 必須チェック
 
 
 def test_update_rejects_uninitialized_db(tmp_path):
-    """s3_objects テーブルが無い DB に対して update が CliUsageError を送出することを確認する。"""
+    """s3_objects テーブルが無い DB に対して update が CliUsageError を送出することを確認する。
+
+    has_s3_objects_table が False のときに update が事前チェックで弾くことを担保する。
+    """
     db_path = tmp_path / "uninitialized.db"
     # init を経由せずに DB ファイルだけ作る。s3_objects テーブルは存在しない。
     with duckdb.connect(str(db_path)) as con:
@@ -679,7 +687,7 @@ def test_prepare_db_for_init_renames_broken_db_file(tmp_path):
 def test_prepare_db_for_init_raises_on_permission_denied(tmp_path):
     """Permission denied のような破損ではない接続エラーは握りつぶさず再 raise することを確認する。
 
-    握りつぶして return すると直後の is_initialized_db が同じパスへ再 connect して
+    握りつぶして return すると直後の has_s3_objects_table が同じパスへ再 connect して
     同じ例外を再発させ、ユーザーに二重出力を見せてしまうため、明示的に raise させる。
     破損ではないので退避ファイルも作られないことを併せて確認する。
     """

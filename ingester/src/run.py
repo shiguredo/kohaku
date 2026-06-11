@@ -96,7 +96,11 @@ def require_s3_credentials(args):
 
 def init(args):
     prepare_db_for_init(args.db)
-    if is_initialized_db(args.db):
+    if has_s3_objects_table(args.db):
+        print(
+            f"DB is already initialized: {args.db}; init skipped",
+            file=sys.stderr,
+        )
         return
 
     # 初期化が必要なケースに限り S3 接続が必要なので、ここで認証情報を要求する。
@@ -261,7 +265,7 @@ def prepare_db_for_init(db_path):
 
     DB が正常な状態であれば何もしない。破損と判定された場合のみ .broken.<timestamp>
     に退避する。それ以外の接続エラー (ロック競合、権限不足等) は呼び出し元へ伝播
-    させる。握りつぶして return すると直後の is_initialized_db が同じパスへ再
+    させる。握りつぶして return すると直後の has_s3_objects_table が同じパスへ再
     connect して同じ例外を再発させ、ユーザーに二重出力を見せてしまうため、明示的に
     raise する。
     """
@@ -287,9 +291,25 @@ def prepare_db_for_init(db_path):
         )
 
 
-def is_initialized_db(db_path):
-    """
-    DB ファイルの初期化が完了しているかどうかを確認する
+def has_s3_objects_table(db_path):
+    """DB ファイルに s3_objects テーブルが存在するかを判定する。
+
+    init は完了判定にこの関数を使い、 True なら早期 return する。
+    update / delete も前段の事前チェックに使う。
+
+    本関数は s3_objects テーブルの「存在」 のみを見て、 行数や LOG_TARGETS テーブルの
+    有無は確認しない。 すなわち以下のすべてのケースを True と判定する:
+
+    - 正常完了した DB (s3_objects テーブルあり、 LOG_TARGETS のテーブルあり、 行あり)
+    - S3 上にログが 0 件で正常終了した DB (s3_objects テーブルあり、 行 0)
+    - init 途中で例外が発生して中途半端な状態で残った DB
+      (s3_objects テーブルのみ、 もしくは一部の LOG_TARGETS テーブルのみ存在)
+
+    中途半端な DB が残った場合、 init は no-op で抜けるが、 update 経路では
+    sync_log_for_update が select_s3_object で None を返したターゲットに対して
+    initialize_log_table を呼ぶため、 取り込み済みでないターゲットは update で復旧する。
+    根本原因 (NoSuchBucket / 認証失敗 等) が解決していない場合は復旧せず同じエラーが
+    update で再発するため、 運用者が DB を削除して再 init する必要がある。
     """
 
     if not os.path.exists(db_path):
@@ -436,7 +456,7 @@ def update(args):
 
     # s3_objects テーブル不在の DB に対しては update を拒否する。init が未実行のまま
     # update を呼ぶと select_s3_object が CatalogException で落ちるため、明示的に弾く。
-    if not is_initialized_db(args.db):
+    if not has_s3_objects_table(args.db):
         raise CliUsageError(f"DB file is not initialized: {args.db}. Run 'init' first.")
 
     require_s3_credentials(args)
