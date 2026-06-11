@@ -416,6 +416,11 @@ def test_init_skips_when_s3_objects_table_exists(tmp_path, capsys):
     require_s3_credentials の呼び出し順序が変わって早期 return より先に認証チェックが
     走るようになるリグレッションを直接検出するため、S3 認証なしの args で例外が出ない
     ことを確認する。 stderr に「init skipped」 メッセージが出ることも併せて確認する。
+
+    args に s3_access_key_id=None と s3_secret_access_key=None を明示する。
+    require_s3_credentials まで到達した場合は CliUsageError("S3 credentials are required ...")
+    が必ず送出されるため、 「例外が出ない」 ことが早期 return の証拠になる。 AttributeError
+    での偶発的な落ち方と区別するための強化。
     """
     db_path = tmp_path / "initialized.db"
     # init を経由せずに s3_objects テーブルだけ手で作る。これで has_s3_objects_table が True になる。
@@ -424,8 +429,13 @@ def test_init_skips_when_s3_objects_table_exists(tmp_path, capsys):
             "CREATE TABLE s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)"
         )
 
-    # s3_* 系を持たない最小構成の args。require_s3_credentials が呼ばれれば AttributeError か ValueError で落ちる。
-    args = SimpleNamespace(db=str(db_path))
+    # require_s3_credentials が呼ばれた場合に必ず CliUsageError で落ちるよう、
+    # s3_access_key_id と s3_secret_access_key を None として明示する。
+    args = SimpleNamespace(
+        db=str(db_path),
+        s3_access_key_id=None,
+        s3_secret_access_key=None,
+    )
 
     # 例外なく完走し、戻り値が None であることを確認する
     assert run.init(args) is None
