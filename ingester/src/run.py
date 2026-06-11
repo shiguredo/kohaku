@@ -1,6 +1,5 @@
 import argparse
 import datetime
-import enum
 import os
 import shutil
 import stat
@@ -16,17 +15,10 @@ class CliUsageError(Exception):
     """CLI ユーザーの入力・操作順序の不備を表す例外。
 
     handle_cli_error はこの例外を「ユーザー向け 1 行メッセージで exit 1」 として扱う。
-    内部呼び出しのエラー (Unknown mode / Unknown table name) やデータ整合性異常
+    内部呼び出しのエラー (Unknown table name) やデータ整合性異常
     (is_after_s3_cursor の None/naive last_modified)、設定ファイル異常 (load_columns) は
     本例外に含めず、 ValueError のままトレースバック付きで上位に伝播させる。
     """
-
-
-class SyncMode(enum.Enum):
-    """sync_logs の動作モード。"""
-
-    INIT = "init"
-    UPDATE = "update"
 
 
 DEFAULT_DUCKDB_FILE = "duck.db"
@@ -121,17 +113,8 @@ def init(args):
         create_s3_object_table(con)
 
         s3_setup(con, args)
-        sync_logs(con, client, args, SyncMode.INIT)
-
-
-def sync_logs(con, client, args, mode):
-    for target in LOG_TARGETS:
-        if mode is SyncMode.INIT:
+        for target in LOG_TARGETS:
             sync_log_for_init(con, client, args, target)
-        elif mode is SyncMode.UPDATE:
-            sync_log_for_update(con, client, args, target)
-        else:
-            raise ValueError(f"Unknown mode: {mode}")
 
 
 def initialize_log_table(con, client, args, target):
@@ -480,7 +463,8 @@ def update(args):
 
     with duckdb.connect(args.db) as con:
         s3_setup(con, args)
-        sync_logs(con, client, args, SyncMode.UPDATE)
+        for target in LOG_TARGETS:
+            sync_log_for_update(con, client, args, target)
 
 
 def delete(args):

@@ -19,12 +19,6 @@ def test_positive_int_rejects_zero():
         run.positive_int("0")
 
 
-def test_sync_logs_raises_for_unknown_mode():
-    """未知の実行モードを指定した場合に例外を送出することを確認する。"""
-    with pytest.raises(ValueError, match="Unknown mode"):
-        run.sync_logs(con=None, client=None, args=None, mode="invalid")
-
-
 def test_insert_log_from_s3_rejects_none_update_maximum_load():
     """update_maximum_load が None のとき ValueError を送出することを確認する。
 
