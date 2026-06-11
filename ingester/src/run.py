@@ -228,8 +228,11 @@ def move_broken_db(db_path):
     DB ファイルが破損していると判断した場合、DB ファイルをリネームする。
 
     タイムスタンプにはマイクロ秒まで含める。crash loop 等で短時間に複数回 init が走り、
-    同じパスの DB を連続して破損退避するケースで、退避先 (.broken.<ts>) が衝突して
-    shutil.move による上書きでフォレンジック情報を失うことを防ぐ。
+    同じパスの DB を連続して破損退避するケースで、退避先 (.broken.<ts>) の衝突の可能性を
+    小さく抑える。 ただし厳密にはマイクロ秒精度の限界で衝突しうるため、 同マイクロ秒で
+    重なった場合は shutil.move が後勝ちで上書きしてしまう。 現実の crash loop でも先行
+    する退避とマイクロ秒未満で連続するケースは観測されていないため、 実例が出てから
+    衝突回避策を追加する。
     """
     timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%d%H%M%S%f")
     broken_db_path = f"{db_path}.broken.{timestamp}"
