@@ -251,6 +251,11 @@ def prepare_db_for_init(db_path):
     させる。握りつぶして return すると直後の has_s3_objects_table が同じパスへ再
     connect して同じ例外を再発させ、ユーザーに二重出力を見せてしまうため、明示的に
     raise する。
+
+    破損判定の流れ (ファイル存在チェック → 試し接続 → 例外分類) は check_db_not_broken
+    と同じ構造を持つ。 破損が見つかったときの処理だけが異なり、 本関数は退避を行うのに対して
+    check_db_not_broken は exit_with_stderr で終了する。 利用箇所が 2 箇所しかないため
+    共通化は見送り、 3 箇所目で同じ流れが必要になった時点で切り出す。
     """
 
     if not os.path.exists(db_path):
