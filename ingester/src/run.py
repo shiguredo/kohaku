@@ -371,8 +371,18 @@ def list_objects(client, bucket, prefix):
 
     オブジェクトキーが時系列順とは限らない (UUID 等を含むケースがある) ため、
     MinIO の start_after でカーソル以降を絞り込むのは取り逃しのリスクがあり使用しない。
+
+    MinIO SDK の Object.last_modified は Optional[datetime] のため、 None が含まれる
+    可能性がある。 ソートのキーとして None と datetime を比較すると TypeError になり、
+    また is_after_s3_cursor 側でも None を ValueError で拒否しているため、 入口でも
+    対称に拒否する。 観測実例は無いが、 防御の入口を揃えるための予防的バリデーション。
     """
-    objects = client.list_objects(bucket, prefix=prefix, recursive=True)
+    objects = list(client.list_objects(bucket, prefix=prefix, recursive=True))
+    for obj in objects:
+        if obj.last_modified is None:
+            raise ValueError(
+                f"S3 object has a missing last_modified timestamp: {obj.object_name}"
+            )
     return sorted(
         objects, key=lambda obj: (obj.last_modified, obj.object_name), reverse=True
     )
