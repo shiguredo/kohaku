@@ -398,8 +398,12 @@ def escape_sql_string_literal(value):
     NUL バイトはファイルパスとして無効、改行や DEL 等は DuckDB パーサで予期せぬ挙動を
     起こす可能性があるため、暗黙の補正でなく明示的に弾く。
     """
-    if any(ord(c) < 0x20 or ord(c) == 0x7F for c in value):
-        raise CliUsageError("SQL string literal must not contain control characters")
+    for i, c in enumerate(value):
+        if ord(c) < 0x20 or ord(c) == 0x7F:
+            raise CliUsageError(
+                "SQL string literal must not contain control characters: "
+                f"U+{ord(c):04X} at index {i}"
+            )
     return value.replace("'", "''")
 
 
