@@ -754,7 +754,8 @@ def test_check_db_not_broken_exits_for_broken_db(tmp_path, capsys):
     captured = capsys.readouterr()
     assert "DB file is broken" in captured.err
     assert str(db_path) in captured.err
-    assert "init" in captured.err
+    # 「'init' の再実行を促す」 という本番メッセージ固有の言い回しを直接確認する。
+    assert "run 'init'" in captured.err
     # 退避ファイルは作られないことを確認する
     renamed_files = list(tmp_path.glob("broken.db.broken.*"))
     assert len(renamed_files) == 0
