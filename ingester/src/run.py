@@ -338,7 +338,7 @@ def check_db_not_broken(db_path):
         raise
 
 
-_UPSERT_S3_OBJECT_SQL = """
+UPSERT_S3_OBJECT_SQL = """
 MERGE INTO s3_objects AS target
 USING (SELECT ? AS type, ? AS object_name, ? AS last_modified) AS source
 ON target.type = source.type
@@ -350,7 +350,7 @@ WHEN NOT MATCHED THEN
 
 
 def update_s3_object_table(con, log_type, obj):
-    con.execute(_UPSERT_S3_OBJECT_SQL, (log_type, obj.object_name, obj.last_modified))
+    con.execute(UPSERT_S3_OBJECT_SQL, (log_type, obj.object_name, obj.last_modified))
 
 
 def list_objects(client, bucket, prefix):
