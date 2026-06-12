@@ -483,6 +483,18 @@ def update(args):
 
 
 def delete(args):
+    """retention_period 日より古いログを削除し、 DB ファイルを VACUUM 相当でサイズ縮小する。
+
+    DELETE 発行後、 in-memory DuckDB から ATTACH + COPY FROM DATABASE で空き領域を詰めた
+    DB を copy_file へ書き出し、 shutil.move で元 DB を置き換える。
+
+    .wal ファイルは with duckdb.connect ブロックを抜けた時点で DuckDB が本体に畳んで削除する
+    ため、 通常 shutil.move 直前には残らない。 もし残っているとすれば前回の update または delete
+    が異常終了して未コミットの WAL が残ったケースに限られる。 そのケースで新本体 + 古い .wal の
+    組み合わせになると次回 open 時に WAL リプレイで本体 DB を壊す可能性があるが、 異常終了後の
+    残骸は check_db_not_broken の破損検出で吸収できる想定のため、 明示的な .wal 削除は加えず、
+    観測実例が出てから対策を検討する。
+    """
     if not os.path.exists(args.db):
         raise FileNotFoundError(f"DB file not found: {args.db}")
 
