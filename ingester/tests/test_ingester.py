@@ -105,8 +105,9 @@ def reset_bucket(s3_client: minio.Minio, bucket_name: str) -> None:
     """
     if s3_client.bucket_exists(bucket_name):
         print(
-            f"reset_bucket: pre-existing {bucket_name} detected;"
-            " previous test teardown may have failed",
+            f"reset_bucket: テスト開始前にバケット {bucket_name} が残っていました。 "
+            "前回テストの teardown が失敗した可能性があります。 "
+            "本テストの開始前に削除して作り直します。",
             file=sys.stderr,
         )
         remove_bucket(s3_client, bucket_name)
