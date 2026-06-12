@@ -55,7 +55,6 @@ if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
   echo "run.py init failed. continue to update loop." >&2
 fi
 
-# TODO: 他の定期実行の方法を検討する
 # 定期的にデータを更新
 while :;
 do
