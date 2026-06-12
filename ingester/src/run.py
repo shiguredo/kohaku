@@ -432,6 +432,19 @@ def s3_setup(con, args):
     con.execute("SET s3_region=?", (args.s3_region,))
 
 
+def require_known_table(table_name, duckdb_columns):
+    """LOG_TARGETS の YAML 定義に含まれないテーブル名を ValueError で拒否する。
+
+    create_log_table と insert_log で同じチェックを使い回す。 SQL に直接埋め込む経路の
+    防御 (delete_log_by_timestamp の LOG_TARGETS チェック) とは別に、 read_json/create
+    系で許可リスト外のテーブル名を弾くために使う。
+    """
+    if table_name not in duckdb_columns:
+        raise ValueError(
+            f"Unknown table name: {table_name}. Available tables: {list(duckdb_columns.keys())}"
+        )
+
+
 def create_log_table(con, table_name, target_urls):
     """指定された S3 オブジェクト URL から DuckDB テーブルを新規作成する。
 
@@ -439,10 +452,7 @@ def create_log_table(con, table_name, target_urls):
     既にテーブルが存在する場合は何もしない。LOG_TARGETS 外のテーブル名は ValueError で弾く。
     """
     duckdb_columns = load_columns()
-    if table_name not in duckdb_columns:
-        raise ValueError(
-            f"Unknown table name: {table_name}. Available tables: {list(duckdb_columns.keys())}"
-        )
+    require_known_table(table_name, duckdb_columns)
 
     # テーブルが存在する場合はすぐにリターンする
     if table_exists(con, table_name):
@@ -574,10 +584,7 @@ def insert_log_from_s3(con, client, table_name, bucket, prefix, update_maximum_l
 
 def insert_log(con, table_name, target_urls):
     duckdb_columns = load_columns()
-    if table_name not in duckdb_columns:
-        raise ValueError(
-            f"Unknown table name: {table_name}. Available tables: {list(duckdb_columns.keys())}"
-        )
+    require_known_table(table_name, duckdb_columns)
 
     columns = duckdb_columns[table_name]
     rel = con.read_json(target_urls, union_by_name=True, columns=columns)
