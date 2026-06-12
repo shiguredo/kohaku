@@ -135,7 +135,7 @@ def initialize_log_table(con, client, args, target):
     """
     log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
     if len(log_objects) == 0:
-        print(f"No log found for {target} in {args.s3_bucket}.")
+        print(f"No log found for {target} in {args.s3_bucket}.", file=sys.stderr)
         return
 
     log_urls = get_target_urls(args.s3_bucket, log_objects[: args.initial_maximum_load])
@@ -608,7 +608,7 @@ def delete_log_by_timestamp(con, table_name, timestamp):
     if not table_exists(con, table_name):
         # テーブルが存在しない場合はスキップする
         # delete サブコマンドはテーブル名を指定して実行ではないため、テーブルが存在しない場合もエラーにはしない
-        print(f"Table {table_name} does not exist.")
+        print(f"Table {table_name} does not exist.", file=sys.stderr)
         return 0
 
     con.execute(f"DELETE FROM {table_name} WHERE timestamp < ?", (timestamp,))
