@@ -696,25 +696,19 @@ def main():
     parser.add_argument(
         "--retention_period",
         default=DEFAULT_RETENTION_PERIOD,
-        help="retention period",
+        help="Retention period in days",
         type=positive_int,
     )
     parser.add_argument(
         "--initial_maximum_load",
         default=DEFAULT_INITIAL_MAXIMUM_LOAD,
-        help=(
-            "Maximum number of S3 objects to import in init. "
-            "Older objects beyond this limit are intentionally skipped."
-        ),
+        help="Max S3 objects per init",
         type=positive_int,
     )
     parser.add_argument(
         "--update_maximum_load",
         default=DEFAULT_UPDATE_MAXIMUM_LOAD,
-        help=(
-            "Maximum number of S3 objects to import per update call. "
-            "Used to split a large backlog accumulated during downtime into batches."
-        ),
+        help="Max S3 objects per update",
         type=positive_int,
     )
 
