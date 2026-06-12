@@ -705,7 +705,7 @@ def test_init_and_update_on_empty_bucket(s3_client_empty, rustfs_endpoint, tmp_p
             )
             table_count = con.fetchone()
             assert table_count is not None
-            assert table_count[0] == 0, f"{target} should not be created"
+            assert table_count[0] == 0, f"{target} テーブルが作成されてはならない"
         con.execute(
             "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='s3_objects'"
         )
