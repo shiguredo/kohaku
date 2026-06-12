@@ -148,8 +148,11 @@ def sync_log_for_init(con, client, args, target):
     try:
         initialize_log_table(con, client, args, target)
     except duckdb.InvalidInputException as e:
-        # まだディレクトリがないため、エラーを表示して次へ
-        print(f"InvalidInputException ({target}): {e}")
+        # 対象 target の取り込みで InvalidInputException が出た場合は、 残りの LOG_TARGETS の
+        # 取り込みを止めないために stderr に記録して次の target へ進む。
+        # 発生要因の例: S3 オブジェクトが JSON として読めない、 read_json のスキーマ不一致など。
+        # S3 上にオブジェクトが 0 件のケースは list_objects 段階で吸収されるため、 ここには到達しない。
+        print(f"InvalidInputException ({target}): {e}", file=sys.stderr)
 
 
 def sync_log_for_update(con, client, args, target):
