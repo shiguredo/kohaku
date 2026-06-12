@@ -607,6 +607,11 @@ def should_create_readonly(db_path, initial_mtime):
     スキップする。init で何もしなかったケース (既に初期化済み) は initial_mtime と
     一致してスキップされる。init で DB を新規作成したケースは initial_mtime=None と
     新 mtime が一致せず readonly を生成する。
+
+    mtime は OS とファイルシステムによっては秒粒度に丸められるため、 同一秒内で書き込みと
+    比較が完了するケースで変化が観測できず、 readonly 生成を誤ってスキップする可能性が
+    残る。 init / update / delete は通常秒オーダーで完了するため現状は実害が出ていないが、
+    実害が出た時点で st_size の併用や明示的な書き込みフラグの導入を検討する。
     """
     if not os.path.exists(db_path):
         return False
