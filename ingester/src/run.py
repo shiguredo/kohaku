@@ -485,7 +485,7 @@ def delete(args):
 
     check_db_not_broken(args.db)
 
-    copy_file = ".".join([args.db, "copy"])
+    copy_file = f"{args.db}.copy"
 
     deleted_rows = 0
     with duckdb.connect(args.db) as con:
@@ -630,11 +630,11 @@ def create_readonly_copy(db_path):
     Grafana は .readonly のみを参照する想定。
     参考: https://github.com/motherduckdb/grafana-duckdb-datasource?tab=readme-ov-file#updating-data-in-the-duckdb-file
     """
-    tmp_file = ".".join([db_path, "tmp"])
+    tmp_file = f"{db_path}.tmp"
     shutil.copyfile(db_path, tmp_file)
     # other の読み込み権限、書き込み権限は不要なので 0o660 に揃える
     os.chmod(tmp_file, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
-    readonly_file = ".".join([db_path, "readonly"])
+    readonly_file = f"{db_path}.readonly"
     shutil.move(tmp_file, readonly_file)
 
 
