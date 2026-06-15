@@ -662,10 +662,9 @@ def handle_cli_error(error, bucket):
     バリデーション失敗で送出される CliUsageError を「ユーザー向け 1 行メッセージで exit 1」
     として扱う。
 
-    sync_logs の Unknown mode や delete_log_by_timestamp の Unknown table name、
-    データ整合性異常 (is_after_s3_cursor の None/naive last_modified) や
-    設定ファイル異常 (load_columns の Invalid format) は ValueError のまま上位に伝播
-    させ、 トレースバックで原因究明できるようにする。
+    delete_log_by_timestamp の Unknown table name、 データ整合性異常 (is_after_s3_cursor
+    の None/naive last_modified)、 設定ファイル異常 (load_columns の Invalid format) は
+    ValueError のまま上位に伝播させ、 トレースバックで原因究明できるようにする。
 
     bucket は NoSuchBucket メッセージ用の表示値として受け取る。
     """
