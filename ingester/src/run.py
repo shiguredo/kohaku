@@ -625,9 +625,7 @@ def should_create_readonly(db_path, initial_mtime):
     """initial_mtime と現在の mtime を比較して、readonly コピーを生成すべきかを返す。
 
     DB ファイルが書き換わったかを mtime で判定し、変化が無ければ .readonly 生成を
-    スキップする。init で何もしなかったケース (既に初期化済み) は initial_mtime と
-    一致してスキップされる。init で DB を新規作成したケースは initial_mtime=None と
-    新 mtime が一致せず readonly を生成する。
+    スキップする。
 
     mtime は OS とファイルシステムによっては秒粒度に丸められるため、 同一秒内で書き込みと
     比較が完了するケースで変化が観測できず、 readonly 生成を誤ってスキップする可能性が
