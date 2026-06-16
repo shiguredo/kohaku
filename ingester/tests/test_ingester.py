@@ -421,7 +421,7 @@ def test_update(s3_client, rustfs_endpoint, tmp_path):
 
     assert s3_client.bucket_exists(BUCKET)
 
-    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint, update_maximum_load=1000)
+    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
     init(args)
 
@@ -690,7 +690,7 @@ def test_init_and_update_on_empty_bucket(s3_client_empty, rustfs_endpoint, tmp_p
 
     assert s3_client_empty.bucket_exists(BUCKET)
 
-    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint, update_maximum_load=1000)
+    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
     # 空バケットでも init は完走し、DB ファイルが作成される
     init(args)
