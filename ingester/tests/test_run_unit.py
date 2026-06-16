@@ -117,6 +117,43 @@ def test_delete_restricts_db_file_permission(tmp_path):
     assert actual_mode == expected_mode
 
 
+def test_delete_removes_stale_copy_files_before_start(tmp_path):
+    """前回異常終了で残った .copy / .copy.wal があっても delete が完走し、 残骸が消えることを確認する。
+
+    冒頭の remove_delete_incompleted_copy_files で残骸を掃除してから ATTACH/COPY に
+    入る挙動を担保する。 残骸を放置すると ATTACH '{copy_file}' AS copy が既存ファイルを
+    開いてしまい、 COPY FROM DATABASE で古いスキーマと新本体データが混ざる可能性がある。
+    """
+    db_path = tmp_path / "delete_with_stale.db"
+
+    # retention_period=1 で削除対象となるよう、 2 日前の timestamp を持つ行を挿入する。
+    old_timestamp = datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=2)
+    with duckdb.connect(str(db_path)) as con:
+        con.execute("CREATE TABLE rtc_stats (timestamp TIMESTAMPTZ)")
+        con.execute("CREATE TABLE session_webhook (timestamp TIMESTAMPTZ)")
+        con.execute("INSERT INTO rtc_stats VALUES (?)", (old_timestamp,))
+
+    # 前回 delete が SIGKILL 等で異常終了した状況を再現する: .copy と .copy.wal を任意の
+    # 内容で配置する。
+    stale_copy = tmp_path / "delete_with_stale.db.copy"
+    stale_wal = tmp_path / "delete_with_stale.db.copy.wal"
+    stale_copy.write_bytes(b"stale copy payload")
+    stale_wal.write_bytes(b"stale wal payload")
+
+    args = SimpleNamespace(db=str(db_path), retention_period=1)
+    run.delete(args)
+
+    # 残骸が掃除され、 delete が完走している (2 日前の行が削除されている) ことを確認する。
+    with duckdb.connect(str(db_path)) as con:
+        result = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()
+        assert result is not None
+        assert result[0] == 0
+
+    # .copy と .copy.wal が残っていないことを確認する。
+    assert os.path.exists(f"{db_path}.copy") is False
+    assert os.path.exists(f"{db_path}.copy.wal") is False
+
+
 # should_create_readonly
 
 

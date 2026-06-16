@@ -507,6 +507,12 @@ def delete(args):
 
     copy_file = f"{args.db}.copy"
 
+    # 前回 delete が SIGKILL や OOM 等で異常終了して残った .copy と .copy.wal を掃除してから
+    # 始める。 残っていると後段の ATTACH '{copy_file}' AS copy が既存ファイルを開いてしまい、
+    # COPY FROM DATABASE で古いスキーマと新本体データが混ざる可能性があるため。
+    # 同一 delete 内で失敗した場合の掃除は except 内で別途行う。
+    remove_delete_incompleted_copy_files(copy_file)
+
     deleted_rows = 0
     with duckdb.connect(args.db) as con:
         timestamp = datetime.datetime.now(datetime.UTC) - datetime.timedelta(
