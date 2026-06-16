@@ -32,27 +32,16 @@ class Args:
 
     def __init__(
         self,
-        # DuckDB ファイルのパス (例: "./test_init.db")。init/update/delete すべてで参照する
         db: str | None = None,
-        # S3 互換ストレージの HTTP エンドポイント (例: "127.0.0.1:9000")。テストでは RustFS コンテナを指す
         s3_endpoint: str | None = None,
-        # S3 互換ストレージのアクセスキー (RustFS の RUSTFS_ACCESS_KEY と同じ値)
         s3_access_key_id: str | None = None,
-        # S3 互換ストレージのシークレットキー (RustFS の RUSTFS_SECRET_KEY と同じ値)
         s3_secret_access_key: str | None = None,
-        # S3 接続時に SSL/TLS を使うかどうか。テストの RustFS は http なので False
         s3_use_ssl: bool | None = None,
-        # S3 のリージョン名 (例: "ap-northeast-1")。リクエスト署名に使う
         s3_region: str | None = None,
-        # 取り込み対象の S3 バケット名 (テストでは BUCKET 定数)
         s3_bucket: str | None = None,
-        # ログオブジェクトキー先頭のプレフィックス (テストでは PREFIX 定数、"log/rtc_stats/..." のように使う)
         s3_prefix: str | None = None,
-        # delete サブコマンド用: 何日より古い行を削除するかの閾値 (単位: 日)
         retention_period: int | None = None,
-        # init サブコマンド用: 一度に取り込む S3 オブジェクト件数の上限
         initial_maximum_load: int | None = None,
-        # update サブコマンド用: 一度に取り込む S3 オブジェクト件数の上限
         update_maximum_load: int | None = None,
     ) -> None:
         self.db = db
