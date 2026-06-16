@@ -55,8 +55,7 @@ def init_grafana_plugin() -> None:
 
     `make init` は repo root の Makefile で plugins/motherduck-duckdb-datasource を取得し、
     test_grafana_integration.py が Grafana コンテナにマウントするときに必要となる。
-    Grafana を使わないテスト (test_run_unit.py や test_ingester.py 等) で不要なネット越し
-    curl を走らせないよう、autouse にせず Grafana テスト側から明示的に依存させる。
+    Grafana テスト側から @pytest.mark.usefixtures で明示的に依存させて呼び出す。
     """
     repo_root = Path(__file__).resolve().parents[2]
     subprocess.run(["make", "init"], cwd=repo_root, check=True)
