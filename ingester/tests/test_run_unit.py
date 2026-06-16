@@ -223,7 +223,6 @@ def test_require_s3_credentials_rejects_missing_secret():
 def test_require_s3_credentials_accepts_valid_credentials():
     """両方の値が指定されている場合は例外を送出しないことを確認する。"""
     args = SimpleNamespace(s3_access_key_id="access", s3_secret_access_key="secret")
-    # 例外が発生しないことを確認する (戻り値は None)
     assert run.require_s3_credentials(args) is None
 
 

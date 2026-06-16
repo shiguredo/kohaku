@@ -183,7 +183,6 @@ def query_grafana_datasource(
 def wait_for_grafana(base_url: str, auth_header: Mapping[str, str]) -> None:
     """Grafana の起動と datasource の provision 完了を待つ。"""
 
-    # Grafana の起動完了と datasource の provision 完了を別々に待つ。
     def health_is_ready() -> bool:
         try:
             return (

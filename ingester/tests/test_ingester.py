@@ -273,7 +273,6 @@ def s3_client_empty(rustfs_endpoint: str) -> Iterator[minio.Minio]:
     # RustFS が利用可能になるまで待機する
     wait_until(lambda: client.list_buckets() is not None)
     reset_bucket(client, BUCKET)
-    # オブジェクトは意図的に 1 件も置かない
     yield client
     remove_bucket(client, BUCKET)
 

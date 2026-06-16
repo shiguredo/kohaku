@@ -135,7 +135,6 @@ def run_ingester_cli(
 
 def append_rtc_stats_log(log_dir: Path) -> None:
     """rtc_stats ログに 1 行追加し、新規オブジェクト送信の契機を作る。"""
-    # 既存ログ 1 行を複製して識別子だけ変え、新規オブジェクト送信を発生させる
     rtc_stats_path = log_dir / "rtc_stats.jsonl"
     first_line = rtc_stats_path.read_text(encoding="utf-8").splitlines()[0]
     data = json.loads(first_line)
@@ -272,7 +271,6 @@ def test_runpy_init_skips_missing_target_without_invalid_input_exception(tmp_pat
             run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
             # 欠損ターゲットがあっても init 全体は成功すること
             assert run.returncode == 0, f"init が失敗しました: {run.stderr}"
-            # 旧挙動で出ていた InvalidInputException が消えていること
             assert "InvalidInputException" not in run.stdout
             assert "InvalidInputException" not in run.stderr
 
