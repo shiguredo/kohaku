@@ -681,12 +681,13 @@ def test_handle_cli_error_exits_for_cli_usage_error(capsys):
 
 
 def test_handle_cli_error_reraises_value_error():
-    """内部用 ValueError (Unknown mode / Unknown table name 等) はそのまま再送出することを確認する。
+    """内部用 ValueError (Unknown table name / load_columns の YAML 形式異常 等) は
+    そのまま再送出することを確認する。
 
     CLI ユーザー入力エラーは CliUsageError で別経路に分離している。
     """
-    error = ValueError("Unknown mode: invalid")
-    with pytest.raises(ValueError, match="Unknown mode"):
+    error = ValueError("Unknown table name: evil_table")
+    with pytest.raises(ValueError, match="Unknown table name"):
         run.handle_cli_error(error, "my-bucket")
 
 
