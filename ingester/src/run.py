@@ -427,16 +427,18 @@ def s3_setup(con, args):
     con.execute("SET s3_region=?", (args.s3_region,))
 
 
-def require_known_table(table_name, duckdb_columns):
-    """LOG_TARGETS の YAML 定義に含まれないテーブル名を ValueError で拒否する。
+def require_known_table(table_name, allowed):
+    """許可リストに含まれないテーブル名を ValueError で拒否する。
 
-    create_log_table と insert_log で同じチェックを使い回す。 SQL に直接埋め込む経路の
-    防御 (delete_log_by_timestamp の LOG_TARGETS チェック) とは別に、 read_json/create
-    系で許可リスト外のテーブル名を弾くために使う。
+    create_log_table / insert_log は load_columns() が返す dict を、
+    delete_log_by_timestamp は LOG_TARGETS タプルを渡す。 dict も in 演算子で
+    キー検査になるため、 呼び出し側で keys() を渡す必要はない。
+    SQL に直接埋め込む経路 (delete_log_by_timestamp) と read_json/create 系
+    (create_log_table / insert_log) の両方で同じ防御チェックを使う。
     """
-    if table_name not in duckdb_columns:
+    if table_name not in allowed:
         raise ValueError(
-            f"Unknown table name: {table_name}. Available tables: {list(duckdb_columns.keys())}"
+            f"Unknown table name: {table_name}. Available tables: {list(allowed)}"
         )
 
 
@@ -601,10 +603,7 @@ def select_s3_object(con, log_type):
 
 def delete_log_by_timestamp(con, table_name, timestamp):
     # table_name は SQL に直接埋め込むため、許可リストで縛る
-    if table_name not in LOG_TARGETS:
-        raise ValueError(
-            f"Unknown table name: {table_name}. Available tables: {list(LOG_TARGETS)}"
-        )
+    require_known_table(table_name, LOG_TARGETS)
 
     if not table_exists(con, table_name):
         # テーブルが存在しない場合はスキップする
