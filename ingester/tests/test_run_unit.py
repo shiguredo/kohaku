@@ -496,7 +496,7 @@ def test_update_rejects_uninitialized_db(tmp_path):
         con.execute("CREATE TABLE dummy (id INTEGER)")
 
     args = SimpleNamespace(db=str(db_path))
-    with pytest.raises(run.CliUsageError, match="DB file is not initialized"):
+    with pytest.raises(run.CliUsageError, match="s3_objects table not found"):
         run.update(args)
 
 

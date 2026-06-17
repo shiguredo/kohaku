@@ -90,7 +90,7 @@ def init(args):
     prepare_db_for_init(args.db)
     if has_s3_objects_table(args.db):
         print(
-            f"DB is already initialized: {args.db}; init skipped",
+            f"s3_objects table is already present in DB: {args.db}; init skipped",
             file=sys.stderr,
         )
         return
@@ -472,7 +472,9 @@ def update(args):
     # s3_objects テーブル不在の DB に対しては update を拒否する。init が未実行のまま
     # update を呼ぶと select_s3_object が CatalogException で落ちるため、明示的に弾く。
     if not has_s3_objects_table(args.db):
-        raise CliUsageError(f"DB file is not initialized: {args.db}. Run 'init' first.")
+        raise CliUsageError(
+            f"s3_objects table not found in DB: {args.db}. Run 'init' first."
+        )
 
     require_s3_credentials(args)
 
