@@ -41,6 +41,8 @@ if [ -n "${UPDATE_MAXIMUM_LOAD:-}" ]; then
   update_maximum_load_args=(--update_maximum_load "${UPDATE_MAXIMUM_LOAD}")
 fi
 
+# update_maximum_load は update でのみ参照されるため、 init には渡さず update の呼び出し
+# にのみ展開する。
 # テーブル作成および初期データの挿入
 if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
                            --s3_endpoint "${S3_ENDPOINT}" \
