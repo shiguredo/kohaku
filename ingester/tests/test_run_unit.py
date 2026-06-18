@@ -176,38 +176,80 @@ def test_delete_removes_stale_copy_files_before_start(tmp_path):
 def test_should_create_readonly_returns_false_when_db_missing(tmp_path):
     """DB ファイルが存在しないとき False を返すことを確認する。"""
     missing = tmp_path / "missing.db"
-    assert run.should_create_readonly(str(missing), initial_mtime=0.0) is False
+    assert (
+        run.should_create_readonly(str(missing), initial_mtime=0.0, initial_size=0)
+        is False
+    )
 
 
-def test_should_create_readonly_returns_false_when_mtime_unchanged(tmp_path):
-    """initial_mtime と現在の mtime が一致するとき False を返すことを確認する。"""
+def test_should_create_readonly_returns_false_when_mtime_and_size_unchanged(tmp_path):
+    """initial_mtime と initial_size が現在の値と一致するとき False を返すことを確認する。"""
     db_path = tmp_path / "db.db"
     db_path.write_bytes(b"payload")
-    mtime = db_path.stat().st_mtime
-    assert run.should_create_readonly(str(db_path), initial_mtime=mtime) is False
+    stat_result = db_path.stat()
+    assert (
+        run.should_create_readonly(
+            str(db_path),
+            initial_mtime=stat_result.st_mtime,
+            initial_size=stat_result.st_size,
+        )
+        is False
+    )
 
 
 def test_should_create_readonly_returns_true_when_mtime_changed(tmp_path):
     """initial_mtime と現在の mtime が異なるとき True を返すことを確認する。"""
     db_path = tmp_path / "db.db"
     db_path.write_bytes(b"payload")
-    initial = db_path.stat().st_mtime
+    initial = db_path.stat()
     # mtime を未来日時に更新して initial と差をつける
-    future = initial + 100.0
+    future = initial.st_mtime + 100.0
     os.utime(db_path, (future, future))
-    assert run.should_create_readonly(str(db_path), initial_mtime=initial) is True
+    assert (
+        run.should_create_readonly(
+            str(db_path),
+            initial_mtime=initial.st_mtime,
+            initial_size=initial.st_size,
+        )
+        is True
+    )
 
 
-def test_should_create_readonly_returns_true_when_initial_mtime_is_none_and_db_created(
+def test_should_create_readonly_returns_true_when_size_changed(tmp_path):
+    """initial_mtime と現在の mtime が同じでも、 st_size が異なれば True を返すことを確認する。
+
+    mtime が秒粒度に丸められる FS で同一秒内に書き込みが完了して mtime が変化しないケースを、
+    st_size の変化で検出できることを担保する。
+    """
+    db_path = tmp_path / "db.db"
+    db_path.write_bytes(b"payload")
+    initial = db_path.stat()
+    # ファイル内容を書き換えてサイズを変えつつ、 mtime は initial と同じ値に戻す。
+    db_path.write_bytes(b"payload-longer")
+    os.utime(db_path, (initial.st_mtime, initial.st_mtime))
+    assert (
+        run.should_create_readonly(
+            str(db_path),
+            initial_mtime=initial.st_mtime,
+            initial_size=initial.st_size,
+        )
+        is True
+    )
+
+
+def test_should_create_readonly_returns_true_when_initial_is_none_and_db_created(
     tmp_path,
 ):
-    """initial_mtime=None かつ DB ファイルが存在するとき True を返すことを確認する。
+    """initial_mtime=None / initial_size=None かつ DB ファイルが存在するとき True を返すことを確認する。
 
     init で DB ファイルを新規作成したケース (主要呼び出し経路) を担保する。
     """
     db_path = tmp_path / "db.db"
     db_path.write_bytes(b"payload")
-    assert run.should_create_readonly(str(db_path), initial_mtime=None) is True
+    assert (
+        run.should_create_readonly(str(db_path), initial_mtime=None, initial_size=None)
+        is True
+    )
 
 
 # create_readonly_copy
