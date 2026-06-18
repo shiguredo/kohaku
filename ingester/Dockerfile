@@ -27,7 +27,6 @@ RUN set -eux; \
     sha256sum -c "${UV_TARBALL}.sha256"; \
     tar -xzf "${UV_TARBALL}"; \
     mv "uv-${UV_TARGET}/uv" /usr/local/bin/uv; \
-    mv "uv-${UV_TARGET}/uvx" /usr/local/bin/uvx; \
     rm -rf "uv-${UV_TARGET}" "${UV_TARBALL}" "${UV_TARBALL}.sha256"
 
 RUN mkdir -p /var/lib/kohaku/duckdb /ingester \
