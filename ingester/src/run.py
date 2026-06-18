@@ -683,7 +683,10 @@ def handle_cli_error(error, bucket):
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    # --help にデフォルト値を自動表示するため、 ArgumentDefaultsHelpFormatter を使う。
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     # 共通オプション
     parser.add_argument("--db", default=DEFAULT_DUCKDB_FILE, help="DB file path")
     parser.add_argument("--s3_endpoint", default="s3.amazonaws.com", help="S3 endpoint")
