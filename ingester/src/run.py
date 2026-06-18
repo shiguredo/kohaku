@@ -42,6 +42,13 @@ BROKEN_DB_ERROR_PATTERNS = (
     "invalid database",
     "not a valid duckdb",
 )
+# 破損 DB を connect したときに DuckDB が送出しうる例外クラス。
+# prepare_db_for_init と check_db_not_broken の except タプルで共有する。
+BROKEN_DB_CONNECT_ERRORS = (
+    duckdb.IOException,
+    duckdb.InternalException,
+    duckdb.FatalException,
+)
 
 # Sora のログテーブル名兼 DuckDB のテーブル名
 LOG_TARGETS = (
@@ -265,11 +272,7 @@ def prepare_db_for_init(db_path):
     try:
         with duckdb.connect(db_path) as con:
             con.execute("SELECT 1")
-    except (
-        duckdb.IOException,
-        duckdb.InternalException,
-        duckdb.FatalException,
-    ) as error:
+    except BROKEN_DB_CONNECT_ERRORS as error:
         if not is_broken_db_error(error):
             # 破損以外のエラー (ロック競合、権限不足等) は退避せず呼び出し元へ伝播させる
             raise
@@ -324,11 +327,7 @@ def check_db_not_broken(db_path):
     try:
         with duckdb.connect(db_path) as con:
             con.execute("SELECT 1")
-    except (
-        duckdb.IOException,
-        duckdb.InternalException,
-        duckdb.FatalException,
-    ) as error:
+    except BROKEN_DB_CONNECT_ERRORS as error:
         if is_broken_db_error(error):
             exit_with_stderr(
                 f"DB file is broken: {db_path}. Move or remove the file and run 'init' to re-initialize."
