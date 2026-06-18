@@ -377,6 +377,22 @@ def test_escape_sql_string_literal_rejects_control_characters(control_char):
         run.escape_sql_string_literal(value)
 
 
+def test_escape_sql_string_literal_error_includes_codepoint_index_and_value_excerpt():
+    """制御文字検出時のエラーメッセージに、 コードポイント・index・値の repr 抜粋が含まれることを確認する。
+
+    デバッグ時に「どの値の何文字目にどの制御文字が混入したか」 を運用者が即座に特定できる
+    フォーマットを契約として固定する。
+    """
+    value = "/var/lib/kohaku/duck\x00.db"
+    with pytest.raises(run.CliUsageError) as exc_info:
+        run.escape_sql_string_literal(value)
+    message = str(exc_info.value)
+    assert "U+0000" in message
+    assert "at index 20" in message
+    # 値の repr 抜粋 (最大 40 文字、 制御文字は \x00 形式で表記される) を含む。
+    assert repr(value[:40]) in message
+
+
 @pytest.mark.parametrize(
     "boundary_char",
     [

@@ -386,8 +386,8 @@ def get_target_urls(bucket, objects):
     return urls
 
 
-def escape_sql_string_literal(value):
-    """DuckDB の ATTACH 等で使う SQL 文字列リテラルとして value を安全に埋め込めるよう
+def escape_sql_string_literal(path_literal):
+    """DuckDB の ATTACH 等で使う SQL 文字列リテラルとして path_literal を安全に埋め込めるよう
     シングルクォートをエスケープする。
 
     DuckDB はファイルパスをプリペアドステートメントでバインドできないため、ATTACH 等で
@@ -396,13 +396,15 @@ def escape_sql_string_literal(value):
     NUL バイトはファイルパスとして無効、改行や DEL 等は DuckDB パーサで予期せぬ挙動を
     起こす可能性があるため、暗黙の補正でなく明示的に弾く。
     """
-    for i, c in enumerate(value):
+    for i, c in enumerate(path_literal):
         if ord(c) < 0x20 or ord(c) == 0x7F:
+            # path_literal[:40]!r はログが肥大化しないように先頭の 40 文字に絞る。 また
+            # repr で制御文字を `\xNN` 形式に視覚化し、 ログ表示や grep を壊さないようにする。
             raise CliUsageError(
                 "SQL string literal must not contain control characters: "
-                f"U+{ord(c):04X} at index {i}"
+                f"U+{ord(c):04X} at index {i} in {path_literal[:40]!r}"
             )
-    return value.replace("'", "''")
+    return path_literal.replace("'", "''")
 
 
 def remove_delete_incompleted_copy_files(copyfile):
