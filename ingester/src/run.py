@@ -729,17 +729,16 @@ def main():
     subparsers_delete.set_defaults(func=delete)
 
     args = parser.parse_args()
-    db = args.db
 
     # DB ファイルが存在すれば mtime、 無ければ None を initial_mtime に入れる。
-    initial_mtime = os.stat(db).st_mtime if os.path.exists(db) else None
+    initial_mtime = os.stat(args.db).st_mtime if os.path.exists(args.db) else None
 
     try:
         args.func(args)
     except Exception as error:
         handle_cli_error(error, args.s3_bucket)
 
-    if should_create_readonly(db, initial_mtime):
+    if should_create_readonly(args.db, initial_mtime):
         create_readonly_copy(args.db)
 
 
