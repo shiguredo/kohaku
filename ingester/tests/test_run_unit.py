@@ -13,10 +13,26 @@ from minio.error import S3Error
 import run
 
 
-def test_positive_int_rejects_zero():
-    """0 を渡した場合に引数エラーとなることを確認する。"""
+@pytest.mark.parametrize("value", ["0", "-1", "-100"])
+def test_positive_int_rejects_non_positive(value):
+    """0 以下の値で argparse 引数エラーになることを確認する。"""
     with pytest.raises(argparse.ArgumentTypeError, match="value must be >= 1"):
-        run.positive_int("0")
+        run.positive_int(value)
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [("1", 1), ("100", 100), ("999999", 999999)],
+)
+def test_positive_int_accepts_positive(value, expected):
+    """正の整数文字列を int に変換して返すことを確認する。"""
+    assert run.positive_int(value) == expected
+
+
+def test_positive_int_rejects_non_numeric():
+    """数値でない文字列を渡すと ValueError (int() 由来) を送出することを確認する。"""
+    with pytest.raises(ValueError, match="invalid literal for int"):
+        run.positive_int("abc")
 
 
 def test_insert_log_from_s3_rejects_none_update_maximum_load():
@@ -335,6 +351,36 @@ def test_escape_sql_string_literal_accepts_boundary_characters(boundary_char):
     assert run.escape_sql_string_literal(value) == value
 
 
+# require_known_table の許可リスト検証
+
+
+def test_require_known_table_accepts_known_name_in_dict():
+    """dict のキーとして許可テーブル名が含まれていれば None を返すことを確認する。"""
+    assert (
+        run.require_known_table("rtc_stats", {"rtc_stats": {}, "session_webhook": {}})
+        is None
+    )
+
+
+def test_require_known_table_accepts_known_name_in_tuple():
+    """tuple に許可テーブル名が含まれていれば None を返すことを確認する。"""
+    assert (
+        run.require_known_table("rtc_stats", ("rtc_stats", "session_webhook")) is None
+    )
+
+
+def test_require_known_table_rejects_unknown_name_in_dict():
+    """dict のキーに含まれないテーブル名で ValueError を送出することを確認する。"""
+    with pytest.raises(ValueError, match="Unknown table name"):
+        run.require_known_table("evil", {"rtc_stats": {}, "session_webhook": {}})
+
+
+def test_require_known_table_rejects_unknown_name_in_tuple():
+    """tuple に含まれないテーブル名で ValueError を送出することを確認する。"""
+    with pytest.raises(ValueError, match="Unknown table name"):
+        run.require_known_table("evil", ("rtc_stats", "session_webhook"))
+
+
 # delete_log_by_timestamp の table_name 許可リスト検証
 
 
@@ -497,6 +543,31 @@ def test_update_rejects_uninitialized_db(tmp_path):
 
     args = SimpleNamespace(db=str(db_path))
     with pytest.raises(run.CliUsageError, match="s3_objects table not found"):
+        run.update(args)
+
+
+def test_update_rejects_missing_s3_credentials(tmp_path):
+    """s3_objects テーブルがある DB で S3 認証情報が無いと update が CliUsageError を送出する
+    ことを確認する。
+
+    has_s3_objects_table を通過した直後に require_s3_credentials が呼ばれる順序を担保する。
+    順序が逆転して require_s3_credentials が先に走るリグレッションを直接検出する。
+    """
+    db_path = tmp_path / "initialized.db"
+    # init を経由せずに s3_objects テーブルだけ手で作る。 has_s3_objects_table が True になる。
+    with duckdb.connect(str(db_path)) as con:
+        con.execute(
+            "CREATE TABLE s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)"
+        )
+
+    # 認証情報を None で明示し、 require_s3_credentials まで到達したら必ず
+    # CliUsageError で落ちる契約にする。
+    args = SimpleNamespace(
+        db=str(db_path),
+        s3_access_key_id=None,
+        s3_secret_access_key=None,
+    )
+    with pytest.raises(run.CliUsageError, match="S3 credentials are required"):
         run.update(args)
 
 
