@@ -54,7 +54,11 @@ if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
                            "${initial_maximum_load_args[@]}" \
                            "${s3_ssl_args[@]}" \
                            init; then
-  echo "run.py init failed. continue to update loop." >&2
+  # init 失敗のまま update ループに入ると s3_objects テーブルが無い状態で update が
+  # CliUsageError で連続失敗するため、 init 失敗時はここで終了し、 systemd / docker の
+  # restart policy 側で再起動戦略を制御してもらう。
+  echo "run.py init failed. exit to let the restart policy retry." >&2
+  exit 1
 fi
 
 # 定期的にデータを更新
