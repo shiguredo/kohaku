@@ -26,6 +26,10 @@ RUN set -eux; \
     curl -LsSf -o "${UV_TARBALL}.sha256" "${UV_URL}.sha256"; \
     sha256sum -c "${UV_TARBALL}.sha256"; \
     tar -xzf "${UV_TARBALL}"; \
+    [ -d "uv-${UV_TARGET}" ] || { \
+        echo "Unexpected tarball structure: uv-${UV_TARGET}/ not found in ${UV_TARBALL}" >&2; \
+        exit 1; \
+    }; \
     mv "uv-${UV_TARGET}/uv" /usr/local/bin/uv; \
     rm -rf "uv-${UV_TARGET}" "${UV_TARBALL}" "${UV_TARBALL}.sha256"
 
