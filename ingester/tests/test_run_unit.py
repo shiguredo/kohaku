@@ -812,6 +812,8 @@ def test_handle_cli_error_exits_for_other_s3_error(capsys):
     # stderr を取得する
     captured = capsys.readouterr()
     assert "S3 error occurred (code=AccessDenied): access denied" in captured.err
+    # bucket は NoSuchBucket 以外の経路では出力に混入しないことを確認する。
+    assert "my-bucket" not in captured.err
 
 
 def test_handle_cli_error_exits_for_file_not_found_error(capsys):
@@ -823,6 +825,8 @@ def test_handle_cli_error_exits_for_file_not_found_error(capsys):
     # stderr を取得する
     captured = capsys.readouterr()
     assert "DB file not found: /tmp/missing.db" in captured.err
+    # bucket は FileNotFoundError 経路では出力に混入しないことを確認する。
+    assert "my-bucket" not in captured.err
 
 
 def test_handle_cli_error_exits_for_cli_usage_error(capsys):
@@ -834,6 +838,8 @@ def test_handle_cli_error_exits_for_cli_usage_error(capsys):
     # stderr を取得する
     captured = capsys.readouterr()
     assert "invalid input" in captured.err
+    # bucket は CliUsageError 経路では出力に混入しないことを確認する。
+    assert "my-bucket" not in captured.err
 
 
 def test_handle_cli_error_reraises_value_error():
