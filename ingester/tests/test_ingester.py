@@ -187,7 +187,7 @@ def s3_client(rustfs_endpoint: str) -> Iterator[minio.Minio]:
     reset_bucket(client, BUCKET)
 
     now = datetime.datetime.now(datetime.UTC)
-    for root, dirs, filenames in os.walk(LOG_DIR):
+    for root, _, filenames in os.walk(LOG_DIR):
         for filename in filenames:
             file_path = os.path.join(root, filename)
             if os.path.isfile(file_path):
