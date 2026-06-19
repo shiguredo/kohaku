@@ -21,7 +21,6 @@ SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 
 def run_and_assert_success(container: DockerContainer) -> None:
     # 一時コンテナを 1 回実行し、終了コードが 0 であることを検証する。
-    wrapped = None
     try:
         container.start()
         wrapped = container.get_wrapped_container()
