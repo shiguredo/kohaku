@@ -33,10 +33,14 @@ DELETE_REQUIRED_VARS = (
 
 
 def _full_s3_env() -> dict[str, str]:
-    """init / update 用に全必須環境変数をダミー値で埋めた dict を返す。"""
+    """init / update 用に全必須環境変数をダミー値で埋めた dict を返す。
+
+    S3_ENDPOINT は RFC 6761 で予約された .invalid TLD を使い、 万一テストが S3 接続まで
+    到達しても DNS 解決段階で必ず失敗させる。
+    """
     return {
         "DUCKDB_DB_PATH": "/tmp/duck.db",
-        "S3_ENDPOINT": "s3.example.com",
+        "S3_ENDPOINT": "s3.invalid",
         "AWS_ACCESS_KEY_ID": "dummy-key",
         "AWS_SECRET_ACCESS_KEY": "dummy-secret",
         "S3_BUCKET": "kohaku",
