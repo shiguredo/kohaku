@@ -1,10 +1,11 @@
-"""scripts/run-ingester.sh の必須環境変数バリデーションをテストする。
+"""scripts/run-ingester.sh の必須環境変数バリデーションとサブコマンド分岐をテストする。
 
 systemd EnvironmentFile の編集忘れによる unbound variable を検出する `:?` の防御層が
 init / update / delete のサブコマンドごとに正しく動作することを bash イメージで検証する。
+合わせて未知サブコマンドが Usage 表示で拒否されることも確認する。
 
-全必須環境変数を埋めた場合は最終 exec の uv 起動で失敗するが、本テストでは env
-バリデーションの挙動だけを検証するため、欠落パターンに限定する。
+全必須環境変数を埋めた場合は最終 exec の uv 起動で失敗するが、 本テストでは env
+バリデーションとサブコマンド分岐の挙動だけを検証する。
 """
 
 from pathlib import Path
