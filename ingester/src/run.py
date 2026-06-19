@@ -75,7 +75,6 @@ def load_columns():
             raise FileNotFoundError(f"Column definition file not found: {file_path}")
 
         with open(file_path) as f:
-            # YAML ファイルを読み込んで辞書に変換
             columns = yaml.safe_load(f)
             if not isinstance(columns, dict):
                 raise ValueError(
@@ -224,7 +223,6 @@ def is_broken_db_error(error):
     DB ファイルが破損しているかどうかを判定する
     """
     message = str(error).lower()
-    # 下記のエラーメッセージが含まれている場合は DB ファイルが破損していると判断する
     return any(pattern in message for pattern in BROKEN_DB_ERROR_PATTERNS)
 
 
@@ -377,9 +375,9 @@ def list_objects(client, bucket, prefix):
 
 
 def get_target_urls(bucket, objects):
+    """テーブル作成や insert で DuckDB の read_json に渡すための s3://bucket/key URL リストを生成する。"""
     urls = []
     for obj in objects:
-        # テーブル作成時に読み込むファイルのパスを作成
         urls.append(f"s3://{bucket}/{obj.object_name}")
 
     return urls
@@ -452,7 +450,6 @@ def create_log_table(con, table_name, target_urls):
     duckdb_columns = load_columns()
     require_known_table(table_name, duckdb_columns)
 
-    # テーブルが存在する場合はすぐにリターンする
     if table_exists(con, table_name):
         print(f"Table {table_name} already exists.")
         return
