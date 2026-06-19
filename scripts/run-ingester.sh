@@ -3,11 +3,8 @@ set -eu
 
 SUBCOMMAND="${1:-}"
 
-# サブコマンド共通で DB パスは必須。 同じ必須環境変数のチェックは ingester/run.sh にも
-# 入っている。 本スクリプトは systemd 経由でサブコマンド単位に動かす想定のためサブコマンド
-# ごとに必要なものだけを検証し、 ingester/run.sh は Docker 経由で init/update/delete を
-# 1 プロセスで順番に動かす想定のため一括で必須にしている。 必須環境変数を増減する場合は
-# 両方を見直す。
+# サブコマンド共通で DB パスは必須。
+# ingester/run.sh も同等の必須検証を持つ。 増減時は両方を見直す。
 : "${DUCKDB_DB_PATH:?DUCKDB_DB_PATH is required}"
 
 case "${SUBCOMMAND}" in
