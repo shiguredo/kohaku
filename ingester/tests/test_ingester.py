@@ -501,7 +501,7 @@ def test_all_delete(s3_client, rustfs_endpoint, tmp_path):
         )
         objects = duckdb_connection.fetchall()
         # すべてのオブジェクトの timestamp を 2 日前に更新する
-        for _, obj in enumerate(objects):
+        for obj in objects:
             update_timestamp_for_rtc_stats(duckdb_connection, obj, 2)
 
     # delete 関数を呼び出すための引数を設定

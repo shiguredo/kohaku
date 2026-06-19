@@ -136,7 +136,7 @@ def test_delete_restricts_db_file_permission(tmp_path):
 def test_delete_removes_stale_copy_files_before_start(tmp_path):
     """前回異常終了で残った .copy / .copy.wal があっても delete が完走し、 残骸が消えることを確認する。
 
-    冒頭の remove_delete_incompleted_copy_files で残骸を掃除してから ATTACH/COPY に
+    冒頭の remove_delete_incomplete_copy_files で残骸を掃除してから ATTACH/COPY に
     入る挙動を担保する。 残骸を放置すると ATTACH '{copy_file}' AS copy が既存ファイルを
     開いてしまい、 COPY FROM DATABASE で古いスキーマと新本体データが混ざる可能性がある。
     """

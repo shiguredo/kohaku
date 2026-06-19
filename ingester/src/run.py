@@ -404,7 +404,7 @@ def escape_sql_string_literal(path_literal):
     return path_literal.replace("'", "''")
 
 
-def remove_delete_incompleted_copy_files(copyfile):
+def remove_delete_incomplete_copy_files(copyfile):
     """
     削除処理が失敗した時に残る可能性があるコピー先の .copy ファイルと .copy.wal ファイルを削除する
     """
@@ -513,7 +513,7 @@ def delete(args):
     # 始める。 残っていると後段の ATTACH '{copy_file}' AS copy が既存ファイルを開いてしまい、
     # COPY FROM DATABASE で古いスキーマと新本体データが混ざる可能性があるため。
     # 同一 delete 内で失敗した場合の掃除は except 内で別途行う。
-    remove_delete_incompleted_copy_files(copy_file)
+    remove_delete_incomplete_copy_files(copy_file)
 
     deleted_rows = 0
     with duckdb.connect(args.db) as con:
@@ -543,7 +543,7 @@ def delete(args):
         shutil.move(copy_file, args.db)
     except Exception:
         # 処理に失敗したときの残る可能性のあるファイルを削除する
-        remove_delete_incompleted_copy_files(copy_file)
+        remove_delete_incomplete_copy_files(copy_file)
         # return code を 0 以外にするため例外を呼び出し元に投げる
         raise
 
