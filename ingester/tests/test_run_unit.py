@@ -569,12 +569,21 @@ def test_init_skips_when_s3_objects_table_exists(tmp_path, capsys):
             "CREATE TABLE s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)"
         )
 
-    # require_s3_credentials が呼ばれた場合に必ず CliUsageError で落ちるよう、
-    # s3_access_key_id と s3_secret_access_key を None として明示する。
+    # init が触りうる args 属性をすべて埋めておく。 早期 return より先に他属性が参照される
+    # リグレッションが起きた場合に AttributeError で偽通過させず、 require_s3_credentials の
+    # CliUsageError か別の想定例外として現れるようにする。
     args = SimpleNamespace(
+        # s3_endpoint は RFC 6761 で予約された .invalid TLD を使い、 万一リグレッションで
+        # 早期 return が抜けて S3 接続経路に進んでも DNS 解決段階で必ず失敗させる。
         db=str(db_path),
+        s3_endpoint="s3.invalid",
         s3_access_key_id=None,
         s3_secret_access_key=None,
+        s3_use_ssl=False,
+        s3_region="ap-northeast-1",
+        s3_bucket="kohaku",
+        s3_prefix="log",
+        initial_maximum_load=100,
     )
 
     # 早期 return で DB ファイルが触られないことを担保するため、 前後で inode と内容を取る。
