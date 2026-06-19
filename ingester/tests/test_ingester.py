@@ -176,14 +176,13 @@ def get_latest_object(s3_client: minio.Minio, bucket: str, prefix: str) -> Any:
 
 @pytest.fixture
 def s3_client(rustfs_endpoint: str) -> Iterator[minio.Minio]:
-    # RustFS に接続する MinIO クライアントを作成する
+    """テスト用ログ (rtc_stats / session_webhook 両方) をアップロードした S3 クライアント。"""
     client = minio.Minio(
         rustfs_endpoint,
         access_key=ACCESS_KEY,
         secret_key=SECRET_KEY,
         secure=False,
     )
-    # RustFS が利用可能になるまで待機する
     wait_until(lambda: client.list_buckets() is not None)
     reset_bucket(client, BUCKET)
 
@@ -217,19 +216,16 @@ def s3_client(rustfs_endpoint: str) -> Iterator[minio.Minio]:
 
 @pytest.fixture
 def s3_client_without_session_webhook(rustfs_endpoint: str) -> Iterator[minio.Minio]:
-    # session_webhook を意図的に除外し、ログ種別が欠損した状態を再現する S3 クライアントを作成する
-    # RustFS に接続する MinIO クライアントを作成する
+    """session_webhook を意図的に除外し、 rtc_stats のみアップロードした S3 クライアント。"""
     client = minio.Minio(
         rustfs_endpoint,
         access_key=ACCESS_KEY,
         secret_key=SECRET_KEY,
         secure=False,
     )
-    # RustFS が利用可能になるまで待機する
     wait_until(lambda: client.list_buckets() is not None)
     reset_bucket(client, BUCKET)
 
-    # rtc_stats のみアップロードし、session_webhook はアップロードしない
     now = datetime.datetime.now(datetime.UTC)
     log_file_path = os.path.join(LOG_DIR, "rtc_stats.jsonl")
     with open(log_file_path, "rb") as data:
@@ -259,7 +255,6 @@ def s3_client_empty(rustfs_endpoint: str) -> Iterator[minio.Minio]:
         secret_key=SECRET_KEY,
         secure=False,
     )
-    # RustFS が利用可能になるまで待機する
     wait_until(lambda: client.list_buckets() is not None)
     reset_bucket(client, BUCKET)
     yield client
