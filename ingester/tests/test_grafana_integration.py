@@ -211,9 +211,6 @@ def wait_for_grafana(base_url: str, auth_header: Mapping[str, str]) -> None:
 @pytest.mark.usefixtures("init_grafana_plugin")
 def test_grafana_can_query_duckdb_data(tmp_path):
     """Grafana の datasource から DuckDB を実際に参照できることを確認する。"""
-    repo_root = Path(__file__).resolve().parents[2]
-    grafana_datasources_dir = repo_root / "grafana" / "datasources"
-    grafana_dashboards_dir = repo_root / "grafana" / "dashboards"
     duckdb_dir = create_duckdb_readonly_copy(tmp_path)
 
     # Grafana コンテナに、設定ファイルと plugin ディレクトリをそのままマウントする。
@@ -231,17 +228,17 @@ def test_grafana_can_query_duckdb_data(tmp_path):
         .with_env("GF_PATHS_PROVISIONING", "/etc/grafana/provisioning")
         .with_env("GF_PLUGINS_FORWARD_HOST_ENV_VARS", DATA_SOURCE_NAME)
         .with_volume_mapping(
-            str(grafana_datasources_dir),
+            str(GRAFANA_DATASOURCES_DIR),
             "/etc/grafana/provisioning/datasources",
             mode="ro",
         )
         .with_volume_mapping(
-            str(grafana_dashboards_dir / "kohaku.yml"),
+            str(GRAFANA_DASHBOARDS_DIR / "kohaku.yml"),
             "/etc/grafana/provisioning/dashboards/kohaku.yml",
             mode="ro",
         )
         .with_volume_mapping(
-            str(grafana_dashboards_dir / "kohaku"),
+            str(GRAFANA_DASHBOARDS_DIR / "kohaku"),
             "/var/lib/grafana/dashboards/kohaku",
             mode="ro",
         )
