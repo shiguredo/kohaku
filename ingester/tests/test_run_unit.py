@@ -577,6 +577,10 @@ def test_init_skips_when_s3_objects_table_exists(tmp_path, capsys):
         s3_secret_access_key=None,
     )
 
+    # 早期 return で DB ファイルが触られないことを担保するため、 前後で inode と内容を取る。
+    before_ino = db_path.stat().st_ino
+    before_hash = hashlib.sha256(db_path.read_bytes()).hexdigest()
+
     # 例外なく完走し、戻り値が None であることを確認する
     assert run.init(args) is None
 
@@ -584,6 +588,13 @@ def test_init_skips_when_s3_objects_table_exists(tmp_path, capsys):
     captured = capsys.readouterr()
     assert "init skipped" in captured.err
     assert str(db_path) in captured.err
+
+    # DB ファイルが書き換わっていないこと (inode と内容ともに不変)
+    assert db_path.stat().st_ino == before_ino
+    assert hashlib.sha256(db_path.read_bytes()).hexdigest() == before_hash
+
+    # tmp_path 配下に .broken.<ts> や .copy などの付随ファイルが生成されていないことを確認する。
+    assert [p.name for p in tmp_path.iterdir()] == ["initialized.db"]
 
 
 # update サブコマンドの初期化済み DB 必須チェック
