@@ -181,26 +181,26 @@ def sync_log_for_update(con, client, args, target):
         )
 
 
-def is_after_s3_cursor(obj, last_modified, object_name):
+def is_after_s3_cursor(obj, cursor_last_modified, cursor_object_name):
     """
     s3_objects テーブルに保存したカーソルより新しいオブジェクトかを判定する。
 
-    obj.last_modified と last_modified の両方がタイムゾーン情報を含んでいることを前提とする。
+    obj.last_modified と cursor_last_modified の両方がタイムゾーン情報を含んでいることを前提とする。
     MinIO SDK の Object.last_modified と DuckDB の TIMESTAMPTZ カラムはどちらも
     タイムゾーン情報を含む datetime を返すため、タイムゾーン情報を含まない datetime が
     渡るのは設計違反として明示的に拒否する。
     """
-    if obj.last_modified is None or last_modified is None:
+    if obj.last_modified is None or cursor_last_modified is None:
         raise ValueError("S3 object cursor has a missing last_modified timestamp")
-    if (obj.last_modified.tzinfo is None) or (last_modified.tzinfo is None):
+    if (obj.last_modified.tzinfo is None) or (cursor_last_modified.tzinfo is None):
         raise ValueError(
             "S3 object cursor has a timezone-naive last_modified timestamp"
         )
-    if obj.last_modified > last_modified:
+    if obj.last_modified > cursor_last_modified:
         return True
-    if obj.last_modified < last_modified:
+    if obj.last_modified < cursor_last_modified:
         return False
-    return obj.object_name > object_name
+    return obj.object_name > cursor_object_name
 
 
 def create_s3_object_table(con):
@@ -388,8 +388,9 @@ def escape_sql_string_literal(path_literal):
     シングルクォートをエスケープする。
 
     DuckDB はファイルパスをプリペアドステートメントでバインドできないため、ATTACH 等で
-    パス文字列を直接埋め込む必要がある。本関数は信頼された CLI 引数 (args.db 等) のみを
-    通す想定で、制御文字 (0x00 から 0x1f および 0x7f) を含む値は CliUsageError で拒否する。
+    パス文字列を直接埋め込む必要がある。本関数は信頼された CLI 引数 (args.db) および
+    そこから派生したパス (delete の copy_file = args.db + ".copy" 等) のみを通す想定で、
+    制御文字 (0x00 から 0x1f および 0x7f) を含む値は CliUsageError で拒否する。
     NUL バイトはファイルパスとして無効、改行や DEL 等は DuckDB パーサで予期せぬ挙動を
     起こす可能性があるため、暗黙の補正でなく明示的に弾く。
     """
@@ -490,7 +491,7 @@ def update(args):
 
 
 def delete(args):
-    """retention_period 日より古いログを削除し、 DB ファイルを VACUUM 相当でサイズ縮小する。
+    """retention_period 日より古いログを削除し、 削除後の DB を新しい DB へ COPY して詰め直す。
 
     DELETE 発行後、 in-memory DuckDB から ATTACH + COPY FROM DATABASE で空き領域を詰めた
     DB を copy_file へ書き出し、 shutil.move で元 DB を置き換える。
@@ -648,6 +649,9 @@ def create_readonly_copy(db_path):
     参考: https://github.com/motherduckdb/grafana-duckdb-datasource?tab=readme-ov-file#updating-data-in-the-duckdb-file
     """
     tmp_file = f"{db_path}.tmp"
+    # 前回の create_readonly_copy が copyfile と move の間で異常終了して .tmp が残っても、
+    # 直後の copyfile が上書きするため事前削除は不要。 delete の .copy は ATTACH で開かれ
+    # 古いスキーマが混ざる危険があるため掃除するが、 .tmp にはその経路がなく非対称でよい。
     shutil.copyfile(db_path, tmp_file)
     # other の読み込み権限、書き込み権限は不要なので 0o660 に揃える
     os.chmod(tmp_file, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
