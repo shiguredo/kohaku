@@ -21,6 +21,15 @@ case "${MC_INIT_RETRY_INTERVAL}" in
     ;;
 esac
 
+# mc コマンドで参照する必須環境変数を事前検証する。compose.yml の env や
+# EnvironmentFile の編集忘れによる unbound variable を、 mc への接続を試みる前に
+# 一度に特定できるようにする。
+: "${S3_ENDPOINT:?S3_ENDPOINT is required}"
+: "${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID is required}"
+: "${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY is required}"
+: "${S3_BUCKET:?S3_BUCKET is required}"
+: "${RETENTION_PERIOD:?RETENTION_PERIOD is required}"
+
 if [ "${S3_USE_SSL:-}" = "true" ]; then
   endpoint_scheme=https
 else
