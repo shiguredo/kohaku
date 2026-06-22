@@ -496,6 +496,13 @@ def delete(args):
     DELETE 発行後、 in-memory DuckDB から ATTACH + COPY FROM DATABASE で空き領域を詰めた
     DB を copy_file へ書き出し、 shutil.move で元 DB を置き換える。
 
+    copy_file は args.db と同一ディレクトリに置くため、 shutil.move は内部で os.rename を
+    呼び POSIX 上 atomic に振る舞う。 すなわち args.db が「move 部分成功で書き換わって
+    壊れる」 状態で残ることはない前提で except 経路を組んでいる。 copy_file を args.db と
+    別のファイルシステムに置くと、 shutil.move は os.rename ではなく copy + remove に
+    切り替わって atomic でなくなり、 args.db が書きかけのまま残り得るので、 その場合は
+    args.db の退避処理を追加すること。
+
     .wal ファイルは with duckdb.connect ブロックを抜けた時点で DuckDB が本体に畳んで削除する
     ため、 通常 shutil.move 直前には残らない。 もし残っているとすれば前回の update または delete
     が異常終了して未コミットの WAL が残ったケースに限られる。 そのケースで新本体 + 古い .wal の
