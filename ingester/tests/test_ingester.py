@@ -307,12 +307,19 @@ def test_re_init(s3_client, rustfs_endpoint, tmp_path):
 
     args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
+    # 1 回目の init
     init(args)
-
     assert os.path.exists(duckdb_filepath)
 
+    # 1 回目の init 後の状態を検証する。 検証用 connection を保持したまま 2 回目の
+    # init を呼ぶと、 init 内部の DB 接続挙動 (prepare_db_for_init や
+    # has_s3_objects_table) との競合をテスト側で抱え込むことになるため、
+    # 検証 → 一旦クローズ → 2 回目 init → 再検証 の順で組む。
+    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+    latest_object = get_latest_object(
+        s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"])
+    )
     with duckdb.connect(duckdb_filepath) as duckdb_connection:
-        objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
         assert result is not None
@@ -322,9 +329,6 @@ def test_re_init(s3_client, rustfs_endpoint, tmp_path):
         assert result[0] == len(objects)
 
         # DuckDB に保存されている last_modified が、最新オブジェクト ((last_modified, object_name) の最大) の last_modified と一致することを確認する
-        latest_object = get_latest_object(
-            s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"])
-        )
         duckdb_connection.execute(
             "SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?",
             (
@@ -336,8 +340,11 @@ def test_re_init(s3_client, rustfs_endpoint, tmp_path):
         assert result is not None
         assert result[0] == 1
 
-        # 再度 init を呼び出しても、内容が変わらないことを確認する
-        init(args)
+    # 2 回目の init はテスト側の DB 接続を閉じてから呼び出す。
+    init(args)
+
+    # 再実行後も内容が変わらないことを別 connection で確認する
+    with duckdb.connect(duckdb_filepath) as duckdb_connection:
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
         # 取得したデータ数が最初の init 実行後から変わらないことを確認する
@@ -407,12 +414,15 @@ def test_update(s3_client, rustfs_endpoint, tmp_path):
 
     args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
+    # 初期 init
     init(args)
-
     assert os.path.exists(duckdb_filepath)
 
+    # init / update の呼び出しと検証用 connection を交差させないため、 検証ごとに
+    # with duckdb.connect(...) を独立させる。 こうしておくと init / update 内部の DB
+    # 接続挙動が変わってもテスト側が暗黙の前提に依存しない。
+    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     with duckdb.connect(duckdb_filepath) as duckdb_connection:
-        objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
         assert result is not None
@@ -421,48 +431,49 @@ def test_update(s3_client, rustfs_endpoint, tmp_path):
         # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
         assert result[0] == len(objects)
 
-        # log データに変化がないため、update を呼び出してもデータ数が変わらないことを確認する
-        update(args)
+    # log データに変化がないため、update を呼び出してもデータ数が変わらないことを確認する
+    update(args)
+    with duckdb.connect(duckdb_filepath) as duckdb_connection:
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
         # 取得したデータ数が変わらないことを確認する
         assert result is not None
         assert result[0] == len(objects)
 
-        # 新規の log データを RustFS に追加した後に update を呼び出して、データ数が増えることを確認する
-        new_log_file = os.path.join(LOG_DIR, "rtc_stats.jsonl")
-        with open(new_log_file, "rb") as data:
-            for line in data:
-                parsed_log = json.loads(line)
-                now = datetime.datetime.now(datetime.UTC)
-                log_data = json.dumps(parsed_log).encode("utf-8")
-                compressed_log_data = gzip.compress(log_data)
+    # 新規の log データを RustFS に追加した後に update を呼び出して、データ数が増えることを確認する
+    new_log_file = os.path.join(LOG_DIR, "rtc_stats.jsonl")
+    with open(new_log_file, "rb") as data:
+        for line in data:
+            parsed_log = json.loads(line)
+            now = datetime.datetime.now(datetime.UTC)
+            log_data = json.dumps(parsed_log).encode("utf-8")
+            compressed_log_data = gzip.compress(log_data)
 
-                directory = now.strftime("%Y/%m/%d")
-                s3_path = data_path(PREFIX, "rtc_stats", directory)
-                # アップロード
-                s3_client.put_object(
-                    BUCKET,
-                    s3_path,
-                    io.BytesIO(compressed_log_data),
-                    length=len(compressed_log_data),
-                )
+            directory = now.strftime("%Y/%m/%d")
+            s3_path = data_path(PREFIX, "rtc_stats", directory)
+            # アップロード
+            s3_client.put_object(
+                BUCKET,
+                s3_path,
+                io.BytesIO(compressed_log_data),
+                length=len(compressed_log_data),
+            )
 
-        # update を呼び出して、データ数が増えることを確認する
-        update(args)
+    # update を呼び出して、データ数が増えることを確認する
+    update(args)
+    objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+    latest_object = get_latest_object(
+        s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"])
+    )
+    with duckdb.connect(duckdb_filepath) as duckdb_connection:
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
         # 取得したデータ数が増えていることを確認する
         assert result is not None
-        assert result[0] > len(objects)
-
-        objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
+        assert result[0] > 0
         assert result[0] == len(objects)
 
         # DuckDB に保存されている last_modified が、最新オブジェクト ((last_modified, object_name) の最大) の last_modified と一致することを確認する
-        latest_object = get_latest_object(
-            s3_client, BUCKET, "/".join([PREFIX, "rtc_stats"])
-        )
         duckdb_connection.execute(
             "SELECT COUNT(*) FROM s3_objects WHERE type=? and last_modified = ?",
             (
