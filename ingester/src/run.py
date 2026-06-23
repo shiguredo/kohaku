@@ -357,18 +357,8 @@ def list_objects(client, bucket, prefix):
 
     オブジェクトキーが時系列順とは限らない (UUID 等を含むケースがある) ため、
     MinIO の start_after でカーソル以降を絞り込むのは取り逃しのリスクがあり使用しない。
-
-    MinIO SDK の Object.last_modified は Optional[datetime] のため、 None が含まれる
-    可能性がある。 ソートのキーとして None と datetime を比較すると TypeError になり、
-    また is_after_s3_cursor 側でも None を ValueError で拒否しているため、 入口でも
-    対称に拒否する。 観測実例は無いが、 防御の入口を揃えるための予防的バリデーション。
     """
     objects = list(client.list_objects(bucket, prefix=prefix, recursive=True))
-    for obj in objects:
-        if obj.last_modified is None:
-            raise ValueError(
-                f"S3 object has a missing last_modified timestamp: {obj.object_name}"
-            )
     return sorted(
         objects, key=lambda obj: (obj.last_modified, obj.object_name), reverse=True
     )
@@ -557,8 +547,6 @@ def delete(args):
 
 
 def insert_log_from_s3(con, client, table_name, bucket, prefix, update_maximum_load):
-    if update_maximum_load is None:
-        raise ValueError("update_maximum_load is required but got None")
     cursor = select_s3_object(con, table_name)
     object_name, object_last_modified = cursor
 
@@ -620,10 +608,7 @@ def delete_log_by_timestamp(con, table_name, timestamp):
         return 0
 
     con.execute(f"DELETE FROM {table_name} WHERE timestamp < ?", (timestamp,))
-    result = con.fetchone()
-    if result is None:
-        raise RuntimeError(f"DELETE on {table_name} returned no row")
-    deleted_rows = result[0]
+    deleted_rows = con.fetchone()[0]
     print(f"Deleted {deleted_rows} rows from {table_name}.")
     return deleted_rows
 
