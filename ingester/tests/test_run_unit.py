@@ -459,75 +459,66 @@ def test_is_after_s3_cursor_newer_last_modified():
     """last_modified がカーソルより新しければ True となることを確認する。"""
     t_old = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
     t_new = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
-    obj = SimpleNamespace(last_modified=t_new, object_name="a")
-    assert run.is_after_s3_cursor(obj, t_old, "a") is True
+    assert run.is_after_s3_cursor(t_new, "a", t_old, "a") is True
 
 
 def test_is_after_s3_cursor_older_last_modified():
     """last_modified がカーソルより古ければ False となることを確認する。"""
     t_old = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
     t_new = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
-    obj = SimpleNamespace(last_modified=t_old, object_name="z")
-    assert run.is_after_s3_cursor(obj, t_new, "a") is False
+    assert run.is_after_s3_cursor(t_old, "z", t_new, "a") is False
 
 
 def test_is_after_s3_cursor_same_last_modified_newer_object_name():
     """last_modified が同値なら object_name が大きい方を新しいと判定することを確認する。"""
     t = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
-    obj = SimpleNamespace(last_modified=t, object_name="b")
-    assert run.is_after_s3_cursor(obj, t, "a") is True
+    assert run.is_after_s3_cursor(t, "b", t, "a") is True
 
 
 def test_is_after_s3_cursor_same_last_modified_older_object_name():
     """last_modified が同値で object_name が小さい場合は False となることを確認する。"""
     t = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
-    obj = SimpleNamespace(last_modified=t, object_name="a")
-    assert run.is_after_s3_cursor(obj, t, "b") is False
+    assert run.is_after_s3_cursor(t, "a", t, "b") is False
 
 
 def test_is_after_s3_cursor_same_last_modified_same_object_name():
     """last_modified と object_name の両方が同値なら False となることを確認する (カーソル自身を除外)。"""
     t = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
-    obj = SimpleNamespace(last_modified=t, object_name="a")
-    assert run.is_after_s3_cursor(obj, t, "a") is False
+    assert run.is_after_s3_cursor(t, "a", t, "a") is False
 
 
 def test_is_after_s3_cursor_rejects_tz_naive_obj_last_modified():
-    """obj.last_modified がタイムゾーン情報を含まないとき ValueError を送出することを確認する。"""
+    """obj 側の last_modified がタイムゾーン情報を含まないとき ValueError を送出することを確認する。"""
     naive = datetime.datetime(2026, 1, 1)
     aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
-    obj = SimpleNamespace(last_modified=naive, object_name="a")
     with pytest.raises(ValueError, match="timezone-naive last_modified"):
-        run.is_after_s3_cursor(obj, aware, "a")
+        run.is_after_s3_cursor(naive, "a", aware, "a")
 
 
 def test_is_after_s3_cursor_rejects_tz_naive_cursor_last_modified():
     """カーソル側の last_modified がタイムゾーン情報を含まないとき ValueError を送出することを確認する。"""
     naive = datetime.datetime(2026, 1, 1)
     aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
-    obj = SimpleNamespace(last_modified=aware, object_name="a")
     with pytest.raises(ValueError, match="timezone-naive last_modified"):
-        run.is_after_s3_cursor(obj, naive, "a")
+        run.is_after_s3_cursor(aware, "a", naive, "a")
 
 
 def test_is_after_s3_cursor_rejects_none_obj_last_modified():
-    """obj.last_modified が None のとき ValueError を送出することを確認する。
+    """obj 側の last_modified が None のとき ValueError を送出することを確認する。
 
     minio SDK の Object.last_modified は Optional[datetime] のため、tzinfo を参照する前に
     None を ValueError として明示的に拒否し、AttributeError を表出させない。
     """
     aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
-    obj = SimpleNamespace(last_modified=None, object_name="a")
     with pytest.raises(ValueError, match="missing last_modified"):
-        run.is_after_s3_cursor(obj, aware, "a")
+        run.is_after_s3_cursor(None, "a", aware, "a")
 
 
 def test_is_after_s3_cursor_rejects_none_cursor_last_modified():
     """カーソル側の last_modified が None のとき ValueError を送出することを確認する。"""
     aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
-    obj = SimpleNamespace(last_modified=aware, object_name="a")
     with pytest.raises(ValueError, match="missing last_modified"):
-        run.is_after_s3_cursor(obj, None, "a")
+        run.is_after_s3_cursor(aware, "a", None, "a")
 
 
 # init サブコマンドの初期化済み DB 早期 return
