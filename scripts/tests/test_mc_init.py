@@ -179,3 +179,83 @@ def test_mc_init_rejects_missing_required_var(missing_var: str) -> None:
     assert f"{missing_var} is required" in stderr, (
         f"stderr に '{missing_var} is required' が含まれていません: {stderr}"
     )
+
+
+@pytest.mark.parametrize(
+    "invalid_value",
+    [
+        "abc",  # 非数値
+        "0",  # 0 は明示的に弾かれる
+        "-1",  # 負数 (case の `*[!0-9]*` でマッチして弾かれる)
+    ],
+)
+def test_mc_init_rejects_invalid_max_retries(invalid_value: str) -> None:
+    """MC_INIT_MAX_RETRIES が正の整数でないと exit 非 0 で 'must be a positive integer' を出すことを確認する。
+
+    空文字は ``${MC_INIT_MAX_RETRIES:-5}`` のフォールバックで 5 に置換されてバリデーション
+    層に到達しないため、 本テストの対象から外している。
+    """
+    env = _full_mc_init_env()
+    env["MC_INIT_MAX_RETRIES"] = invalid_value
+
+    status_code, stderr = _run_mc_init(env)
+
+    assert status_code != 0, (
+        f"不正な MC_INIT_MAX_RETRIES なのに exit 0 になりました (value={invalid_value!r}): {stderr}"
+    )
+    assert "MC_INIT_MAX_RETRIES must be a positive integer" in stderr, (
+        f"stderr に 'MC_INIT_MAX_RETRIES must be a positive integer' が含まれていません (value={invalid_value!r}): {stderr}"
+    )
+
+
+@pytest.mark.parametrize(
+    "invalid_value",
+    [
+        "abc",  # 非数値
+        "-1",  # 負数 (case の `*[!0-9]*` でマッチして弾かれる)
+    ],
+)
+def test_mc_init_rejects_invalid_retry_interval(invalid_value: str) -> None:
+    """MC_INIT_RETRY_INTERVAL が非負整数でないと exit 非 0 で 'must be a non-negative integer' を出すことを確認する。
+
+    空文字は ``${MC_INIT_RETRY_INTERVAL:-2}`` のフォールバックで 2 に置換されてバリデーション
+    層に到達しないため、 本テストの対象から外している。
+    """
+    env = _full_mc_init_env()
+    env["MC_INIT_RETRY_INTERVAL"] = invalid_value
+
+    status_code, stderr = _run_mc_init(env)
+
+    assert status_code != 0, (
+        f"不正な MC_INIT_RETRY_INTERVAL なのに exit 0 になりました (value={invalid_value!r}): {stderr}"
+    )
+    assert "MC_INIT_RETRY_INTERVAL must be a non-negative integer" in stderr, (
+        f"stderr に 'MC_INIT_RETRY_INTERVAL must be a non-negative integer' が含まれていません (value={invalid_value!r}): {stderr}"
+    )
+
+
+def test_mc_init_accepts_zero_retry_interval() -> None:
+    """MC_INIT_RETRY_INTERVAL=0 (即時リトライ) がバリデーションで弾かれず、 リトライループへ進むことを確認する。
+
+    bash イメージには mc コマンドが無いため接続ループは必ず失敗するが、 その失敗は
+    'must be a non-negative integer' ではなく後段の Timed out 経路で起きる。 これにより
+    「0 はバリデーションを通過する」 ことを間接的に検証する。
+    """
+    env = _full_mc_init_env()
+    env["MC_INIT_RETRY_INTERVAL"] = "0"
+    # テスト時間短縮のため最小リトライ回数に絞る
+    env["MC_INIT_MAX_RETRIES"] = "2"
+
+    status_code, stderr = _run_mc_init(env)
+
+    assert "MC_INIT_RETRY_INTERVAL must be a non-negative integer" not in stderr, (
+        f"MC_INIT_RETRY_INTERVAL=0 がバリデーションで弾かれました: {stderr}"
+    )
+    # バリデーション層を通過してリトライループへ進んだ証拠
+    assert "Timed out waiting for storage endpoint" in stderr, (
+        f"バリデーション通過後にリトライループへ進んだ形跡がありません: {stderr}"
+    )
+    # mc コマンドが見つからず接続失敗 → MAX_RETRIES 到達で exit 1 になる
+    assert status_code != 0, (
+        f"mc コマンド未インストール環境で正常終了してはいけません: {stderr}"
+    )
