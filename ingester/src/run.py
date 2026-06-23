@@ -14,10 +14,8 @@ from minio.error import S3Error
 class CliUsageError(Exception):
     """CLI ユーザーの入力・操作順序の不備を表す例外。
 
-    handle_cli_error はこの例外を「ユーザー向け 1 行メッセージで exit 1」 として扱う。
-    内部呼び出しのエラー (Unknown table name) やデータ整合性異常
-    (is_after_s3_cursor の None/naive last_modified)、設定ファイル異常 (load_columns) は
-    本例外に含めず、 ValueError のままトレースバック付きで上位に伝播させる。
+    handle_cli_error がユーザー向け 1 行メッセージで exit 1 にする経路に乗せる。
+    内部用エラーは ValueError 等のまま上位に伝播させて区別する。
     """
 
 
@@ -126,18 +124,12 @@ def init(args):
 def initialize_log_table(con, client, args, target):
     """対象テーブルを初回作成する。
 
-    list_objects は (last_modified, object_name) の降順 (新しい順) で並ぶため、先頭側
-    initial_maximum_load 件 = 新しい側 N 件のみを取り込んでテーブルを作成し、カーソルは
-    log_objects[0] (= 全体最新オブジェクト) に進める。対象オブジェクトが無ければ何もしない。
+    list_objects は (last_modified, object_name) の降順で並ぶため、先頭側 initial_maximum_load
+    件 (新しい側) のみを取り込み、カーソルは全体最新オブジェクトに進める。対象オブジェクトが
+    無ければ何もしない。
 
-    initial_maximum_load を超えるオブジェクトが S3 上に存在する場合、超過した古い側は
-    意図的に取り込まない。これは「古すぎるデータを取り込まない」ためにユーザーが指定する
-    上限であり、超過分は DB に取り込まれず S3 に残り続ける。カーソルを全体最新まで進める
-    ことで、以降の update では新たに到着したオブジェクトのみが取り込まれる。
-
-    insert_log_from_s3 は逆に「停止後の復帰時に大量蓄積したログを古い側からバッチで取り
-    込む」目的のため古い側 (末尾側) を取るが、init は新しい側 (先頭側) を取る。この非対称は
-    両関数の目的が異なるためで意図的なものである。
+    initial_maximum_load を超える古い側は「古すぎるデータを取り込まない」ため意図的に
+    取り込まない (insert_log_from_s3 が古い側からバッチ取り込みする方針と非対称なのが正解)。
     """
     log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
     if len(log_objects) == 0:
@@ -154,10 +146,8 @@ def sync_log_for_init(con, client, args, target):
     try:
         initialize_log_table(con, client, args, target)
     except duckdb.InvalidInputException as e:
-        # 対象 target の取り込みで InvalidInputException が出た場合は、 残りの LOG_TARGETS の
-        # 取り込みを止めないために stderr に記録して次の target へ進む。
-        # 発生要因の例: S3 オブジェクトが JSON として読めない、 read_json のスキーマ不一致など。
-        # S3 上にオブジェクトが 0 件のケースは list_objects 段階で吸収されるため、 ここには到達しない。
+        # 対象 target で InvalidInputException が出ても残りの LOG_TARGETS を止めないため、
+        # stderr に記録して次の target へ進む。 発生要因の例: read_json のスキーマ不一致など。
         print(f"InvalidInputException ({target}): {e}", file=sys.stderr)
 
 
@@ -227,15 +217,9 @@ def is_broken_db_error(error):
 
 
 def move_broken_db(db_path):
-    """
-    DB ファイルが破損していると判断した場合、DB ファイルをリネームする。
+    """DB ファイルが破損していると判断した場合に .broken.<timestamp> へリネームする。
 
-    タイムスタンプにはマイクロ秒まで含める。crash loop 等で短時間に複数回 init が走り、
-    同じパスの DB を連続して破損退避するケースで、退避先 (.broken.<ts>) の衝突の可能性を
-    小さく抑える。 ただし厳密にはマイクロ秒精度の限界で衝突しうるため、 同マイクロ秒で
-    重なった場合は shutil.move が後勝ちで上書きしてしまう。 現実の crash loop でも先行
-    する退避とマイクロ秒未満で連続するケースは観測されていないため、 実例が出てから
-    衝突回避策を追加する。
+    タイムスタンプはマイクロ秒まで含めて crash loop による連続退避時の衝突を抑える。
     """
     timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%d%H%M%S%f")
     broken_db_path = f"{db_path}.broken.{timestamp}"
@@ -249,19 +233,12 @@ def move_broken_db(db_path):
 
 
 def prepare_db_for_init(db_path):
-    """
-    DB ファイルが存在する場合に、DB ファイルが破損していないかを確認する。
+    """DB ファイルが存在する場合に破損していないかを確認する。
 
-    DB が正常な状態であれば何もしない。破損と判定された場合のみ .broken.<timestamp>
-    に退避する。それ以外の接続エラー (ロック競合、権限不足等) は呼び出し元へ伝播
-    させる。握りつぶして return すると直後の has_s3_objects_table が同じパスへ再
-    connect して同じ例外を再発させ、ユーザーに二重出力を見せてしまうため、明示的に
-    raise する。
-
-    破損判定の流れ (ファイル存在チェック → 試し接続 → 例外分類) は check_db_not_broken
-    と同じ構造を持つ。 破損が見つかったときの処理だけが異なり、 本関数は退避を行うのに対して
-    check_db_not_broken は exit_with_stderr で終了する。 利用箇所が 2 箇所しかないため
-    共通化は見送り、 3 箇所目で同じ流れが必要になった時点で切り出す。
+    DB が正常なら何もしない。 破損と判定された場合のみ .broken.<timestamp> に退避する。
+    破損以外の接続エラー (ロック競合、 権限不足等) は呼び出し元へ伝播させる
+    (握りつぶすと直後の has_s3_objects_table で同じ例外を再発させ、 ユーザーに二重出力
+    させてしまうため)。
     """
 
     if not os.path.exists(db_path):
@@ -284,22 +261,10 @@ def prepare_db_for_init(db_path):
 def has_s3_objects_table(db_path):
     """DB ファイルに s3_objects テーブルが存在するかを判定する。
 
-    init は完了判定にこの関数を使い、 True なら早期 return する。
-    update / delete も前段の事前チェックに使う。
-
-    本関数は s3_objects テーブルの「存在」 のみを見て、 行数や LOG_TARGETS テーブルの
-    有無は確認しない。 すなわち以下のすべてのケースを True と判定する:
-
-    - 正常完了した DB (s3_objects テーブルあり、 LOG_TARGETS のテーブルあり、 行あり)
-    - S3 上にログが 0 件で正常終了した DB (s3_objects テーブルあり、 行 0)
-    - init 途中で例外が発生して中途半端な状態で残った DB
-      (s3_objects テーブルのみ、 もしくは一部の LOG_TARGETS テーブルのみ存在)
-
-    中途半端な DB が残った場合、 init は no-op で抜けるが、 update 経路では
-    sync_log_for_update が select_s3_object で None を返したターゲットに対して
-    initialize_log_table を呼ぶため、 取り込み済みでないターゲットは update で復旧する。
-    根本原因 (NoSuchBucket / 認証失敗 等) が解決していない場合は復旧せず同じエラーが
-    update で再発するため、 運用者が DB を削除して再 init する必要がある。
+    init は完了判定に使い、 update / delete は事前チェックに使う。
+    s3_objects テーブルの「存在」 のみを見て、 行数や LOG_TARGETS テーブルの有無は見ない。
+    中途半端な DB (s3_objects テーブルあり、 LOG_TARGETS 一部欠落) は update 経路の
+    sync_log_for_update で復旧する設計。
     """
 
     if not os.path.exists(db_path):
@@ -493,12 +458,7 @@ def delete(args):
     切り替わって atomic でなくなり、 args.db が書きかけのまま残り得るので、 その場合は
     args.db の退避処理を追加すること。
 
-    .wal ファイルは with duckdb.connect ブロックを抜けた時点で DuckDB が本体に畳んで削除する
-    ため、 通常 shutil.move 直前には残らない。 もし残っているとすれば前回の update または delete
-    が異常終了して未コミットの WAL が残ったケースに限られる。 そのケースで新本体 + 古い .wal の
-    組み合わせになると次回 open 時に WAL リプレイで本体 DB を壊す可能性があるが、 異常終了後の
-    残骸は check_db_not_broken の破損検出で吸収できる想定のため、 明示的な .wal 削除は加えず、
-    観測実例が出てから対策を検討する。
+    .wal の残骸は check_db_not_broken の破損検出で吸収する想定で、 明示的な削除は加えない。
     """
     if not os.path.exists(args.db):
         raise FileNotFoundError(f"DB file not found: {args.db}")
@@ -654,17 +614,11 @@ def create_readonly_copy(db_path):
 
 
 def handle_cli_error(error, bucket):
-    """CLI トップレベル例外ハンドラ。main から呼び出された関数の例外を分類して整形する。
+    """main から呼び出された関数の例外を分類して整形する CLI トップレベル例外ハンドラ。
 
-    ストレージ系の S3Error、 DB ファイル不在の FileNotFoundError、 CLI ユーザーの入力
-    バリデーション失敗で送出される CliUsageError を「ユーザー向け 1 行メッセージで exit 1」
-    として扱う。
-
-    delete_log_by_timestamp の Unknown table name、 データ整合性異常 (is_after_s3_cursor
-    の None/naive last_modified)、 設定ファイル異常 (load_columns の Invalid format) は
-    ValueError のまま上位に伝播させ、 トレースバックで原因究明できるようにする。
-
-    bucket は NoSuchBucket メッセージ用の表示値として受け取る。
+    S3Error / FileNotFoundError / CliUsageError をユーザー向け 1 行メッセージで exit 1 にする。
+    それ以外はトレースバック付きで上位に伝播させる。 bucket は NoSuchBucket メッセージ用
+    の表示値として受け取る。
     """
     if isinstance(error, S3Error):
         if error.code == "NoSuchBucket":
