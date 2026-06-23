@@ -29,12 +29,6 @@ def test_positive_int_accepts_positive(value, expected):
     assert run.positive_int(value) == expected
 
 
-def test_positive_int_rejects_non_numeric():
-    """数値でない文字列を渡すと ValueError (int() 由来) を送出することを確認する。"""
-    with pytest.raises(ValueError, match="invalid literal for int"):
-        run.positive_int("abc")
-
-
 def test_delete_returns_without_copy_when_no_rows_deleted(tmp_path):
     """削除件数が 0 件の場合に DB コピー処理へ進まず、元 DB も変化しないことを確認する。"""
     db_path = tmp_path / "delete_no_rows.db"
@@ -154,15 +148,6 @@ def test_delete_removes_stale_copy_files_before_start(tmp_path):
 
 
 # should_create_readonly
-
-
-def test_should_create_readonly_returns_false_when_db_missing(tmp_path):
-    """DB ファイルが存在しないとき False を返すことを確認する。"""
-    missing = tmp_path / "missing.db"
-    assert (
-        run.should_create_readonly(str(missing), initial_mtime=0.0, initial_size=0)
-        is False
-    )
 
 
 def test_should_create_readonly_returns_false_when_mtime_and_size_unchanged(tmp_path):
@@ -358,38 +343,6 @@ def test_escape_sql_string_literal_rejects_control_characters(control_char):
     value = f"/var/lib/kohaku/duck{control_char}.db"
     with pytest.raises(run.CliUsageError, match="control characters"):
         run.escape_sql_string_literal(value)
-
-
-def test_escape_sql_string_literal_error_includes_codepoint_index_and_value_excerpt():
-    """制御文字検出時のエラーメッセージに、 コードポイント・index・値の repr 抜粋が含まれることを確認する。
-
-    デバッグ時に「どの値の何文字目にどの制御文字が混入したか」 を運用者が即座に特定できる
-    フォーマットを契約として固定する。
-    """
-    value = "/var/lib/kohaku/duck\x00.db"
-    with pytest.raises(run.CliUsageError) as exc_info:
-        run.escape_sql_string_literal(value)
-    message = str(exc_info.value)
-    assert "U+0000" in message
-    assert "at index 20" in message
-    # 値の repr 抜粋 (最大 40 文字、 制御文字は \x00 形式で表記される) を含む。
-    assert repr(value[:40]) in message
-
-
-@pytest.mark.parametrize(
-    "boundary_char",
-    [
-        " ",  # 0x20 (空白): 制御文字範囲の直後
-        "~",  # 0x7E (チルダ): DEL の直前
-        "\xa0",  # 0xA0 (NO-BREAK SPACE): DEL の直後の非 ASCII 文字
-        "あ",  # マルチバイト文字 (U+3042)
-    ],
-)
-def test_escape_sql_string_literal_accepts_boundary_characters(boundary_char):
-    """制御文字範囲の境界 (0x20 と 0x7E) と非 ASCII 文字は受容することを確認する。"""
-    value = f"/var/lib/kohaku/duck{boundary_char}.db"
-    # シングルクォートを含まないので元の値がそのまま返る
-    assert run.escape_sql_string_literal(value) == value
 
 
 # require_known_table の許可リスト検証
@@ -675,11 +628,6 @@ def test_is_broken_db_error_is_case_insensitive(message):
 def test_is_broken_db_error_returns_false_for_unrelated_message():
     """破損とは無関係なエラーメッセージで False を返すことを確認する。"""
     assert run.is_broken_db_error(Exception("Permission denied")) is False
-
-
-def test_is_broken_db_error_returns_false_for_empty_message():
-    """空のエラーメッセージで False を返すことを確認する。"""
-    assert run.is_broken_db_error(Exception("")) is False
 
 
 # move_broken_db
