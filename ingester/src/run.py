@@ -442,7 +442,7 @@ def create_log_table(con, table_name, target_urls):
     require_known_table(table_name, duckdb_columns)
 
     if table_exists(con, table_name):
-        print(f"Table {table_name} already exists.")
+        print(f"Table {table_name} already exists.", file=sys.stderr)
         return
 
     # テーブルを作成する
