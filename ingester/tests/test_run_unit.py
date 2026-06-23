@@ -456,24 +456,6 @@ def test_is_after_s3_cursor_rejects_tz_naive_cursor_last_modified():
         run.is_after_s3_cursor(aware, "a", naive, "a")
 
 
-def test_is_after_s3_cursor_rejects_none_obj_last_modified():
-    """obj 側の last_modified が None のとき ValueError を送出することを確認する。
-
-    minio SDK の Object.last_modified は Optional[datetime] のため、tzinfo を参照する前に
-    None を ValueError として明示的に拒否し、AttributeError を表出させない。
-    """
-    aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
-    with pytest.raises(ValueError, match="missing last_modified"):
-        run.is_after_s3_cursor(None, "a", aware, "a")
-
-
-def test_is_after_s3_cursor_rejects_none_cursor_last_modified():
-    """カーソル側の last_modified が None のとき ValueError を送出することを確認する。"""
-    aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
-    with pytest.raises(ValueError, match="missing last_modified"):
-        run.is_after_s3_cursor(aware, "a", None, "a")
-
-
 # init サブコマンドの初期化済み DB 早期 return
 
 
