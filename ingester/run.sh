@@ -4,7 +4,10 @@ set -euo pipefail
 
 # 必須環境変数を事前検証する。compose.yml の env や systemd EnvironmentFile の編集忘れに
 # よる unbound variable をスクリプト冒頭で一度に特定できるようにする。
-# scripts/run-ingester.sh も同等の必須検証を持つ。 増減時は両方を見直す。
+# 本スクリプトは docker / compose 経由で init + update ループ + delete を 1 プロセスで
+# 回すため、 全サブコマンドが参照する必須変数を冒頭でまとめて検証する。
+# scripts/run-ingester.sh は systemd 経由で 1 サブコマンドのみ実行する起動形態のため、
+# 検証する必須変数の組が異なる点に注意 (両ファイル変更時は対象サブコマンドを揃えること)。
 : "${DUCKDB_DB_PATH:?DUCKDB_DB_PATH is required}"
 : "${S3_ENDPOINT:?S3_ENDPOINT is required}"
 : "${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID is required}"
