@@ -437,5 +437,13 @@ def test_runpy_init_fails_when_bucket_not_found(tmp_path):
             )
 
             run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
-            assert run.returncode != 0
-            assert "S3 bucket not found" in run.stderr
+            # handle_cli_error → exit_with_stderr 経由で exit code 1 が返り、
+            # stderr に bucket 名込みのメッセージが出ることを担保する (DNS 解決失敗等の
+            # 別経路で偶発的に部分文字列が一致するケースを除外する)。
+            assert run.returncode == 1, (
+                f"NoSuchBucket 経路で exit code 1 を期待したが {run.returncode} でした: "
+                f"{run.stderr}"
+            )
+            assert f"S3 bucket not found: {BUCKET}" in run.stderr, (
+                f"stderr に 'S3 bucket not found: {BUCKET}' が含まれていません: {run.stderr}"
+            )
