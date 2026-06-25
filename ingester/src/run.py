@@ -232,30 +232,37 @@ def move_broken_db(db_path):
     return broken_db_path
 
 
-def prepare_db_for_init(db_path):
-    """DB ファイルが存在する場合に破損していないかを確認する。
+def _detect_broken_db(db_path):
+    """DB ファイルが破損していれば True、 正常または不在なら False を返す。
 
-    DB が正常なら何もしない。 破損と判定された場合のみ .broken.<timestamp> に退避する。
-    破損以外の接続エラー (ロック競合、 権限不足等) は呼び出し元へ伝播させる
-    (握りつぶすと直後の has_s3_objects_table で同じ例外を再発させ、 ユーザーに二重出力
-    させてしまうため)。
+    破損以外の接続エラー (ロック競合、 権限不足等) は呼び出し元へ伝播させる。
     """
-
     if not os.path.exists(db_path):
-        return
-
+        return False
     try:
         with duckdb.connect(db_path) as con:
             con.execute("SELECT 1")
     except BROKEN_DB_CONNECT_ERRORS as error:
-        if not is_broken_db_error(error):
-            # 破損以外のエラー (ロック競合、権限不足等) は退避せず呼び出し元へ伝播させる
-            raise
-        broken_db_path = move_broken_db(db_path)
-        print(
-            f"Detected broken DB file. moved to {broken_db_path}",
-            file=sys.stderr,
-        )
+        if is_broken_db_error(error):
+            return True
+        raise
+    return False
+
+
+def prepare_db_for_init(db_path):
+    """DB ファイルが破損していれば .broken.<timestamp> に退避する。
+
+    破損以外の接続エラー (ロック競合、 権限不足等) は呼び出し元へ伝播させる
+    (握りつぶすと直後の has_s3_objects_table で同じ例外を再発させ、 ユーザーに二重出力
+    させてしまうため)。
+    """
+    if not _detect_broken_db(db_path):
+        return
+    broken_db_path = move_broken_db(db_path)
+    print(
+        f"Detected broken DB file. moved to {broken_db_path}",
+        file=sys.stderr,
+    )
 
 
 def has_s3_objects_table(db_path):
@@ -278,24 +285,16 @@ def has_s3_objects_table(db_path):
 
 
 def check_db_not_broken(db_path):
-    """update / delete の前処理として DB 破損を検出する。
+    """update / delete の前処理として DB 破損を検出し、 init の再実行を促して終了する。
 
-    破損と判定したら exit_with_stderr で終了し、運用者に init 再実行を促す。
-    init は prepare_db_for_init で自動退避するが、update / delete では運用者の判断を
-    優先するため自動退避せず、エラーメッセージで意思決定の主導権を運用者に残す。
-    破損以外 (ロック競合、権限不足等) は呼び出し元へ伝播させる。
+    init は prepare_db_for_init で自動退避するが、 update / delete では運用者の判断を
+    優先するため自動退避しない。 破損以外 (ロック競合、 権限不足等) は呼び出し元へ伝播。
     """
-    if not os.path.exists(db_path):
+    if not _detect_broken_db(db_path):
         return
-    try:
-        with duckdb.connect(db_path) as con:
-            con.execute("SELECT 1")
-    except BROKEN_DB_CONNECT_ERRORS as error:
-        if is_broken_db_error(error):
-            exit_with_stderr(
-                f"DB file is broken: {db_path}. Move or remove the file and run 'init' to re-initialize."
-            )
-        raise
+    exit_with_stderr(
+        f"DB file is broken: {db_path}. Move or remove the file and run 'init' to re-initialize."
+    )
 
 
 UPSERT_S3_OBJECT_SQL = """
