@@ -5,15 +5,20 @@ pytest はテストモジュールと同じディレクトリ階層を遡って 
 重複している接続情報やコンテナ起動処理を一箇所にまとめ、テストごとの揺れを防ぐ目的で用意している。
 """
 
+import os
 import subprocess
+import uuid
 from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 from testcontainers.core.container import DockerContainer
 
-# テスト用に作成する S3 バケット名 (test_ingester / test_fluent_bit で共通利用)
-BUCKET = "kohaku"
+# テスト用に作成する S3 バケット名 (test_ingester / test_fluent_bit で共通利用)。
+# pytest-xdist で並列実行したとき worker (= 別プロセス) ごとに別バケットを使うよう
+# PID + uuid で一意化する。 同一プロセス内では全テストが同じ BUCKET を共有する
+# (session スコープの RustFS コンテナ上で reset_bucket / make_bucket を回す現行設計)。
+BUCKET = f"kohaku-{os.getpid()}-{uuid.uuid4().hex[:8]}"
 # RustFS コンテナのアクセスキー (テスト専用)
 ACCESS_KEY = "kohakuadmin"
 # RustFS コンテナのシークレットキー (テスト専用)

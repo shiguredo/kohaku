@@ -632,9 +632,11 @@ def test_no_bucket(rustfs_endpoint, tmp_path):
     """RustFS のバケットが存在しない場合に init が S3Error(NoSuchBucket) を送出することを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
-    # S3 バケット名規約に従いつつ、RustFS に存在しないバケット名を指定する
+    # S3 バケット名規約に従いつつ、 RustFS に存在しないバケット名を指定する。
+    # 他テストが偶発的に同名バケットを作って偽通過するのを防ぐため uuid で一意化する。
+    non_existent_bucket = f"non-existent-{uuid.uuid4().hex[:8]}"
     args = make_args_for_s3(
-        duckdb_filepath, rustfs_endpoint, s3_bucket="non-existent-bucket"
+        duckdb_filepath, rustfs_endpoint, s3_bucket=non_existent_bucket
     )
 
     with pytest.raises(S3Error) as exc_info:
