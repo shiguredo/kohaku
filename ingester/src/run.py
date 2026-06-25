@@ -341,12 +341,12 @@ def escape_sql_string_literal(path_literal):
     """DuckDB の ATTACH 等で使う SQL 文字列リテラルとして path_literal を安全に埋め込めるよう
     シングルクォートをエスケープする。
 
-    DuckDB はファイルパスをプリペアドステートメントでバインドできないため、ATTACH 等で
-    パス文字列を直接埋め込む必要がある。本関数は信頼された CLI 引数 (args.db) および
-    そこから派生したパス (delete の copy_file = args.db + ".copy" 等) のみを通す想定で、
-    制御文字 (0x00 から 0x1f および 0x7f) を含む値は CliUsageError で拒否する。
-    NUL バイトはファイルパスとして無効、改行や DEL 等は DuckDB パーサで予期せぬ挙動を
-    起こす可能性があるため、暗黙の補正でなく明示的に弾く。
+    DuckDB はファイルパスをプリペアドステートメントでバインドできないため、 ATTACH 直前に
+    呼んでパス文字列を直接埋め込む用途。 制御文字 (0x00 から 0x1F および 0x7F) を含む値は
+    DuckDB パーサで予期せぬ挙動を起こす可能性があるため CliUsageError で拒否する。
+    ATTACH を通らない `duckdb.connect(args.db)` 等の経路は本関数の対象外で、 そこで NUL
+    バイト等が混入したときは Python 側の `embedded null byte` ValueError 等に委ねる
+    (args.db は argparse 経由の CLI 引数で外部入力ではないため、 入口での網羅検証は持たない)。
     """
     for i, c in enumerate(path_literal):
         if ord(c) < 0x20 or ord(c) == 0x7F:
