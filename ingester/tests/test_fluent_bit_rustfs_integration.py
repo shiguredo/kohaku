@@ -167,7 +167,7 @@ def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path):
     state_dir = tmp_path / "state"
     state_dir.mkdir()
     config_path = tmp_path / "fluent-bit.yml"
-    create_fluent_bit_config(config_path)
+    create_fluent_bit_config(config_path, s3_bucket=BUCKET)
     duckdb_path = tmp_path / "duck.db"
 
     # RustFS と fluent-bit を同一 Docker network 上で接続する
@@ -233,7 +233,7 @@ def test_runpy_init_skips_missing_target_without_invalid_input_exception(tmp_pat
     state_dir = tmp_path / "state"
     state_dir.mkdir()
     config_path = tmp_path / "fluent-bit.yml"
-    create_fluent_bit_config(config_path)
+    create_fluent_bit_config(config_path, s3_bucket=BUCKET)
     duckdb_path = tmp_path / "duck.db"
 
     with Network() as network:
@@ -322,7 +322,7 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
     state_dir = tmp_path / "state"
     state_dir.mkdir()
     config_path = tmp_path / "fluent-bit.yml"
-    create_fluent_bit_config(config_path)
+    create_fluent_bit_config(config_path, s3_bucket=BUCKET)
     duckdb_path = tmp_path / "duck.db"
 
     with Network() as network:
