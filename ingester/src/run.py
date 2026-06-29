@@ -114,7 +114,7 @@ def init(args):
         con.execute("LOAD icu")
 
         # 取得済みの最後のオブジェクト情報を保存するテーブルを作成
-        create_s3_object_table(con)
+        create_s3_objects_table(con)
 
         s3_setup(con, args)
         for target in LOG_TARGETS:
@@ -139,7 +139,7 @@ def initialize_log_table(con, client, args, target):
     log_urls = get_target_urls(args.s3_bucket, log_objects[: args.initial_maximum_load])
     create_log_table(con, target, log_urls)
     # 先頭が全体最新
-    update_s3_object_table(con, target, log_objects[0])
+    update_s3_objects_table(con, target, log_objects[0])
 
 
 def sync_log_for_init(con, client, args, target):
@@ -152,7 +152,7 @@ def sync_log_for_init(con, client, args, target):
 
 
 def sync_log_for_update(con, client, args, target):
-    cursor = select_s3_object(con, target)
+    cursor = select_s3_objects_row(con, target)
     if cursor is None:
         # 対象 log_type が初登場するケース (init 時点で該当ターゲットの S3 オブジェクトが
         # 1 件も無く、s3_objects にも行が作られなかった状況であとから登場した場合)。
@@ -193,7 +193,7 @@ def is_after_s3_cursor(
     return obj_object_name > cursor_object_name
 
 
-def create_s3_object_table(con):
+def create_s3_objects_table(con):
     con.execute(
         "CREATE TABLE IF NOT EXISTS s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)"
     )
@@ -308,7 +308,7 @@ WHEN NOT MATCHED THEN
 """
 
 
-def update_s3_object_table(con, log_type, obj):
+def update_s3_objects_table(con, log_type, obj):
     con.execute(UPSERT_S3_OBJECT_SQL, (log_type, obj.object_name, obj.last_modified))
 
 
@@ -423,7 +423,7 @@ def update(args):
     check_db_not_broken(args.db)
 
     # s3_objects テーブル不在の DB に対しては update を拒否する。init が未実行のまま
-    # update を呼ぶと select_s3_object が CatalogException で落ちるため、明示的に弾く。
+    # update を呼ぶと select_s3_objects_row が CatalogException で落ちるため、明示的に弾く。
     if not has_s3_objects_table(args.db):
         raise CliUsageError(
             f"s3_objects table not found in DB: {args.db}. Run 'init' first."
@@ -506,7 +506,7 @@ def delete(args):
 
 
 def insert_log_from_s3(con, client, table_name, bucket, prefix, update_maximum_load):
-    cursor = select_s3_object(con, table_name)
+    cursor = select_s3_objects_row(con, table_name)
     object_name, object_last_modified = cursor
 
     log_objects = list_objects(client, bucket, f"{prefix}/{table_name}/")
@@ -535,7 +535,7 @@ def insert_log_from_s3(con, client, table_name, bucket, prefix, update_maximum_l
     try:
         insert_log(con, table_name, target_urls)
         # 先頭がこのバッチの最新
-        update_s3_object_table(con, table_name, target_log_objects[0])
+        update_s3_objects_table(con, table_name, target_log_objects[0])
         con.commit()
     except Exception:
         con.rollback()
@@ -551,7 +551,7 @@ def insert_log(con, table_name, target_urls):
     rel.insert_into(table_name)
 
 
-def select_s3_object(con, log_type):
+def select_s3_objects_row(con, log_type):
     return con.execute(
         "SELECT object_name, last_modified FROM s3_objects WHERE type=?",
         (log_type,),
