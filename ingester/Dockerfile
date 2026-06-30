@@ -17,7 +17,7 @@ RUN set -eux; \
     case "${TARGETARCH}" in \
         amd64) UV_TARGET=x86_64-unknown-linux-gnu ;; \
         arm64) UV_TARGET=aarch64-unknown-linux-gnu ;; \
-        *) echo "Unsupported TARGETARCH: ${TARGETARCH}" >&2; exit 1 ;; \
+        *) echo "Unsupported TARGETARCH: '${TARGETARCH}'" >&2; exit 1 ;; \
     esac; \
     UV_TARBALL="uv-${UV_TARGET}.tar.gz"; \
     UV_URL="https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/${UV_TARBALL}"; \
