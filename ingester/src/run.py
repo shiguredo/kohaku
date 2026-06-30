@@ -458,6 +458,9 @@ def delete(args):
     args.db の退避処理を追加すること。
 
     .wal の残骸は check_db_not_broken の破損検出で吸収する想定で、 明示的な削除は加えない。
+
+    0o660 への chmod は COPY 経路の副次効果なので、 削除 0 件のときは正規化されない
+    (元 DB のパーミッションは init / sync の umask で揃える前提)。
     """
     if not os.path.exists(args.db):
         raise FileNotFoundError(f"DB file not found: {args.db}")
