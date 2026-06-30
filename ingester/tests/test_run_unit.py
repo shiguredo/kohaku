@@ -743,10 +743,8 @@ def _make_s3_error(code: str, message: str = "boom") -> S3Error:
     """テスト用の最小限の S3Error を生成する。
 
     response 引数は S3Error コンストラクタが urllib3 由来のレスポンス互換オブジェクトを
-    要求するため形式上渡している。 handle_cli_error は error.code と error.message のみを
-    参照するので、 ここで渡す HTTPResponse の中身は使われない。 ただし将来 urllib3 のメジャー
-    更新で HTTPResponse の引数規約が変わるとここが破綻するため、 pyproject.toml で
-    urllib3>=2,<3 と上限を切って互換範囲を固定している。
+    要求するため形式上 HTTPResponse() を渡している (urllib3 のバージョン制約は
+    pyproject.toml の urllib3 行のコメント参照)。
     """
     return S3Error(
         code=code,
