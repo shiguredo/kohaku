@@ -36,13 +36,13 @@ RUN set -eux; \
 RUN mkdir -p /var/lib/kohaku/duckdb /ingester \
     && chown -R kohaku:root /var/lib/kohaku \
     && chmod -R g+rw /var/lib/kohaku \
-    && chown -R kohaku /ingester
+    && chown -R kohaku:root /ingester
 
 ENV HOME=/var/lib/kohaku
 
 WORKDIR /ingester
 
-COPY --chown=kohaku . /ingester
+COPY --chown=kohaku:root . /ingester
 
 USER kohaku
 
