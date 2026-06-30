@@ -12,30 +12,7 @@ from minio.error import S3Error
 
 import run
 
-
-def _full_args(**overrides):
-    """init / update / delete が触る全 args 属性をデフォルト値で埋めた dict を返す。
-
-    overrides で必要な属性のみ上書きする。 「テスト対象が将来別属性を参照するリグレッション」
-    が入ったときに AttributeError で偽通過するのを防ぐため、 args 全属性を 1 箇所で定義する。
-    s3_endpoint は RFC 6761 で予約された .invalid TLD を使い、 万一リグレッションで早期 return
-    が抜けて S3 接続経路に進んでも DNS 解決段階で失敗させる。
-    """
-    defaults = {
-        "db": "/tmp/dummy.db",
-        "s3_endpoint": "s3.invalid",
-        "s3_access_key_id": None,
-        "s3_secret_access_key": None,
-        "s3_use_ssl": False,
-        "s3_region": "ap-northeast-1",
-        "s3_bucket": "kohaku",
-        "s3_prefix": "log",
-        "retention_period": 7,
-        "initial_maximum_load": 100,
-        "update_maximum_load": 100,
-    }
-    defaults.update(overrides)
-    return defaults
+from .helpers import full_args
 
 
 @pytest.mark.parametrize("value", ["0", "-1", "-100"])
@@ -553,10 +530,10 @@ def test_init_skips_when_s3_objects_table_exists(tmp_path, capsys):
             "CREATE TABLE s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)"
         )
 
-    # init が触りうる args 属性をすべて埋めておく (_full_args で集約)。 早期 return より
+    # init が触りうる args 属性をすべて埋めておく (full_args で集約)。 早期 return より
     # 先に他属性が参照されるリグレッションが起きた場合に AttributeError で偽通過させず、
     # require_s3_credentials の CliUsageError か別の想定例外として現れるようにする。
-    args = SimpleNamespace(**_full_args(db=str(db_path)))
+    args = SimpleNamespace(**full_args(db=str(db_path)))
 
     # 早期 return で DB ファイルが触られないことを担保するため、 前後で inode と内容を取る。
     before_ino = db_path.stat().st_ino
@@ -585,7 +562,7 @@ def test_update_rejects_uninitialized_db(tmp_path):
     """s3_objects テーブルが無い DB に対して update が CliUsageError を送出することを確認する。
 
     has_s3_objects_table が False のときに update が事前チェックで弾くことを担保する。
-    全 args 属性を _full_args で埋めることで、 「事前チェックより先に他属性が参照される
+    全 args 属性を full_args で埋めることで、 「事前チェックより先に他属性が参照される
     リグレッション」 を AttributeError で偽通過させない。
     """
     db_path = tmp_path / "uninitialized.db"
@@ -593,7 +570,7 @@ def test_update_rejects_uninitialized_db(tmp_path):
     with duckdb.connect(str(db_path)) as con:
         con.execute("CREATE TABLE dummy (id INTEGER)")
 
-    args = SimpleNamespace(**_full_args(db=str(db_path)))
+    args = SimpleNamespace(**full_args(db=str(db_path)))
     with pytest.raises(run.CliUsageError, match="s3_objects table not found"):
         run.update(args)
 
@@ -612,11 +589,11 @@ def test_update_rejects_missing_s3_credentials(tmp_path):
             "CREATE TABLE s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)"
         )
 
-    # 認証情報を None で明示し (_full_args のデフォルトが None)、 require_s3_credentials
-    # まで到達したら必ず CliUsageError で落ちる契約にする。 他属性も _full_args で埋めて
+    # 認証情報を None で明示し (full_args のデフォルトが None)、 require_s3_credentials
+    # まで到達したら必ず CliUsageError で落ちる契約にする。 他属性も full_args で埋めて
     # 「require_s3_credentials より先に他属性が参照されるリグレッション」 を AttributeError
     # で偽通過させない。
-    args = SimpleNamespace(**_full_args(db=str(db_path)))
+    args = SimpleNamespace(**full_args(db=str(db_path)))
     with pytest.raises(run.CliUsageError, match="S3 credentials are required"):
         run.update(args)
 

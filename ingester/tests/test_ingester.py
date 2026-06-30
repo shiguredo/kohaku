@@ -6,6 +6,7 @@ import os
 import sys
 import uuid
 from collections.abc import Iterator, Sequence
+from types import SimpleNamespace
 from typing import Any
 
 import duckdb
@@ -16,45 +17,10 @@ from minio.error import S3Error
 from run import delete, init, update
 
 from .conftest import ACCESS_KEY, BUCKET, PREFIX, SECRET_KEY
-from .helpers import wait_until
+from .helpers import full_args, wait_until
 
 # 出力されたままのログファイルを保存するディレクトリ
 LOG_DIR = "./tests/log"
-
-
-class Args:
-    """ingester/src/run.py が受け取る argparse.Namespace を模した DTO。
-
-    テストから init / update / delete を直接呼び出すために、本番で argparse が組み立てる
-    Namespace と同じ属性名を揃えてある。各サブコマンドが参照するフィールドの組は異なる
-    (例: delete は db と retention_period のみ参照する) ため、すべて Optional にしてある。
-    """
-
-    def __init__(
-        self,
-        db: str | None = None,
-        s3_endpoint: str | None = None,
-        s3_access_key_id: str | None = None,
-        s3_secret_access_key: str | None = None,
-        s3_use_ssl: bool | None = None,
-        s3_region: str | None = None,
-        s3_bucket: str | None = None,
-        s3_prefix: str | None = None,
-        retention_period: int | None = None,
-        initial_maximum_load: int | None = None,
-        update_maximum_load: int | None = None,
-    ) -> None:
-        self.db = db
-        self.s3_endpoint = s3_endpoint
-        self.s3_access_key_id = s3_access_key_id
-        self.s3_secret_access_key = s3_secret_access_key
-        self.s3_use_ssl = s3_use_ssl
-        self.s3_region = s3_region
-        self.s3_bucket = s3_bucket
-        self.s3_prefix = s3_prefix
-        self.retention_period = retention_period
-        self.initial_maximum_load = initial_maximum_load
-        self.update_maximum_load = update_maximum_load
 
 
 def data_path(s3_prefix: str, tag: str, directory: str) -> str:
@@ -130,24 +96,26 @@ def make_args_for_s3(
     rustfs_endpoint: str,
     *,
     s3_bucket: str = BUCKET,
-    initial_maximum_load: int | None = 1000,
-    update_maximum_load: int | None = 1000,
-) -> Args:
-    """init / update テスト用 Args を共通設定で組み立てる。
+    initial_maximum_load: int = 1000,
+    update_maximum_load: int = 1000,
+) -> SimpleNamespace:
+    """init / update テスト用 args を共通設定で組み立てる。
 
     各テストではこの関数を呼んで個別差分だけキーワード引数で上書きする。
     """
-    return Args(
-        db=duckdb_filepath,
-        s3_endpoint=rustfs_endpoint,
-        s3_access_key_id=ACCESS_KEY,
-        s3_secret_access_key=SECRET_KEY,
-        s3_use_ssl=False,
-        s3_region="ap-northeast-1",
-        s3_bucket=s3_bucket,
-        s3_prefix=PREFIX,
-        initial_maximum_load=initial_maximum_load,
-        update_maximum_load=update_maximum_load,
+    return SimpleNamespace(
+        **full_args(
+            db=duckdb_filepath,
+            s3_endpoint=rustfs_endpoint,
+            s3_access_key_id=ACCESS_KEY,
+            s3_secret_access_key=SECRET_KEY,
+            s3_use_ssl=False,
+            s3_region="ap-northeast-1",
+            s3_bucket=s3_bucket,
+            s3_prefix=PREFIX,
+            initial_maximum_load=initial_maximum_load,
+            update_maximum_load=update_maximum_load,
+        )
     )
 
 
@@ -155,11 +123,10 @@ def make_args_for_delete(
     duckdb_filepath: str,
     *,
     retention_period: int,
-) -> Args:
-    """delete テスト用 Args を db と retention_period のみで組み立てる。"""
-    return Args(
-        db=duckdb_filepath,
-        retention_period=retention_period,
+) -> SimpleNamespace:
+    """delete テスト用 args を db と retention_period のみで組み立てる。"""
+    return SimpleNamespace(
+        **full_args(db=duckdb_filepath, retention_period=retention_period)
     )
 
 
