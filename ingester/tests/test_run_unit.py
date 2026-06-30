@@ -437,32 +437,72 @@ def test_is_after_s3_cursor_newer_last_modified():
     """last_modified がカーソルより新しければ True となることを確認する。"""
     t_old = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
     t_new = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
-    assert run.is_after_s3_cursor(t_new, "a", t_old, "a") is True
+    assert (
+        run.is_after_s3_cursor(
+            obj_last_modified=t_new,
+            obj_object_name="a",
+            cursor_last_modified=t_old,
+            cursor_object_name="a",
+        )
+        is True
+    )
 
 
 def test_is_after_s3_cursor_older_last_modified():
     """last_modified がカーソルより古ければ False となることを確認する。"""
     t_old = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
     t_new = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
-    assert run.is_after_s3_cursor(t_old, "z", t_new, "a") is False
+    assert (
+        run.is_after_s3_cursor(
+            obj_last_modified=t_old,
+            obj_object_name="z",
+            cursor_last_modified=t_new,
+            cursor_object_name="a",
+        )
+        is False
+    )
 
 
 def test_is_after_s3_cursor_same_last_modified_newer_object_name():
     """last_modified が同値なら object_name が大きい方を新しいと判定することを確認する。"""
     t = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
-    assert run.is_after_s3_cursor(t, "b", t, "a") is True
+    assert (
+        run.is_after_s3_cursor(
+            obj_last_modified=t,
+            obj_object_name="b",
+            cursor_last_modified=t,
+            cursor_object_name="a",
+        )
+        is True
+    )
 
 
 def test_is_after_s3_cursor_same_last_modified_older_object_name():
     """last_modified が同値で object_name が小さい場合は False となることを確認する。"""
     t = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
-    assert run.is_after_s3_cursor(t, "a", t, "b") is False
+    assert (
+        run.is_after_s3_cursor(
+            obj_last_modified=t,
+            obj_object_name="a",
+            cursor_last_modified=t,
+            cursor_object_name="b",
+        )
+        is False
+    )
 
 
 def test_is_after_s3_cursor_same_last_modified_same_object_name():
     """last_modified と object_name の両方が同値なら False となることを確認する (カーソル自身を除外)。"""
     t = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
-    assert run.is_after_s3_cursor(t, "a", t, "a") is False
+    assert (
+        run.is_after_s3_cursor(
+            obj_last_modified=t,
+            obj_object_name="a",
+            cursor_last_modified=t,
+            cursor_object_name="a",
+        )
+        is False
+    )
 
 
 def test_is_after_s3_cursor_rejects_tz_naive_obj_last_modified():
@@ -470,7 +510,12 @@ def test_is_after_s3_cursor_rejects_tz_naive_obj_last_modified():
     naive = datetime.datetime(2026, 1, 1)
     aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
     with pytest.raises(ValueError, match="timezone-naive last_modified"):
-        run.is_after_s3_cursor(naive, "a", aware, "a")
+        run.is_after_s3_cursor(
+            obj_last_modified=naive,
+            obj_object_name="a",
+            cursor_last_modified=aware,
+            cursor_object_name="a",
+        )
 
 
 def test_is_after_s3_cursor_rejects_tz_naive_cursor_last_modified():
@@ -478,7 +523,12 @@ def test_is_after_s3_cursor_rejects_tz_naive_cursor_last_modified():
     naive = datetime.datetime(2026, 1, 1)
     aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
     with pytest.raises(ValueError, match="timezone-naive last_modified"):
-        run.is_after_s3_cursor(aware, "a", naive, "a")
+        run.is_after_s3_cursor(
+            obj_last_modified=aware,
+            obj_object_name="a",
+            cursor_last_modified=naive,
+            cursor_object_name="a",
+        )
 
 
 # init サブコマンドの初期化済み DB 早期 return

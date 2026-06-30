@@ -172,7 +172,7 @@ def sync_log_for_update(con, client, args, target):
 
 
 def is_after_s3_cursor(
-    obj_last_modified, obj_object_name, cursor_last_modified, cursor_object_name
+    *, obj_last_modified, obj_object_name, cursor_last_modified, cursor_object_name
 ):
     """
     s3_objects テーブルに保存したカーソルより新しいオブジェクトかを判定する。
@@ -515,7 +515,10 @@ def insert_log_from_s3(con, client, table_name, bucket, prefix, update_maximum_l
         obj
         for obj in log_objects
         if is_after_s3_cursor(
-            obj.last_modified, obj.object_name, object_last_modified, object_name
+            obj_last_modified=obj.last_modified,
+            obj_object_name=obj.object_name,
+            cursor_last_modified=object_last_modified,
+            cursor_object_name=object_name,
         )
     ]
 
