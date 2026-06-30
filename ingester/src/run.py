@@ -418,7 +418,7 @@ def create_log_table(con, table_name, target_urls):
 
 def update(args):
     if not os.path.exists(args.db):
-        raise FileNotFoundError(f"DB file not found: {args.db}")
+        raise FileNotFoundError(f"DB file not found: {args.db}. Run 'init' first.")
 
     check_db_not_broken(args.db)
 
@@ -463,7 +463,7 @@ def delete(args):
     (元 DB のパーミッションは init / sync の umask で揃える前提)。
     """
     if not os.path.exists(args.db):
-        raise FileNotFoundError(f"DB file not found: {args.db}")
+        raise FileNotFoundError(f"DB file not found: {args.db}. Run 'init' first.")
 
     check_db_not_broken(args.db)
 
