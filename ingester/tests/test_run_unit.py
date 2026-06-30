@@ -83,6 +83,7 @@ def test_delete_handles_single_quote_in_db_path(tmp_path):
 
     # COPY 用の一時ファイルが残っていないことを確認する (ATTACH/COPY/move が完了している)。
     assert os.path.exists(f"{db_path}.copy") is False
+    assert os.path.exists(f"{db_path}.copy.wal") is False
 
 
 def test_delete_restricts_db_file_permission(tmp_path):
