@@ -506,10 +506,10 @@ def test_is_after_s3_cursor_same_last_modified_same_object_name():
 
 
 def test_is_after_s3_cursor_rejects_tz_naive_obj_last_modified():
-    """obj 側の last_modified がタイムゾーン情報を含まないとき ValueError を送出することを確認する。"""
+    """obj 側の last_modified がタイムゾーン情報を含まないとき obj 側を示す ValueError を送出することを確認する。"""
     naive = datetime.datetime(2026, 1, 1)
     aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
-    with pytest.raises(ValueError, match="timezone-naive last_modified"):
+    with pytest.raises(ValueError, match="S3 object has a timezone-naive"):
         run.is_after_s3_cursor(
             obj_last_modified=naive,
             obj_object_name="a",
@@ -519,10 +519,10 @@ def test_is_after_s3_cursor_rejects_tz_naive_obj_last_modified():
 
 
 def test_is_after_s3_cursor_rejects_tz_naive_cursor_last_modified():
-    """カーソル側の last_modified がタイムゾーン情報を含まないとき ValueError を送出することを確認する。"""
+    """カーソル側の last_modified がタイムゾーン情報を含まないとき cursor 側を示す ValueError を送出することを確認する。"""
     naive = datetime.datetime(2026, 1, 1)
     aware = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
-    with pytest.raises(ValueError, match="timezone-naive last_modified"):
+    with pytest.raises(ValueError, match="S3 cursor has a timezone-naive"):
         run.is_after_s3_cursor(
             obj_last_modified=aware,
             obj_object_name="a",

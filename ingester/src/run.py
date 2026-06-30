@@ -182,10 +182,10 @@ def is_after_s3_cursor(
     タイムゾーン情報を含む datetime を返すため、タイムゾーン情報を含まない datetime が
     渡るのは設計違反として明示的に拒否する。
     """
-    if (obj_last_modified.tzinfo is None) or (cursor_last_modified.tzinfo is None):
-        raise ValueError(
-            "S3 object cursor has a timezone-naive last_modified timestamp"
-        )
+    if obj_last_modified.tzinfo is None:
+        raise ValueError("S3 object has a timezone-naive last_modified timestamp")
+    if cursor_last_modified.tzinfo is None:
+        raise ValueError("S3 cursor has a timezone-naive last_modified timestamp")
     if obj_last_modified > cursor_last_modified:
         return True
     if obj_last_modified < cursor_last_modified:
