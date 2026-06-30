@@ -9,7 +9,8 @@ RUN apt-get update \
 
 RUN useradd --no-create-home --gid 0 kohaku
 
-# uv binary をバージョン pin で取得し、 sha256 を検証してから /usr/local/bin に配置する。
+# uv binary をバージョン pin で取得し、 sha256 を検証してから /usr/local/bin に配置する
+# (sha256 は同 Release から取得するためダウンロード破損のみ検出、 真正性は GitHub に依存)。
 # TARGETARCH は BuildKit が自動で amd64 / arm64 を設定する。
 ARG UV_VERSION=0.11.21
 ARG TARGETARCH
