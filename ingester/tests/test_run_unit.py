@@ -245,17 +245,21 @@ def test_create_readonly_copy_generates_readonly_with_restricted_permission(tmp_
 
 
 def test_create_readonly_copy_overwrites_existing_readonly(tmp_path):
-    """既に .readonly が存在しても、最新の DB 内容で上書きされることを確認する。"""
+    """既に .readonly が存在しても、 最新の DB 内容で上書きされ、 パーミッションが 0o660 に縮小されることを確認する。"""
     db_path = tmp_path / "source.db"
     db_path.write_bytes(b"new-payload")
 
     readonly_path = tmp_path / "source.db.readonly"
-    # 既存の .readonly を別内容で配置しておく
+    # 既存の .readonly を別内容 + 過剰権限で配置しておく
     readonly_path.write_bytes(b"stale-payload")
+    os.chmod(readonly_path, 0o666)
 
     run.create_readonly_copy(str(db_path))
 
     assert readonly_path.read_bytes() == b"new-payload"
+    # owner: rw, group: rw, other: なし
+    expected_mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP
+    assert stat.S_IMODE(readonly_path.stat().st_mode) == expected_mode
 
 
 def test_create_readonly_copy_does_not_leave_tmp_file(tmp_path):
