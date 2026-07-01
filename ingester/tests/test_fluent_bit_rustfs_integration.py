@@ -102,7 +102,6 @@ def run_ingester_cli(
     initial_maximum_load: int = 1000,
 ) -> subprocess.CompletedProcess[str]:
     """ingester の run.py を CLI として実行し、stdout/stderr を呼び出し元で検証できるようにする。"""
-    # run.py を CLI 経由で実行し、stdout/stderr を呼び出し元で検証できるようにする
     cmd = [
         "uv",
         "run",
