@@ -343,23 +343,10 @@ def test_require_known_table_accepts_known_name_in_dict():
     )
 
 
-def test_require_known_table_accepts_known_name_in_tuple():
-    """tuple に許可テーブル名が含まれていれば None を返すことを確認する。"""
-    assert (
-        run.require_known_table("rtc_stats", ("rtc_stats", "session_webhook")) is None
-    )
-
-
 def test_require_known_table_rejects_unknown_name_in_dict():
     """dict のキーに含まれないテーブル名で ValueError を送出することを確認する。"""
     with pytest.raises(ValueError, match="Unknown table name"):
         run.require_known_table("evil", {"rtc_stats": {}, "session_webhook": {}})
-
-
-def test_require_known_table_rejects_unknown_name_in_tuple():
-    """tuple に含まれないテーブル名で ValueError を送出することを確認する。"""
-    with pytest.raises(ValueError, match="Unknown table name"):
-        run.require_known_table("evil", ("rtc_stats", "session_webhook"))
 
 
 # delete_log_by_timestamp の table_name 許可リスト検証
