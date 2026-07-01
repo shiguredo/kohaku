@@ -353,30 +353,12 @@ def test_require_known_table_rejects_unknown_name_in_dict():
 
 
 def test_delete_log_by_timestamp_rejects_unknown_table():
-    """LOG_TARGETS 外のテーブル名を渡すと ValueError を送出することを確認する。"""
+    """LOG_TARGETS 外のテーブル名を渡すと ValueError を送出することを確認する (require_known_table 経由の Smoke)。"""
     with duckdb.connect(":memory:") as con:
         with pytest.raises(ValueError, match="Unknown table name"):
             run.delete_log_by_timestamp(
                 con=con, table_name="evil_table", timestamp=None
             )
-
-
-def test_delete_log_by_timestamp_rejects_sql_injection_attempt():
-    """SQL インジェクションを試みる文字列も許可リストではじかれることを確認する。"""
-    with duckdb.connect(":memory:") as con:
-        with pytest.raises(ValueError, match="Unknown table name"):
-            run.delete_log_by_timestamp(
-                con=con,
-                table_name="rtc_stats; DROP TABLE x",
-                timestamp=None,
-            )
-
-
-def test_delete_log_by_timestamp_rejects_empty_table_name():
-    """空文字のテーブル名も許可リストではじかれることを確認する。"""
-    with duckdb.connect(":memory:") as con:
-        with pytest.raises(ValueError, match="Unknown table name"):
-            run.delete_log_by_timestamp(con=con, table_name="", timestamp=None)
 
 
 # is_after_s3_cursor の比較ロジック
