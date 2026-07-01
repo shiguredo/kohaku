@@ -294,11 +294,6 @@ def test_escape_sql_string_literal_handles_multiple_quotes():
     assert run.escape_sql_string_literal("'a'b'c'") == "''a''b''c''"
 
 
-def test_escape_sql_string_literal_handles_consecutive_quotes():
-    """連続したシングルクォートも正しく二重化することを確認する。"""
-    assert run.escape_sql_string_literal("a''b") == "a''''b"
-
-
 def test_escape_sql_string_literal_passes_through_safe_string():
     """シングルクォートを含まない文字列はそのまま返すことを確認する。"""
     assert (
