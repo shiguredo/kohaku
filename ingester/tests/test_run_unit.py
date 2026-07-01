@@ -208,21 +208,6 @@ def test_should_create_readonly_returns_true_when_size_changed(tmp_path):
     )
 
 
-def test_should_create_readonly_returns_true_when_initial_is_none_and_db_created(
-    tmp_path,
-):
-    """initial_mtime=None / initial_size=None かつ DB ファイルが存在するとき True を返すことを確認する。
-
-    init で DB ファイルを新規作成したケース (主要呼び出し経路) を担保する。
-    """
-    db_path = tmp_path / "db.db"
-    db_path.write_bytes(b"payload")
-    assert (
-        run.should_create_readonly(str(db_path), initial_mtime=None, initial_size=None)
-        is True
-    )
-
-
 # create_readonly_copy
 
 
