@@ -723,21 +723,21 @@ def test_handle_cli_error_exits_for_cli_usage_error(capsys):
     assert "my-bucket" not in captured.err
 
 
-def test_handle_cli_error_reraises_value_error():
-    """内部用 ValueError (Unknown table name / load_columns の YAML 形式異常 等) は
-    そのまま再送出することを確認する。
+@pytest.mark.parametrize(
+    ("error", "match_pattern"),
+    [
+        (ValueError("Unknown table name: evil_table"), "Unknown table name"),
+        (RuntimeError("unexpected"), "unexpected"),
+    ],
+)
+def test_handle_cli_error_reraises_non_handled_errors(error, match_pattern):
+    """S3Error / FileNotFoundError / CliUsageError 以外の例外はそのまま再送出することを確認する。
 
-    CLI ユーザー入力エラーは CliUsageError で別経路に分離している。
+    内部用 ValueError (Unknown table name / load_columns の YAML 形式異常 等) や未知の
+    エラータイプは CLI ユーザー入力エラーではないため、 CliUsageError で別経路に分離せず
+    トレースバック付きで上位に伝播させる。
     """
-    error = ValueError("Unknown table name: evil_table")
-    with pytest.raises(ValueError, match="Unknown table name"):
-        run.handle_cli_error(error, "my-bucket")
-
-
-def test_handle_cli_error_reraises_unknown_error():
-    """未知のエラータイプはそのまま再送出することを確認する。"""
-    error = RuntimeError("unexpected")
-    with pytest.raises(RuntimeError, match="unexpected"):
+    with pytest.raises(type(error), match=match_pattern):
         run.handle_cli_error(error, "my-bucket")
 
 
