@@ -270,8 +270,12 @@ def has_s3_objects_table(db_path):
 
     init は完了判定に使い、 update / delete は事前チェックに使う。
     s3_objects テーブルの「存在」 のみを見て、 行数や LOG_TARGETS テーブルの有無は見ない。
-    中途半端な DB (s3_objects テーブルあり、 LOG_TARGETS 一部欠落) は update 経路の
-    sync_log_for_update で復旧する設計。
+    「s3_objects テーブルはあるが特定ターゲットのカーソル行が無い」 中途半端な状態
+    (init 時にバケットが空だったターゲット、 後から S3 に登場したターゲット等) は
+    update 経路の sync_log_for_update が cursor is None 分岐で initialize_log_table
+    を呼び直して復旧する。 LOG_TARGETS テーブル自体が drop された状態 (s3_objects に
+    該当行あり) からの復旧は対象外で、 insert_log 側で Catalog エラーとして表面化させ、
+    運用者の判断で init を再実行する経路に載せる。
     """
 
     if not os.path.exists(db_path):
