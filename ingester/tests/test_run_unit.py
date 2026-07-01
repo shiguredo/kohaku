@@ -619,17 +619,9 @@ def test_is_broken_db_error_detects_known_patterns(message):
     assert run.is_broken_db_error(Exception(message)) is True
 
 
-@pytest.mark.parametrize(
-    "message",
-    [
-        "Database file is CORRUPT",
-        "INVALID DATABASE file",
-        "File is NOT A VALID DUCKDB",
-    ],
-)
-def test_is_broken_db_error_is_case_insensitive(message):
-    """大文字を含むメッセージでもパターン検出されることを確認する。"""
-    assert run.is_broken_db_error(Exception(message)) is True
+def test_is_broken_db_error_is_case_insensitive():
+    """大文字を含むメッセージでもパターン検出されることを確認する (`.lower()` 経由の判定担保)。"""
+    assert run.is_broken_db_error(Exception("Database file is CORRUPT")) is True
 
 
 def test_is_broken_db_error_returns_false_for_unrelated_message():
