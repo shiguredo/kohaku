@@ -819,23 +819,23 @@ def test_check_db_not_broken_returns_for_healthy_db(tmp_path):
     assert run.check_db_not_broken(str(db_path)) is None
 
 
-def test_check_db_not_broken_exits_for_broken_db(tmp_path, capsys):
-    """破損 DB に対しては自動退避せず exit_with_stderr で終了することを確認する。
+def test_check_db_not_broken_raises_cli_usage_error_for_broken_db(tmp_path):
+    """破損 DB に対しては自動退避せず CliUsageError を送出することを確認する。
 
     update / delete では運用者の判断を優先するため、検出のみ行い、メッセージで
-    init の再実行を促す挙動を担保する。
+    init の再実行を促す挙動を担保する。 exit code / stderr への整形は
+    handle_cli_error の責務なので、 ここでは例外内容のみ検査する。
     """
     db_path = tmp_path / "broken.db"
     db_path.write_bytes(b"invalid db")
 
-    with pytest.raises(SystemExit) as exc_info:
+    with pytest.raises(run.CliUsageError) as exc_info:
         run.check_db_not_broken(str(db_path))
-    assert exc_info.value.code == 1
-    captured = capsys.readouterr()
-    assert "DB file is broken" in captured.err
-    assert str(db_path) in captured.err
+    message = str(exc_info.value)
+    assert "DB file is broken" in message
+    assert str(db_path) in message
     # 「'init' の再実行を促す」 という本番メッセージ固有の言い回しを直接確認する。
-    assert "run 'init'" in captured.err
+    assert "run 'init'" in message
     # 退避ファイルは作られないことを確認する
     renamed_files = list(tmp_path.glob("broken.db.broken.*"))
     assert len(renamed_files) == 0

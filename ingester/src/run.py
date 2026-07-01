@@ -289,14 +289,16 @@ def has_s3_objects_table(db_path):
 
 
 def check_db_not_broken(db_path):
-    """update / delete の前処理として DB 破損を検出し、 init の再実行を促して終了する。
+    """update / delete の前処理として DB 破損を検出し、 CliUsageError で init の再実行を促す。
 
     init は prepare_db_for_init で自動退避するが、 update / delete では運用者の判断を
-    優先するため自動退避しない。 破損以外 (ロック競合、 権限不足等) は呼び出し元へ伝播。
+    優先するため自動退避しない。 例外は handle_cli_error で ユーザー向け 1 行メッセージ
+    + exit 1 に整形される (他の前処理 FileNotFoundError / CliUsageError と経路を揃える)。
+    破損以外 (ロック競合、 権限不足等) は呼び出し元へ伝播。
     """
     if not _detect_broken_db(db_path):
         return
-    exit_with_stderr(
+    raise CliUsageError(
         f"DB file is broken: {db_path}. Move or remove the file and run 'init' to re-initialize."
     )
 
