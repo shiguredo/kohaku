@@ -417,7 +417,10 @@ def create_log_table(con, table_name, target_urls):
     columns = duckdb_columns[table_name]
     rel = con.read_json(target_urls, union_by_name=True, columns=columns)
     rel.create(table_name)
-    print(f"Created table {table_name} from {len(target_urls)} object(s).")
+    print(
+        f"Created table {table_name} from {len(target_urls)} object(s).",
+        file=sys.stderr,
+    )
 
 
 def update(args):
@@ -584,7 +587,7 @@ def delete_log_by_timestamp(con, table_name, timestamp):
 
     con.execute(f"DELETE FROM {table_name} WHERE timestamp < ?", (timestamp,))
     deleted_rows = con.fetchone()[0]
-    print(f"Deleted {deleted_rows} rows from {table_name}.")
+    print(f"Deleted {deleted_rows} rows from {table_name}.", file=sys.stderr)
     return deleted_rows
 
 
