@@ -171,26 +171,24 @@ def sync_log_for_update(con, client, args, target):
         )
 
 
-def is_after_s3_cursor(
-    *, obj_last_modified, obj_object_name, cursor_last_modified, cursor_object_name
-):
+def is_after_s3_cursor(obj_key, cursor_key):
     """
     s3_objects テーブルに保存したカーソルより新しいオブジェクトかを判定する。
 
-    obj_last_modified と cursor_last_modified の両方がタイムゾーン情報を含んでいることを前提とする。
-    MinIO SDK の Object.last_modified と DuckDB の TIMESTAMPTZ カラムはどちらも
-    タイムゾーン情報を含む datetime を返すため、タイムゾーン情報を含まない datetime が
-    渡るのは設計違反として明示的に拒否する。
+    obj_key と cursor_key はどちらも (last_modified, object_name) の 2 タプル。 両方の
+    last_modified がタイムゾーン情報を含んでいることを前提とする。 MinIO SDK の
+    Object.last_modified と DuckDB の TIMESTAMPTZ カラムはどちらもタイムゾーン情報を
+    含む datetime を返すため、 タイムゾーン情報を含まない datetime が渡るのは設計違反
+    として明示的に拒否する。 判定はタプルの辞書順比較で行い、 last_modified が同値の
+    場合は object_name の辞書順で決まる。
     """
+    obj_last_modified, _ = obj_key
+    cursor_last_modified, _ = cursor_key
     if obj_last_modified.tzinfo is None:
         raise ValueError("S3 object has a timezone-naive last_modified timestamp")
     if cursor_last_modified.tzinfo is None:
         raise ValueError("S3 cursor has a timezone-naive last_modified timestamp")
-    if obj_last_modified > cursor_last_modified:
-        return True
-    if obj_last_modified < cursor_last_modified:
-        return False
-    return obj_object_name > cursor_object_name
+    return obj_key > cursor_key
 
 
 def create_s3_objects_table(con):
@@ -525,18 +523,14 @@ def delete(args):
 def insert_log_from_s3(con, client, table_name, bucket, prefix, update_maximum_load):
     cursor = select_s3_objects_row(con, table_name)
     object_name, object_last_modified = cursor
+    cursor_key = (object_last_modified, object_name)
 
     log_objects = list_objects(client, bucket, f"{prefix}/{table_name}/")
 
     target_log_objects = [
         obj
         for obj in log_objects
-        if is_after_s3_cursor(
-            obj_last_modified=obj.last_modified,
-            obj_object_name=obj.object_name,
-            cursor_last_modified=object_last_modified,
-            cursor_object_name=object_name,
-        )
+        if is_after_s3_cursor((obj.last_modified, obj.object_name), cursor_key)
     ]
 
     # 長時間停止後に大量ファイルが蓄積したケースに備え、古い方からバッチで取り込む。
