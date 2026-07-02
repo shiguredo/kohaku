@@ -510,13 +510,18 @@ def delete(args):
         shutil.move(copy_file, args.db)
     except Exception:
         # 削除する前にデバッグ情報 (存在有無 + サイズ) を stderr に残す。 ディスクフルや
-        # パーミッションエラー等の原因究明の手がかりを消さないため。
+        # パーミッションエラー等の原因究明の手がかりを消さないため。 stat 失敗で元例外を
+        # 上書きしないよう、 診断出力自体は best-effort に留める (exists と getsize を
+        # 分けると TOCTOU で FileNotFoundError が乗る)。
         for path in (copy_file, f"{copy_file}.wal"):
-            if os.path.exists(path):
-                print(
-                    f"Cleaning up incomplete {path} (size={os.path.getsize(path)} bytes)",
-                    file=sys.stderr,
-                )
+            try:
+                size = os.stat(path).st_size
+            except OSError:
+                continue
+            print(
+                f"Cleaning up incomplete {path} (size={size} bytes)",
+                file=sys.stderr,
+            )
         # 処理に失敗したときの残る可能性のあるファイルを削除する
         remove_delete_incomplete_copy_files(copy_file)
         # return code を 0 以外にするため例外を呼び出し元に投げる
