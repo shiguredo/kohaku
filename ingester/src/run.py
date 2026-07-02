@@ -152,7 +152,7 @@ def sync_log_for_init(con, client, args, target):
 
 
 def sync_log_for_update(con, client, args, target):
-    cursor = select_s3_objects_row(con, target)
+    cursor = get_s3_objects_cursor(con, target)
     if cursor is None:
         # 対象 log_type が初登場するケース (init 時点で該当ターゲットの S3 オブジェクトが
         # 1 件も無く、s3_objects にも行が作られなかった状況であとから登場した場合)。
@@ -301,7 +301,7 @@ def check_db_not_broken(db_path):
     )
 
 
-UPSERT_S3_OBJECT_SQL = """
+UPSERT_S3_OBJECTS_SQL = """
 MERGE INTO s3_objects AS target
 USING (SELECT ? AS type, ? AS object_name, ? AS last_modified) AS source
 ON target.type = source.type
@@ -313,7 +313,7 @@ WHEN NOT MATCHED THEN
 
 
 def update_s3_objects_table(con, log_type, obj):
-    con.execute(UPSERT_S3_OBJECT_SQL, (log_type, obj.object_name, obj.last_modified))
+    con.execute(UPSERT_S3_OBJECTS_SQL, (log_type, obj.object_name, obj.last_modified))
 
 
 def list_objects(client, bucket, prefix):
@@ -427,7 +427,7 @@ def update(args):
     check_db_not_broken(args.db)
 
     # s3_objects テーブル不在の DB に対しては update を拒否する。init が未実行のまま
-    # update を呼ぶと select_s3_objects_row が CatalogException で落ちるため、明示的に弾く。
+    # update を呼ぶと get_s3_objects_cursor が CatalogException で落ちるため、明示的に弾く。
     if not has_s3_objects_table(args.db):
         raise CliUsageError(
             f"s3_objects table not found in DB: {args.db}. Run 'init' first."
@@ -521,7 +521,7 @@ def delete(args):
 
 
 def insert_log_from_s3(con, client, table_name, bucket, prefix, update_maximum_load):
-    cursor = select_s3_objects_row(con, table_name)
+    cursor = get_s3_objects_cursor(con, table_name)
     object_name, object_last_modified = cursor
     cursor_key = (object_last_modified, object_name)
 
@@ -565,7 +565,7 @@ def insert_log(con, table_name, target_urls):
     rel.insert_into(table_name)
 
 
-def select_s3_objects_row(con, log_type):
+def get_s3_objects_cursor(con, log_type):
     return con.execute(
         "SELECT object_name, last_modified FROM s3_objects WHERE type=?",
         (log_type,),
