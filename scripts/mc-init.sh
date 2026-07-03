@@ -8,14 +8,14 @@ MC_INIT_RETRY_INTERVAL="${MC_INIT_RETRY_INTERVAL:-2}"
 # while ループの [ "${i}" -ge "${MC_INIT_MAX_RETRIES}" ] が非数値で死ぬのを防ぐ。
 # MAX_RETRIES は 1 以上 (1 だと初回失敗で即タイムアウトする) を要求する。
 case "${MC_INIT_MAX_RETRIES}" in
-  ''|*[!0-9]*|0)
+  *[!0-9]*|0)
     echo "MC_INIT_MAX_RETRIES must be a positive integer: ${MC_INIT_MAX_RETRIES}" >&2
     exit 1
     ;;
 esac
 # RETRY_INTERVAL は 0 (即時リトライ) を許容するが、 非数値は sleep が失敗するため弾く。
 case "${MC_INIT_RETRY_INTERVAL}" in
-  ''|*[!0-9]*)
+  *[!0-9]*)
     echo "MC_INIT_RETRY_INTERVAL must be a non-negative integer: ${MC_INIT_RETRY_INTERVAL}" >&2
     exit 1
     ;;
