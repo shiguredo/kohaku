@@ -36,13 +36,25 @@ def wait_until(
     timeout_sec: float = 120,
     interval_sec: float = 1,
 ) -> None:
-    """条件が真になるまで待機し、タイムアウトしたら WaitTimeoutError を送出する。"""
+    """条件が真になるまで待機し、タイムアウトしたら WaitTimeoutError を送出する。
+
+    condition の呼び出し中に例外が出てもポーリングは継続する (接続待ち等では初期の
+    connection refused 等が正常なため)。 タイムアウト時は最後に観測した例外を
+    WaitTimeoutError の __cause__ に付けてメッセージにも含め、 「なぜ条件が満たされなかったか」
+    を診断できるようにする。
+    """
     deadline = time.time() + timeout_sec
+    last_error: Exception | None = None
     while time.time() < deadline:
         try:
             if condition():
                 return
-        except Exception:
-            pass
+        except Exception as error:
+            last_error = error
         time.sleep(interval_sec)
+    if last_error is not None:
+        raise WaitTimeoutError(
+            f"condition was not met within {timeout_sec} seconds; "
+            f"last error: {last_error!r}"
+        ) from last_error
     raise WaitTimeoutError(f"condition was not met within {timeout_sec} seconds")
