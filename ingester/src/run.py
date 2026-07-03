@@ -522,8 +522,19 @@ def delete(args):
                 f"Cleaning up incomplete {path} (size={size} bytes)",
                 file=sys.stderr,
             )
-        # 処理に失敗したときの残る可能性のあるファイルを削除する
-        remove_delete_incomplete_copy_files(copy_file)
+        # ATTACH / COPY / chmod / move のいずれかが失敗した後、 残った copy_file と
+        # copy_file.wal を削除する。 削除中に PermissionError 等が出ても、 元例外
+        # (ATTACH 失敗、 COPY 失敗、 ディスクフル 等) を上書きしないよう best-effort に
+        # 留める。 delete 冒頭側の掃除 (前回異常終了の残骸を消す経路) は「掃除失敗を
+        # そのまま delete 失敗として扱う」 想定なので、 関数自体は FileNotFoundError
+        # のみ吸収の現行を維持し、 except 経路の呼び出しだけを try で広く受ける。
+        try:
+            remove_delete_incomplete_copy_files(copy_file)
+        except OSError as cleanup_error:
+            print(
+                f"Failed to cleanup incomplete copy files: {cleanup_error}",
+                file=sys.stderr,
+            )
         # return code を 0 以外にするため例外を呼び出し元に投げる
         raise
 
