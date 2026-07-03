@@ -602,17 +602,17 @@ def exit_with_stderr(message):
     sys.exit(1)
 
 
-def should_create_readonly(db_path, initial_mtime, initial_size):
-    """initial_mtime / initial_size と現在の値を比較して、 readonly コピーを生成すべきかを返す。
+def should_create_readonly(db_path, initial_mtime_ns, initial_size):
+    """initial_mtime_ns / initial_size と現在の値を比較して、 readonly コピーを生成すべきかを返す。
 
     DB ファイルが書き換わったかを mtime と st_size の両方で判定し、 どちらか異なれば
-    .readonly を生成する。 mtime は OS とファイルシステムによっては秒粒度に丸められるため、
-    同一秒内で書き込みと比較が完了するケースは st_size の変化で検出する。
+    .readonly を生成する。 mtime は st_mtime_ns (ナノ秒精度整数) で保持し、 秒粒度に
+    丸められる FS でも「同一秒 + 同一サイズ」 の同値ですり抜けるケースを実質排除する。
     """
     if not os.path.exists(db_path):
         return False
     current = os.stat(db_path)
-    return (initial_mtime, initial_size) != (current.st_mtime, current.st_size)
+    return (initial_mtime_ns, initial_size) != (current.st_mtime_ns, current.st_size)
 
 
 def create_readonly_copy(db_path):
@@ -701,13 +701,13 @@ def main():
 
     args = parser.parse_args()
 
-    # DB ファイルが存在すれば mtime と st_size を、 無ければ両方 None を取る。
+    # DB ファイルが存在すれば mtime_ns と st_size を、 無ければ両方 None を取る。
     if os.path.exists(args.db):
         stat_result = os.stat(args.db)
-        initial_mtime = stat_result.st_mtime
+        initial_mtime_ns = stat_result.st_mtime_ns
         initial_size = stat_result.st_size
     else:
-        initial_mtime = None
+        initial_mtime_ns = None
         initial_size = None
 
     try:
@@ -715,7 +715,7 @@ def main():
     except Exception as error:
         handle_cli_error(error, args.s3_bucket)
 
-    if should_create_readonly(args.db, initial_mtime, initial_size):
+    if should_create_readonly(args.db, initial_mtime_ns, initial_size):
         create_readonly_copy(args.db)
 
 
