@@ -2,6 +2,7 @@ import base64
 import json
 import os
 import shutil
+import subprocess
 import urllib.error
 import urllib.request
 from collections.abc import Mapping
@@ -206,6 +207,19 @@ def wait_for_grafana(base_url: str, auth_header: Mapping[str, str]) -> None:
 
     wait_until(health_is_ready)
     wait_until(datasource_is_ready)
+
+
+@pytest.fixture(scope="session")
+def init_grafana_plugin() -> None:
+    """pytest セッション中に 1 回だけ Grafana プラグイン取得用の make init を実行する。
+
+    `make init` は repo root の Makefile で plugins/motherduck-duckdb-datasource を取得し、
+    Grafana コンテナにマウントするときに必要となる。 Grafana テスト専用の session scoped
+    fixture のため、 共有 conftest.py には置かず本モジュール内に置く。 テスト側からは
+    @pytest.mark.usefixtures("init_grafana_plugin") で明示的に依存させる。
+    """
+    repo_root = Path(__file__).resolve().parents[2]
+    subprocess.run(["make", "init"], cwd=repo_root, check=True)
 
 
 @pytest.mark.usefixtures("init_grafana_plugin")

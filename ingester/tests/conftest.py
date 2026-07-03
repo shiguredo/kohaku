@@ -6,10 +6,8 @@ pytest はテストモジュールと同じディレクトリ階層を遡って 
 """
 
 import os
-import subprocess
 import uuid
 from collections.abc import Iterator
-from pathlib import Path
 
 import pytest
 from testcontainers.core.container import DockerContainer
@@ -52,15 +50,3 @@ def rustfs_container() -> Iterator[DockerContainer]:
 def rustfs_endpoint(rustfs_container: DockerContainer) -> str:
     """rustfs_container の公開エンドポイント (host:port) を返す。"""
     return f"{rustfs_container.get_container_host_ip()}:{rustfs_container.get_exposed_port(RUSTFS_PORT)}"
-
-
-@pytest.fixture(scope="session")
-def init_grafana_plugin() -> None:
-    """pytest セッション中に 1 回だけ Grafana プラグイン取得用の make init を実行する。
-
-    `make init` は repo root の Makefile で plugins/motherduck-duckdb-datasource を取得し、
-    test_grafana_integration.py が Grafana コンテナにマウントするときに必要となる。
-    Grafana テスト側から @pytest.mark.usefixtures で明示的に依存させて呼び出す。
-    """
-    repo_root = Path(__file__).resolve().parents[2]
-    subprocess.run(["make", "init"], cwd=repo_root, check=True)
