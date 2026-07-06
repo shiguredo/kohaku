@@ -497,7 +497,11 @@ def delete(args):
     # 前回 delete が SIGKILL や OOM 等で異常終了して残った .copy と .copy.wal を掃除してから
     # 始める。 残っていると後段の ATTACH '{copy_file}' AS copy が既存ファイルを開いてしまい、
     # COPY FROM DATABASE で古いスキーマと新本体データが混ざる可能性があるため。
-    # 同一 delete 内で失敗した場合の掃除は except 内で別途行う。
+    # ここでの掃除失敗は delete 全体の失敗として扱う (残骸を消せない状態で ATTACH に進むと
+    # 古いスキーマ混入の危険があるため)。 関数側は FileNotFoundError のみ吸収し、
+    # PermissionError 等は握らずに呼び出し元へ伝播することで、 掃除失敗を隠さず delete 全体
+    # を失敗させる。 同一 delete 内で失敗した場合の掃除は except 内で別途行う (そちらは
+    # 元の例外を守るため掃除の例外を握りつぶす経路)。
     remove_delete_incomplete_copy_files(copy_file)
 
     deleted_rows = 0
