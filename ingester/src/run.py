@@ -130,6 +130,12 @@ def initialize_log_table(con, client, args, target):
 
     initial_maximum_load を超える古い側は「古すぎるデータを取り込まない」ため意図的に
     取り込まない (insert_log_from_s3 が古い側からバッチ取り込みする方針と非対称なのが正解)。
+
+    運用上の注意: 「LOG_TARGETS テーブルは存在するが s3_objects のカーソル行が無い」 状態
+    (例: 手動 DELETE FROM s3_objects) を作らないこと。 その状態から本関数が呼ばれると、
+    create_log_table がテーブル既存で早期 return するためデータを取り込まず、 直後の
+    update_s3_objects_table でカーソルだけ全体最新へ進んでしまい、 過去オブジェクトが
+    埋没する silent gap になる。 該当状態を作った場合は init を再実行して整合を取り直すこと。
     """
     log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
     if len(log_objects) == 0:
