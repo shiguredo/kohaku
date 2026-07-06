@@ -241,7 +241,7 @@ def move_broken_db(db_path):
     return broken_db_path
 
 
-def _detect_broken_db(db_path):
+def detect_broken_db(db_path):
     """DB ファイルが破損していれば True、 正常または不在なら False を返す。
 
     破損以外の接続エラー (ロック競合、 権限不足等) は呼び出し元へ伝播させる。
@@ -267,7 +267,7 @@ def prepare_db_for_init(db_path):
     (握りつぶすと直後の has_s3_objects_table で同じ例外を再発させ、 ユーザーに二重出力
     させてしまうため)。
     """
-    if not _detect_broken_db(db_path):
+    if not detect_broken_db(db_path):
         return
     broken_db_path = move_broken_db(db_path)
     print(
@@ -310,7 +310,7 @@ def check_db_not_broken(db_path):
     + exit 1 に整形される (他の前処理 FileNotFoundError / CliUsageError と経路を揃える)。
     破損以外 (ロック競合、 権限不足等) は呼び出し元へ伝播。
     """
-    if not _detect_broken_db(db_path):
+    if not detect_broken_db(db_path):
         return
     raise CliUsageError(
         f"DB file is broken: {db_path}. Move or remove the file and run 'init' to re-initialize."
