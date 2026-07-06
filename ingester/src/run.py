@@ -234,11 +234,13 @@ def _detect_broken_db(db_path):
     """DB ファイルが破損していれば True、 正常または不在なら False を返す。
 
     破損以外の接続エラー (ロック競合、 権限不足等) は呼び出し元へ伝播させる。
+    read_only=True で開くことで、 WAL 再生による意図せぬ状態変化 (破損を「復旧」
+    したように見せる副作用) を避け、 破損状態をそのまま検出できるようにする。
     """
     if not os.path.exists(db_path):
         return False
     try:
-        with duckdb.connect(db_path) as con:
+        with duckdb.connect(db_path, read_only=True) as con:
             con.execute("SELECT 1")
     except BROKEN_DB_CONNECT_ERRORS as error:
         if is_broken_db_error(error):
@@ -279,7 +281,10 @@ def has_s3_objects_table(db_path):
     if not os.path.exists(db_path):
         return False
 
-    with duckdb.connect(db_path) as con:
+    # read_only=True で開くことで、 s3_objects テーブル存在確認だけの目的で mtime や
+    # WAL を進めないようにする。 これで no-op init 経路 (has_s3_objects_table True で
+    # 早期 return) が readonly コピー再生成を毎回誘発することを防ぐ。
+    with duckdb.connect(db_path, read_only=True) as con:
         if not table_exists(con, "s3_objects"):
             return False
 
