@@ -151,41 +151,29 @@ def test_delete_removes_stale_copy_files_before_start(tmp_path):
 # should_create_readonly
 
 
-def test_should_create_readonly_returns_false_when_mtime_and_size_unchanged(tmp_path):
-    """initial_mtime_ns と initial_size が現在の値と一致するとき False を返すことを確認する。"""
+def test_should_create_readonly_returns_false_when_stat_unchanged(tmp_path):
+    """initial_stat と現在の (mtime_ns, size) が一致するとき False を返すことを確認する。"""
     db_path = tmp_path / "db.db"
     db_path.write_bytes(b"payload")
     stat_result = db_path.stat()
-    assert (
-        run.should_create_readonly(
-            str(db_path),
-            initial_mtime_ns=stat_result.st_mtime_ns,
-            initial_size=stat_result.st_size,
-        )
-        is False
-    )
+    initial_stat = (stat_result.st_mtime_ns, stat_result.st_size)
+    assert run.should_create_readonly(str(db_path), initial_stat) is False
 
 
 def test_should_create_readonly_returns_true_when_mtime_changed(tmp_path):
-    """initial_mtime_ns と現在の mtime_ns が異なるとき True を返すことを確認する。"""
+    """initial_stat の mtime_ns と現在の mtime_ns が異なるとき True を返すことを確認する。"""
     db_path = tmp_path / "db.db"
     db_path.write_bytes(b"payload")
     initial = db_path.stat()
+    initial_stat = (initial.st_mtime_ns, initial.st_size)
     # mtime を 100 秒先の未来値 (ナノ秒 = 100 * 10^9) に更新して initial と差をつける。
     future_ns = initial.st_mtime_ns + 100 * 10**9
     os.utime(db_path, ns=(future_ns, future_ns))
-    assert (
-        run.should_create_readonly(
-            str(db_path),
-            initial_mtime_ns=initial.st_mtime_ns,
-            initial_size=initial.st_size,
-        )
-        is True
-    )
+    assert run.should_create_readonly(str(db_path), initial_stat) is True
 
 
 def test_should_create_readonly_returns_true_when_size_changed(tmp_path):
-    """initial_mtime_ns と現在の mtime_ns が同じでも、 st_size が異なれば True を返すことを確認する。
+    """initial_stat の mtime_ns と現在の mtime_ns が同じでも、 st_size が異なれば True を返すことを確認する。
 
     mtime が秒粒度に丸められる FS で同一秒内に書き込みが完了して mtime が変化しないケースを、
     st_size の変化で検出できることを担保する。
@@ -193,17 +181,11 @@ def test_should_create_readonly_returns_true_when_size_changed(tmp_path):
     db_path = tmp_path / "db.db"
     db_path.write_bytes(b"payload")
     initial = db_path.stat()
+    initial_stat = (initial.st_mtime_ns, initial.st_size)
     # ファイル内容を書き換えてサイズを変えつつ、 mtime_ns は initial と同じ値に戻す。
     db_path.write_bytes(b"payload-longer")
     os.utime(db_path, ns=(initial.st_mtime_ns, initial.st_mtime_ns))
-    assert (
-        run.should_create_readonly(
-            str(db_path),
-            initial_mtime_ns=initial.st_mtime_ns,
-            initial_size=initial.st_size,
-        )
-        is True
-    )
+    assert run.should_create_readonly(str(db_path), initial_stat) is True
 
 
 # create_readonly_copy
