@@ -545,9 +545,7 @@ def delete(args):
 
 
 def insert_log_from_s3(con, client, table_name, bucket, prefix, update_maximum_load):
-    cursor = get_s3_objects_cursor(con, table_name)
-    object_name, object_last_modified = cursor
-    cursor_key = (object_last_modified, object_name)
+    cursor_key = get_s3_objects_cursor(con, table_name)
 
     log_objects = list_objects(client, bucket, f"{prefix}/{table_name}/")
 
@@ -591,7 +589,7 @@ def insert_log(con, table_name, target_urls):
 
 def get_s3_objects_cursor(con, log_type):
     return con.execute(
-        "SELECT object_name, last_modified FROM s3_objects WHERE type=?",
+        "SELECT last_modified, object_name FROM s3_objects WHERE type=?",
         (log_type,),
     ).fetchone()
 

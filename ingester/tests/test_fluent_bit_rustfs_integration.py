@@ -149,9 +149,9 @@ def append_rtc_stats_log(log_dir: Path) -> None:
 def get_s3_cursor(
     con: duckdb.DuckDBPyConnection, log_type: str
 ) -> tuple[Any, ...] | None:
-    """指定ログ種別の S3 カーソル (object_name, last_modified) を返す。未登録時は None。"""
+    """指定ログ種別の S3 カーソル (last_modified, object_name) を返す。未登録時は None。"""
     return con.execute(
-        "SELECT object_name, last_modified FROM s3_objects WHERE type=?",
+        "SELECT last_modified, object_name FROM s3_objects WHERE type=?",
         (log_type,),
     ).fetchone()
 
