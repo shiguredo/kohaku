@@ -65,12 +65,17 @@ def positive_int(value):
 
 
 def load_columns():
-    """LOG_TARGETS 各テーブルのカラム定義 YAML をロードして辞書として返す。"""
+    """LOG_TARGETS 各テーブルのカラム定義 YAML をロードして辞書として返す。
+
+    YAML 欠損はデプロイ / イメージビルド側の不備なので RuntimeError で送出し、
+    handle_cli_error では拾わずトレースバック付きで上位に伝播させる (「Run 'init'」
+    のようなユーザー向け 1 行メッセージにはしない)。
+    """
     duckdb_columns = {}
     for target in LOG_TARGETS:
         file_path = os.path.join(COLUMNS_DIR, f"{target}.yml")
         if not os.path.exists(file_path):
-            raise FileNotFoundError(f"Column definition file not found: {file_path}")
+            raise RuntimeError(f"Column definition file not found: {file_path}")
 
         with open(file_path) as f:
             columns = yaml.safe_load(f)
@@ -657,9 +662,10 @@ def create_readonly_copy(db_path):
 def handle_cli_error(error, bucket):
     """main から呼び出された関数の例外を分類して整形する CLI トップレベル例外ハンドラ。
 
-    S3Error / FileNotFoundError / CliUsageError をユーザー向け 1 行メッセージで exit 1 にする。
-    それ以外はトレースバック付きで上位に伝播させる。 bucket は NoSuchBucket メッセージ用
-    の表示値として受け取る。
+    S3Error / FileNotFoundError (DB 不在) / CliUsageError をユーザー向け 1 行メッセージで
+    exit 1 にする。 それ以外 (デプロイ不備の RuntimeError や内部バグの ValueError 等) は
+    トレースバック付きで上位に伝播させる。 bucket は NoSuchBucket メッセージ用の表示値
+    として受け取る。
     """
     if isinstance(error, S3Error):
         if error.code == "NoSuchBucket":
