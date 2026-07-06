@@ -558,6 +558,17 @@ def delete(args):
 
 
 def insert_log_from_s3(con, client, table_name, bucket, prefix, update_maximum_load):
+    """s3_objects カーソルより新しい S3 オブジェクトを古い順にバッチで取り込む。
+
+    update 経路の中心関数。 list_objects (降順) と is_after_s3_cursor でカーソル以降の
+    対象オブジェクトを絞り込み、 末尾側 update_maximum_load 件 (古い側) を 1 回の update で
+    取り込む。 カーソルはバッチ内最新までしか進めないため、 update_maximum_load を超えた
+    新しい側は次回以降の update で is_after_s3_cursor が True 判定して順次取得する。
+
+    insert_log とカーソル更新は con.begin() / con.commit() で囲み、 途中失敗時は
+    con.rollback() で「行 insert とカーソル更新」 の原子性を保つ (中途半端な状態で
+    残さない)。
+    """
     cursor_key = get_s3_objects_cursor(con, table_name)
 
     log_objects = list_objects(client, bucket, f"{prefix}/{table_name}/")
@@ -592,6 +603,11 @@ def insert_log_from_s3(con, client, table_name, bucket, prefix, update_maximum_l
 
 
 def insert_log(con, table_name, target_urls):
+    """指定 target_urls の JSON を LOG_TARGETS テーブルに追加する。
+
+    create_log_table と同じ許可リスト検査 (require_known_table) を経由して、
+    SQL への直接埋め込みを行わない経路でも防御チェックを共有する。
+    """
     duckdb_columns = load_columns()
     require_known_table(table_name, duckdb_columns)
 
