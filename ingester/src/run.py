@@ -362,8 +362,10 @@ def escape_sql_string_literal(path_literal):
     シングルクォートをエスケープする。
 
     DuckDB はファイルパスをプリペアドステートメントでバインドできないため、 ATTACH 直前に
-    呼んでパス文字列を直接埋め込む用途。 制御文字 (0x00 から 0x1F および 0x7F) を含む値は
-    DuckDB パーサで予期せぬ挙動を起こす可能性があるため CliUsageError で拒否する。
+    呼んでパス文字列を直接埋め込む用途。 低位制御文字 (0x00 から 0x1F および 0x7F) を含む値は
+    DuckDB パーサで予期せぬ挙動を起こす可能性があるため CliUsageError で拒否する。 C1 制御
+    (0x80-0x9F) や Unicode 行区切り (U+2028 / U+2029) は DuckDB での実害が観測されていない
+    ため対象外とする (追加が必要になれば実例を根拠に拡張する)。
     ATTACH を通らない `duckdb.connect(args.db)` 等の経路は本関数の対象外で、 そこで NUL
     バイト等が混入したときは Python 側の `embedded null byte` ValueError 等に委ねる
     (args.db は argparse 経由の CLI 引数で外部入力ではないため、 入口での網羅検証は持たない)。
