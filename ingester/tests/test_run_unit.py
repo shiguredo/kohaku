@@ -87,10 +87,11 @@ def test_delete_handles_single_quote_in_db_path(tmp_path):
 
 
 def test_delete_restricts_db_file_permission(tmp_path):
-    """delete 完了後の DB ファイルのパーミッションが owner と group のみに縮小されることを確認する。
+    """delete が生成する DB ファイルのパーミッションが owner と group のみに縮小されることを確認する。
 
-    chmod 対象は COPY 先の copy ファイルだが、shutil.move 後に同じパーミッションが
-    args.db に反映される。other 読み書きと group 書き込み以外の権限が落ちることを保証する。
+    chmod 対象は COPY 先の copy ファイルだが、 shutil.move (rename) 経由で最終的な args.db の
+    パーミッションが 0o660 になる (rename は元 args.db のパーミッションを引き継がず copy_file
+    側で置換する)。 other 読み書きと group 書き込み以外の権限が落ちることを保証する。
     """
     db_path = tmp_path / "delete_permission.db"
 
@@ -100,9 +101,6 @@ def test_delete_restricts_db_file_permission(tmp_path):
         con.execute("CREATE TABLE rtc_stats (timestamp TIMESTAMPTZ)")
         con.execute("CREATE TABLE session_webhook (timestamp TIMESTAMPTZ)")
         con.execute("INSERT INTO rtc_stats VALUES (?)", (old_timestamp,))
-
-    # 元 DB を過剰権限にしておき、delete が明示的に縮小していることを示せるようにする。
-    os.chmod(db_path, 0o666)
 
     args = SimpleNamespace(db=str(db_path), retention_period=1)
     run.delete(args)
