@@ -374,13 +374,13 @@ def escape_sql_string_literal(path_literal):
     return path_literal.replace("'", "''")
 
 
-def remove_delete_incomplete_copy_files(copyfile):
+def remove_delete_incomplete_copy_files(copy_file):
     """
     削除処理が失敗した時に残る可能性があるコピー先の .copy ファイルと .copy.wal ファイルを削除する
     """
-    for file in (copyfile, f"{copyfile}.wal"):
+    for path in (copy_file, f"{copy_file}.wal"):
         try:
-            os.remove(file)
+            os.remove(path)
         except FileNotFoundError:
             pass
 
