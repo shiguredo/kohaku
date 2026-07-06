@@ -669,6 +669,9 @@ def handle_cli_error(error, bucket):
     elif isinstance(error, (FileNotFoundError, CliUsageError)):
         exit_with_stderr(str(error))
     else:
+        # ハンドル対象外の例外 (ValueError 等の内部バグ) は意図的にトレースバック付きで
+        # 上位に伝播させる。 tb には handle_cli_error のフレームが 1 段乗るが、 原因究明時は
+        # 元例外の chain を辿る前提で受け入れる。
         raise error
 
 
