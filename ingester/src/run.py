@@ -695,7 +695,7 @@ def create_readonly_copy(db_path):
     """書き込み済みの DB ファイルから読み込み専用コピーを生成する。
 
     DuckDB は書き込み中に他プロセスからアクセスできないため、書き込み終了後に同 FS 内で
-    一時ファイルを作成し、rename で .readonly に切り替えることでアトミックな差し替えにする。
+    一時ファイルを作成し、rename で .readonly に切り替えることで atomic な差し替えにする。
     Grafana は .readonly のみを参照する想定。
     参考: https://github.com/motherduckdb/grafana-duckdb-datasource?tab=readme-ov-file#updating-data-in-the-duckdb-file
     """
