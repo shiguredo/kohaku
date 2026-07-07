@@ -214,10 +214,14 @@ def init_grafana_plugin() -> None:
     """pytest セッション中に 1 回だけ Grafana プラグイン取得用の make init を実行する。
 
     `make init` は repo root の Makefile で plugins/motherduck-duckdb-datasource を取得し、
-    Grafana コンテナにマウントするときに必要となる。 Grafana テスト専用の session scoped
+    Grafana コンテナにマウントするときに必要となる。 副作用として repo root に plugins/ と
+    rustfs/ を作る破壊的初期化なので、 既に PLUGIN_DIR が存在する場合は make init を
+    スキップして repo state を汚さないようにする。 Grafana テスト専用の session scoped
     fixture のため、 共有 conftest.py には置かず本モジュール内に置く。 テスト側からは
     @pytest.mark.usefixtures("init_grafana_plugin") で明示的に依存させる。
     """
+    if PLUGIN_DIR.exists():
+        return
     repo_root = Path(__file__).resolve().parents[2]
     subprocess.run(["make", "init"], cwd=repo_root, check=True)
 
