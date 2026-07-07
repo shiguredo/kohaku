@@ -554,9 +554,7 @@ def delete(args):
         # ATTACH / COPY / chmod / move のいずれかが失敗した後、 残った copy_file と
         # copy_file.wal を削除する。 削除中に PermissionError 等が出ても、 元例外
         # (ATTACH 失敗、 COPY 失敗、 ディスクフル 等) を上書きしないよう best-effort に
-        # 留める。 delete 冒頭側の掃除 (前回異常終了の残骸を消す経路) は「掃除失敗を
-        # そのまま delete 失敗として扱う」 想定なので、 関数自体は FileNotFoundError
-        # のみ吸収の現行を維持し、 except 経路の呼び出しだけを try で広く受ける。
+        # 留める。
         try:
             remove_delete_incomplete_copy_files(copy_file)
         except OSError as cleanup_error:
@@ -592,9 +590,6 @@ def insert_log_from_s3(con, client, table_name, bucket, prefix, update_maximum_l
 
     # 長時間停止後に大量ファイルが蓄積したケースに備え、古い方からバッチで取り込む。
     # 降順ソートされているため、末尾側 update_maximum_load 件が古い順のバッチになる。
-    # update_maximum_load を超えた新しい側のオブジェクトは今回取り込まず、次回以降の
-    # update で残りを取得する。カーソルをバッチ内最新までしか進めないため、is_after_s3_cursor
-    # で次回 True と判定されて順次取り込まれる。
     if len(target_log_objects) > update_maximum_load:
         target_log_objects = target_log_objects[-update_maximum_load:]
 
