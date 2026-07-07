@@ -172,8 +172,8 @@ def sync_log_for_init(con, client, args, target):
 
 def sync_log_for_update(con, client, args, target):
     try:
-        cursor = get_s3_objects_cursor(con, target)
-        if cursor is None:
+        cursor_key = get_s3_objects_cursor(con, target)
+        if cursor_key is None:
             # 対象 log_type が初登場するケース (init 時点で該当ターゲットの S3 オブジェクトが
             # 1 件も無く、s3_objects にも行が作られなかった状況であとから登場した場合)。
             # update 経路でも新規初期化として initialize_log_table を呼ぶ。取り込み件数の上限は
@@ -188,6 +188,7 @@ def sync_log_for_update(con, client, args, target):
                 args.s3_bucket,
                 args.s3_prefix,
                 args.update_maximum_load,
+                cursor_key,
             )
     except duckdb.InvalidInputException as e:
         # 対象 target で InvalidInputException (壊れた gzip、 read_json のスキーマ不一致等)
@@ -574,20 +575,22 @@ def delete(args):
         raise
 
 
-def insert_log_from_s3(con, client, table_name, bucket, prefix, update_maximum_load):
+def insert_log_from_s3(
+    con, client, table_name, bucket, prefix, update_maximum_load, cursor_key
+):
     """s3_objects カーソルより新しい S3 オブジェクトを古い順にバッチで取り込む。
 
-    update 経路の中心関数。 list_objects (降順) と is_after_s3_cursor でカーソル以降の
-    対象オブジェクトを絞り込み、 末尾側 update_maximum_load 件 (古い側) を 1 回の update で
-    取り込む。 カーソルはバッチ内最新までしか進めないため、 update_maximum_load を超えた
-    新しい側は次回以降の update で is_after_s3_cursor が True 判定して順次取得する。
+    update 経路の中心関数。 呼び出し側 (sync_log_for_update) は cursor_key is not None
+    を保証する契約 (cursor_key は (last_modified, object_name) の 2 タプル)。 list_objects
+    (降順) と is_after_s3_cursor でカーソル以降の対象オブジェクトを絞り込み、 末尾側
+    update_maximum_load 件 (古い側) を 1 回の update で取り込む。 カーソルはバッチ内最新
+    までしか進めないため、 update_maximum_load を超えた新しい側は次回以降の update で
+    is_after_s3_cursor が True 判定して順次取得する。
 
     insert_log とカーソル更新は con.begin() / con.commit() で囲み、 途中失敗時は
     con.rollback() で「行 insert とカーソル更新」 の原子性を保つ (中途半端な状態で
     残さない)。
     """
-    cursor_key = get_s3_objects_cursor(con, table_name)
-
     log_objects = list_objects(client, bucket, f"{prefix}/{table_name}/")
 
     target_log_objects = [
