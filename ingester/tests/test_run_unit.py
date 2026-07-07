@@ -32,25 +32,26 @@ def test_positive_int_accepts_positive(value, expected):
 
 
 def test_delete_returns_without_copy_when_no_rows_deleted(tmp_path):
-    """削除件数が 0 件の場合に DB コピー処理へ進まず、元 DB も変化しないことを確認する。"""
+    """削除件数が 0 件の場合に DB コピー処理 (ATTACH + COPY + shutil.move) へ進まないことを確認する。
+
+    「元 DB のバイト内容そのものが不変」 は DuckDB が R/W 接続を開いた時点で WAL ヘッダー等を
+    更新する可能性があるため保証しない (バージョン依存で fragile)。 契約は「COPY 経路が走って
+    いない」 で、 inode 不変 + `.copy` 不在で担保する。
+    """
     db_path = tmp_path / "delete_no_rows.db"
     with duckdb.connect(str(db_path)) as con:
         con.execute("CREATE TABLE rtc_stats (timestamp TIMESTAMPTZ)")
         con.execute("CREATE TABLE session_webhook (timestamp TIMESTAMPTZ)")
 
     before_stat = db_path.stat()
-    before_hash = hashlib.sha256(db_path.read_bytes()).hexdigest()
 
     args = SimpleNamespace(db=str(db_path), retention_period=1)
     run.delete(args)
 
-    after_stat = db_path.stat()
-    after_hash = hashlib.sha256(db_path.read_bytes()).hexdigest()
-
-    # DB ファイルが存在し、inode が変わらず、内容も変わっていないことを確認する。
+    # DB ファイルが shutil.move で置き換わっていないこと (inode 不変)、 COPY 用一時ファイルが
+    # 作られていないことを確認する。
     assert db_path.exists()
-    assert after_stat.st_ino == before_stat.st_ino
-    assert after_hash == before_hash
+    assert db_path.stat().st_ino == before_stat.st_ino
     assert os.path.exists(f"{db_path}.copy") is False
 
 
