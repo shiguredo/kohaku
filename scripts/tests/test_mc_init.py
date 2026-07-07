@@ -112,7 +112,8 @@ def test_mc_init_creates_bucket(rustfs_env: dict[str, object]) -> None:
                 'mc alias set storage "http://${S3_ENDPOINT}" "${AWS_ACCESS_KEY_ID}" '
                 '"${AWS_SECRET_ACCESS_KEY}" >/dev/null\n'
                 'mc ls "storage/${S3_BUCKET}" >/dev/null\n'
-                'mc ilm rule ls "storage/${S3_BUCKET}" | grep -q "${RETENTION_PERIOD} days"',
+                'rules=$(mc ilm rule ls "storage/${S3_BUCKET}")\n'
+                'case "$rules" in *"${RETENTION_PERIOD} days"*) ;; *) exit 1 ;; esac',
             ],
         )
         .with_network(rustfs_env["network"])
