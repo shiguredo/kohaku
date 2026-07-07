@@ -680,6 +680,11 @@ def should_create_readonly(db_path, initial_stat):
     丸められる FS でも「同一秒 + 同一サイズ」 の同値ですり抜けるケースを実質排除する。
     args.db が args.func 実行後に消失したケース (initial_stat が None または現在ファイル不在)
     は readonly も更新しない方針とし、 現在ファイルが無ければ False を返す。
+
+    update / delete では実データ変更が無くても DuckDB の R/W オープン副作用で mtime が
+    進むため、 readonly が念のため再生成される (コストは shutil.copyfile 1 回分で許容する
+    方針)。 no-op init だけは has_s3_objects_table を read_only=True にして再生成を
+    防いでいる。
     """
     current_stat = capture_db_stat(db_path)
     if current_stat is None:
