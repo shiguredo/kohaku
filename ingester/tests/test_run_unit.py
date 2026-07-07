@@ -92,7 +92,8 @@ def test_delete_restricts_db_file_permission(tmp_path):
 
     chmod 対象は COPY 先の copy ファイルだが、 shutil.move (rename) 経由で最終的な args.db の
     パーミッションが 0o660 になる (rename は元 args.db のパーミッションを引き継がず copy_file
-    側で置換する)。 other 読み書きと group 書き込み以外の権限が落ちることを保証する。
+    側で置換する)。 owner の読み書きと group の読み書きのみ残り、 other から全権限が落ちる
+    ことを保証する。
     """
     db_path = tmp_path / "delete_permission.db"
 
