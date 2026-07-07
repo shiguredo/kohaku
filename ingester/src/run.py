@@ -663,8 +663,8 @@ def exit_with_stderr(message):
 def capture_db_stat(db_path):
     """DB ファイルが存在すれば (mtime_ns, size) タプルを、 無ければ None を返す。
 
-    main が args.func 実行前後で readonly コピー生成要否を判定するための初期値取得。
-    should_create_readonly の入力ペアを 1 引数に絞り、 main の分岐を平坦化する。
+    main が args.func 実行前後で readonly コピー生成要否を判定するための初期値取得と、
+    should_create_readonly 内の現在値取得を共通化するためのヘルパー。
     """
     if not os.path.exists(db_path):
         return None
@@ -681,10 +681,10 @@ def should_create_readonly(db_path, initial_stat):
     args.db が args.func 実行後に消失したケース (initial_stat が None または現在ファイル不在)
     は readonly も更新しない方針とし、 現在ファイルが無ければ False を返す。
     """
-    if not os.path.exists(db_path):
+    current_stat = capture_db_stat(db_path)
+    if current_stat is None:
         return False
-    current = os.stat(db_path)
-    return initial_stat != (current.st_mtime_ns, current.st_size)
+    return initial_stat != current_stat
 
 
 def create_readonly_copy(db_path):
