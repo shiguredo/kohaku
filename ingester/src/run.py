@@ -482,7 +482,9 @@ def delete(args):
     切り替わって atomic でなくなり、 args.db が書きかけのまま残り得るので、 その場合は
     args.db の退避処理を追加すること。
 
-    .wal の残骸は check_db_not_broken の破損検出で吸収する想定で、 明示的な削除は加えない。
+    .wal の残骸は本関数内の duckdb.connect(args.db) (R/W オープン) で DuckDB が自動的に
+    再生・チェックポイントするため、 明示的な削除は加えない。 check_db_not_broken は
+    read_only 接続なので WAL 再生には関与しない。
 
     0o660 への chmod は COPY 経路の副次効果なので、 削除 0 件のときは正規化されない
     (元 DB のパーミッションは init / sync の umask で揃える前提)。
