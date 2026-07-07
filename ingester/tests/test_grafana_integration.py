@@ -265,12 +265,14 @@ def test_grafana_can_query_duckdb_data(tmp_path):
     )
 
     try:
-        container.start()
-    except ContainerStartException as exc:
-        # Docker が使えない環境はテスト環境不備として失敗させる。
-        pytest.fail(f"Docker Engine へ接続できないためテストを実行できません: {exc}")
+        try:
+            container.start()
+        except ContainerStartException as exc:
+            # Docker が使えない環境はテスト環境不備として失敗させる。
+            pytest.fail(
+                f"Docker Engine へ接続できないためテストを実行できません: {exc}"
+            )
 
-    try:
         # 起動後は health と datasource の provision 完了を待ってから API を叩く。
         host = container.get_container_host_ip()
         port = container.get_exposed_port(3000)
