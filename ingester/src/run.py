@@ -279,7 +279,7 @@ def prepare_db_for_init(db_path):
 def has_s3_objects_table(db_path):
     """DB ファイルに s3_objects テーブルが存在するかを判定する。
 
-    init は完了判定に使い、 update / delete は事前チェックに使う。
+    init は完了判定に使い、 update は事前チェックに使う。
     s3_objects テーブルの「存在」 のみを見て、 行数や LOG_TARGETS テーブルの有無は見ない。
     「s3_objects テーブルはあるが特定ターゲットのカーソル行が無い」 中途半端な状態
     (init 時にバケットが空だったターゲット、 後から S3 に登場したターゲット等) は
