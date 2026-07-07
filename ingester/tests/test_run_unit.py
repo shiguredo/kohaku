@@ -734,24 +734,24 @@ def test_prepare_db_for_init_raises_on_permission_denied(tmp_path):
         os.chmod(db_path, 0o600)
 
 
-# check_db_not_broken
+# raise_if_db_broken
 
 
-def test_check_db_not_broken_returns_for_non_existent_db(tmp_path):
+def test_raise_if_db_broken_returns_for_non_existent_db(tmp_path):
     """DB ファイルが存在しないときは何もせずに return することを確認する。"""
     missing = tmp_path / "missing.db"
-    assert run.check_db_not_broken(str(missing)) is None
+    assert run.raise_if_db_broken(str(missing)) is None
 
 
-def test_check_db_not_broken_returns_for_healthy_db(tmp_path):
+def test_raise_if_db_broken_returns_for_healthy_db(tmp_path):
     """正常な DB に対しては何もせずに return することを確認する。"""
     db_path = tmp_path / "healthy.db"
     with duckdb.connect(str(db_path)) as con:
         con.execute("CREATE TABLE t(id INTEGER)")
-    assert run.check_db_not_broken(str(db_path)) is None
+    assert run.raise_if_db_broken(str(db_path)) is None
 
 
-def test_check_db_not_broken_raises_cli_usage_error_for_broken_db(tmp_path):
+def test_raise_if_db_broken_raises_cli_usage_error_for_broken_db(tmp_path):
     """破損 DB に対しては自動退避せず CliUsageError を送出することを確認する。
 
     update / delete では運用者の判断を優先するため、検出のみ行い、メッセージで
@@ -762,7 +762,7 @@ def test_check_db_not_broken_raises_cli_usage_error_for_broken_db(tmp_path):
     db_path.write_bytes(b"invalid db")
 
     with pytest.raises(run.CliUsageError) as exc_info:
-        run.check_db_not_broken(str(db_path))
+        run.raise_if_db_broken(str(db_path))
     message = str(exc_info.value)
     assert "DB file is broken" in message
     assert str(db_path) in message
@@ -773,7 +773,7 @@ def test_check_db_not_broken_raises_cli_usage_error_for_broken_db(tmp_path):
     assert len(renamed_files) == 0
 
 
-def test_check_db_not_broken_propagates_non_broken_errors(tmp_path):
+def test_raise_if_db_broken_propagates_non_broken_errors(tmp_path):
     """Permission denied のような破損ではない接続エラーは再 raise することを確認する。"""
     # root 実行時は chmod 0 が無視されて Permission denied を再現できないため、
     # 偽通過を避けるためにテストを明示的に失敗させる。
@@ -786,7 +786,7 @@ def test_check_db_not_broken_propagates_non_broken_errors(tmp_path):
 
     try:
         with pytest.raises(run.BROKEN_DB_CONNECT_ERRORS) as exc_info:
-            run.check_db_not_broken(str(db_path))
+            run.raise_if_db_broken(str(db_path))
         # 破損ではない接続エラー (Permission denied 等) であることを確認する
         assert run.is_broken_db_error(exc_info.value) is False
     finally:

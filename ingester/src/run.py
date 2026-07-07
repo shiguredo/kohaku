@@ -41,7 +41,7 @@ BROKEN_DB_ERROR_PATTERNS = (
     "not a valid duckdb",
 )
 # 破損 DB を connect したときに DuckDB が送出しうる例外クラス。
-# prepare_db_for_init と check_db_not_broken の except タプルで共有する。
+# prepare_db_for_init と raise_if_db_broken の except タプルで共有する。
 BROKEN_DB_CONNECT_ERRORS = (
     duckdb.IOException,
     duckdb.InternalException,
@@ -250,7 +250,7 @@ def move_broken_db(db_path):
     return broken_db_path
 
 
-def detect_broken_db(db_path):
+def is_db_broken(db_path):
     """DB ファイルが破損していれば True、 正常または不在なら False を返す。
 
     破損以外の接続エラー (ロック競合、 権限不足等) は呼び出し元へ伝播させる。
@@ -276,7 +276,7 @@ def prepare_db_for_init(db_path):
     (握りつぶすと直後の has_s3_objects_table で同じ例外を再発させ、 ユーザーに二重出力
     させてしまうため)。
     """
-    if not detect_broken_db(db_path):
+    if not is_db_broken(db_path):
         return
     broken_db_path = move_broken_db(db_path)
     print(
@@ -311,7 +311,7 @@ def has_s3_objects_table(db_path):
     return True
 
 
-def check_db_not_broken(db_path):
+def raise_if_db_broken(db_path):
     """update / delete の前処理として DB 破損を検出し、 CliUsageError で init の再実行を促す。
 
     init は prepare_db_for_init で自動退避するが、 update / delete では運用者の判断を
@@ -319,7 +319,7 @@ def check_db_not_broken(db_path):
     + exit 1 に整形される (他の前処理 FileNotFoundError / CliUsageError と経路を揃える)。
     破損以外 (ロック競合、 権限不足等) は呼び出し元へ伝播。
     """
-    if not detect_broken_db(db_path):
+    if not is_db_broken(db_path):
         return
     raise CliUsageError(
         f"DB file is broken: {db_path}. Move or remove the file and run 'init' to re-initialize."
@@ -454,7 +454,7 @@ def update(args):
     if not os.path.exists(args.db):
         raise FileNotFoundError(f"DB file not found: {args.db}. Run 'init' first.")
 
-    check_db_not_broken(args.db)
+    raise_if_db_broken(args.db)
 
     # s3_objects テーブル不在の DB に対しては update を拒否する。init が未実行のまま
     # update を呼ぶと get_s3_objects_cursor が CatalogException で落ちるため、明示的に弾く。
@@ -492,7 +492,7 @@ def delete(args):
     args.db の退避処理を追加すること。
 
     .wal の残骸は本関数内の duckdb.connect(args.db) (R/W オープン) で DuckDB が自動的に
-    再生・チェックポイントするため、 明示的な削除は加えない。 check_db_not_broken は
+    再生・チェックポイントするため、 明示的な削除は加えない。 raise_if_db_broken は
     read_only 接続なので WAL 再生には関与しない。
 
     0o660 への chmod は COPY 経路の副次効果なので、 削除 0 件のときは正規化されない
@@ -501,7 +501,7 @@ def delete(args):
     if not os.path.exists(args.db):
         raise FileNotFoundError(f"DB file not found: {args.db}. Run 'init' first.")
 
-    check_db_not_broken(args.db)
+    raise_if_db_broken(args.db)
 
     copy_file = f"{args.db}.copy"
 
