@@ -163,23 +163,32 @@ def sync_log_for_init(con, client, args, target):
 
 
 def sync_log_for_update(con, client, args, target):
-    cursor = get_s3_objects_cursor(con, target)
-    if cursor is None:
-        # 対象 log_type が初登場するケース (init 時点で該当ターゲットの S3 オブジェクトが
-        # 1 件も無く、s3_objects にも行が作られなかった状況であとから登場した場合)。
-        # update 経路でも新規初期化として initialize_log_table を呼ぶ。取り込み件数の上限は
-        # initialize_log_table の仕様通り initial_maximum_load を用いる。
-        initialize_log_table(con, client, args, target)
-    else:
-        # テーブルが存在しているのでログを追加する
-        insert_log_from_s3(
-            con,
-            client,
-            target,
-            args.s3_bucket,
-            args.s3_prefix,
-            args.update_maximum_load,
-        )
+    try:
+        cursor = get_s3_objects_cursor(con, target)
+        if cursor is None:
+            # 対象 log_type が初登場するケース (init 時点で該当ターゲットの S3 オブジェクトが
+            # 1 件も無く、s3_objects にも行が作られなかった状況であとから登場した場合)。
+            # update 経路でも新規初期化として initialize_log_table を呼ぶ。取り込み件数の上限は
+            # initialize_log_table の仕様通り initial_maximum_load を用いる。
+            initialize_log_table(con, client, args, target)
+        else:
+            # テーブルが存在しているのでログを追加する
+            insert_log_from_s3(
+                con,
+                client,
+                target,
+                args.s3_bucket,
+                args.s3_prefix,
+                args.update_maximum_load,
+            )
+    except duckdb.InvalidInputException as e:
+        # 対象 target で InvalidInputException (壊れた gzip、 read_json のスキーマ不一致等)
+        # が出ても残りの LOG_TARGETS を止めないため、 stderr に記録して次の target へ進む
+        # (sync_log_for_init と同じ方針)。 catch しないと単一の壊れたオブジェクトで update
+        # 全体が中断し、 次サイクルもカーソル未進行のまま同じオブジェクトで固まる。
+        # 該当 target 自体はカーソルが進まないため、 壊れたオブジェクトが除去されるまで
+        # 同じ target で再発するが、 他 target への波及は防げる。
+        print(f"InvalidInputException ({target}): {e}", file=sys.stderr)
 
 
 def is_after_s3_cursor(obj_key, cursor_key):
