@@ -109,8 +109,6 @@ def make_args_for_s3(
             s3_endpoint=rustfs_endpoint,
             s3_access_key_id=ACCESS_KEY,
             s3_secret_access_key=SECRET_KEY,
-            s3_use_ssl=False,
-            s3_region="ap-northeast-1",
             s3_bucket=s3_bucket,
             s3_prefix=PREFIX,
             initial_maximum_load=initial_maximum_load,
