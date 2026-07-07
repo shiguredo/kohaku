@@ -16,6 +16,14 @@ class CliUsageError(Exception):
 
     handle_cli_error がユーザー向け 1 行メッセージで exit 1 にする経路に乗せる。
     内部用エラーは ValueError 等のまま上位に伝播させて区別する。
+
+    例外分類の対応表 (handle_cli_error のディスパッチ先):
+      - S3Error: 1 行メッセージで exit 1
+      - FileNotFoundError (DB 不在): 1 行メッセージで exit 1
+      - CliUsageError (本例外): 1 行メッセージで exit 1
+      - RuntimeError (デプロイ不備、 例: load_columns の YAML 欠損): トレースバック伝播
+      - ValueError (内部 invariant 違反、 例: Unknown table name): トレースバック伝播
+      - その他: トレースバック伝播
     """
 
 
