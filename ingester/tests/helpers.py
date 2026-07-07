@@ -55,6 +55,6 @@ def wait_until(
     if last_error is not None:
         raise WaitTimeoutError(
             f"condition was not met within {timeout_sec} seconds; "
-            f"last error: {last_error!r}"
+            f"last error: {type(last_error).__name__}: {last_error}"
         ) from last_error
     raise WaitTimeoutError(f"condition was not met within {timeout_sec} seconds")
