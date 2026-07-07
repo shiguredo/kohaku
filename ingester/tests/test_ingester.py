@@ -139,7 +139,7 @@ def get_latest_object(s3_client: minio.Minio, bucket: str, prefix: str) -> Any:
     return max(objects, key=lambda obj: (obj.last_modified, obj.object_name))
 
 
-def _make_reset_bucket_client(rustfs_endpoint: str) -> minio.Minio:
+def _setup_fresh_bucket_client(rustfs_endpoint: str) -> minio.Minio:
     """RustFS 用の Minio client を作成し、 接続待ちと BUCKET の reset を行う。
 
     3 つの s3_client 系 fixture が共通で行うセットアップを 1 箇所に集約する。
@@ -159,7 +159,7 @@ def _make_reset_bucket_client(rustfs_endpoint: str) -> minio.Minio:
 @pytest.fixture
 def s3_client(rustfs_endpoint: str) -> Iterator[minio.Minio]:
     """テスト用ログ (rtc_stats / session_webhook 両方) をアップロードした S3 クライアント。"""
-    client = _make_reset_bucket_client(rustfs_endpoint)
+    client = _setup_fresh_bucket_client(rustfs_endpoint)
 
     now = datetime.datetime.now(datetime.UTC)
     for root, _, filenames in os.walk(LOG_DIR):
@@ -192,7 +192,7 @@ def s3_client(rustfs_endpoint: str) -> Iterator[minio.Minio]:
 @pytest.fixture
 def s3_client_without_session_webhook(rustfs_endpoint: str) -> Iterator[minio.Minio]:
     """session_webhook を意図的に除外し、 rtc_stats のみアップロードした S3 クライアント。"""
-    client = _make_reset_bucket_client(rustfs_endpoint)
+    client = _setup_fresh_bucket_client(rustfs_endpoint)
 
     now = datetime.datetime.now(datetime.UTC)
     log_file_path = os.path.join(LOG_DIR, "rtc_stats.jsonl")
@@ -217,7 +217,7 @@ def s3_client_without_session_webhook(rustfs_endpoint: str) -> Iterator[minio.Mi
 @pytest.fixture
 def s3_client_empty(rustfs_endpoint: str) -> Iterator[minio.Minio]:
     """ログオブジェクトを 1 件もアップロードしない空バケットを準備する S3 クライアント。"""
-    client = _make_reset_bucket_client(rustfs_endpoint)
+    client = _setup_fresh_bucket_client(rustfs_endpoint)
     yield client
     remove_bucket(client, BUCKET)
 
