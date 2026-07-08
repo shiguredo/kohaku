@@ -168,7 +168,10 @@ def sync_log_for_init(con, client, args, target):
         # 対象 target で読み込みエラー (壊れた gzip、 read_json のスキーマ不一致等) が
         # 出ても残りの LOG_TARGETS を止めないため、 stderr に記録して次の target へ進む。
         # 発生要因の例: 壊れた gzip (IOException)、 read_json のスキーマ不一致
-        # (InvalidInputException)。
+        # (InvalidInputException)。 なお IOException は DB 書き込み側 (disk full、
+        # 権限剥奪、 WAL 書き込み失敗等) でも発生し得るが、 message で区別しないので
+        # 同経路で握られる。 top-level の exit code は失敗を示さないため、 per-target
+        # の stderr 出力を運用側で監視すること。
         print(f"{type(e).__name__} ({target}): {e}", file=sys.stderr)
 
 
@@ -198,7 +201,10 @@ def sync_log_for_update(con, client, args, target):
         # (sync_log_for_init と同じ方針)。 catch しないと単一の壊れたオブジェクトで update
         # 全体が中断し、 次サイクルもカーソル未進行のまま同じオブジェクトで固まる。
         # 該当 target 自体はカーソルが進まないため、 壊れたオブジェクトが除去されるまで
-        # 同じ target で再発するが、 他 target への波及は防げる。
+        # 同じ target で再発するが、 他 target への波及は防げる。 なお IOException は
+        # DB 書き込み側 (disk full、 権限剥奪、 WAL 書き込み失敗等) でも発生し得るが、
+        # message で区別しないので同経路で握られる。 top-level の exit code は失敗を
+        # 示さないため、 per-target の stderr 出力を運用側で監視すること。
         print(f"{type(e).__name__} ({target}): {e}", file=sys.stderr)
 
 
