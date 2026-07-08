@@ -452,7 +452,7 @@ def test_update_skips_broken_object_and_continues_other_targets(
 ):
     """update 中に session_webhook の壊れたオブジェクトが混じっても rtc_stats の取り込みが続くことを確認する。
 
-    sync_log_for_update に追加した InvalidInputException catch の仕様 (壊れた target で
+    sync_log_for_update に追加した IOException catch の仕様 (壊れた target で
     update 全体を止めず、 他 target への波及を防ぐ) を担保する。
     """
     duckdb_filepath = str(tmp_path / "duck.db")
