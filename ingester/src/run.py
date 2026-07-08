@@ -695,9 +695,10 @@ def capture_db_stat(db_path):
     FS でも「同一秒 + 同一サイズ」 の同値ですり抜けるケースを排除するため、 mtime_ns
     (ナノ秒精度整数) と size のペアを返す。
     """
-    if not os.path.exists(db_path):
+    try:
+        stat_result = os.stat(db_path)
+    except FileNotFoundError:
         return None
-    stat_result = os.stat(db_path)
     return (stat_result.st_mtime_ns, stat_result.st_size)
 
 
