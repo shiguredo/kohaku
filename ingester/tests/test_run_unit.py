@@ -759,7 +759,7 @@ def test_prepare_db_for_init_raises_on_permission_denied(tmp_path):
     os.chmod(db_path, 0)
 
     try:
-        with pytest.raises(run.BROKEN_DB_CONNECT_ERRORS) as exc_info:
+        with pytest.raises(duckdb.IOException) as exc_info:
             run.prepare_db_for_init(str(db_path))
         # 破損ではない接続エラー (Permission denied 等) であることを確認する
         assert run.is_broken_db_error(exc_info.value) is False
@@ -825,7 +825,7 @@ def test_raise_if_db_broken_propagates_non_broken_errors(tmp_path):
     os.chmod(db_path, 0)
 
     try:
-        with pytest.raises(run.BROKEN_DB_CONNECT_ERRORS) as exc_info:
+        with pytest.raises(duckdb.IOException) as exc_info:
             run.raise_if_db_broken(str(db_path))
         # 破損ではない接続エラー (Permission denied 等) であることを確認する
         assert run.is_broken_db_error(exc_info.value) is False
