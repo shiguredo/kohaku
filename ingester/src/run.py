@@ -266,7 +266,10 @@ def is_db_broken(db_path):
 
     破損以外の接続エラー (ロック競合、 権限不足等) は呼び出し元へ伝播させる。
     read_only=True で開くことで、 WAL 再生による意図せぬ状態変化 (破損を「復旧」
-    したように見せる副作用) を避け、 破損状態をそのまま検出できるようにする。
+    したように見せる副作用) を避け、 破損状態をそのまま検出できるようにする。 ただし
+    read_only 接続は WAL 再生を行わないため、 「DB 本体は正常だが WAL が破損」 の
+    ケースは本関数では検出しない。 WAL 破損は update / delete が実 R/W オープンして
+    WAL 再生を試みた段階で IOException 等として顕在化する。
     """
     if not os.path.exists(db_path):
         return False
