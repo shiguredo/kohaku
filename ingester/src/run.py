@@ -726,9 +726,9 @@ def handle_cli_error(error, bucket):
     """main から呼び出された関数の例外を分類して整形する CLI トップレベル例外ハンドラ。
 
     S3Error / FileNotFoundError (DB 不在) / CliUsageError をユーザー向け 1 行メッセージで
-    exit 1 にする。 それ以外 (デプロイ不備の RuntimeError や内部バグの ValueError 等) は
-    トレースバック付きで上位に伝播させる。 bucket は NoSuchBucket メッセージ用の表示値
-    として受け取る。
+    exit 1 にし、 それ以外はトレースバック付きで上位に伝播させる (詳細な分類は
+    CliUsageError の対応表を参照)。 bucket は NoSuchBucket メッセージ用の表示値として
+    受け取る。
     """
     if isinstance(error, S3Error):
         if error.code == "NoSuchBucket":
