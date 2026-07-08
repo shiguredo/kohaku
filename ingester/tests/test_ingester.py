@@ -53,7 +53,7 @@ def remove_bucket(s3_client: minio.Minio, bucket_name: str) -> None:
 def reset_bucket(s3_client: minio.Minio, bucket_name: str) -> None:
     """テスト開始前に既存バケットを掃除してから作り直す。
 
-    セッションスコープの RustFS を function スコープの s3_client 系 fixture で共有して
+    session スコープの RustFS を function スコープの s3_client 系 fixture で共有して
     いるため、前テストの teardown (fixture 内の remove_bucket) が落ちて残骸が残った場合
     でも次のテストを空のバケットから始められるようにする。残骸を検出したときは黙って
     吸収せず stderr に警告を出し、teardown 失敗を見える化する。

@@ -218,7 +218,7 @@ def init_grafana_plugin() -> None:
     rustfs/ を作る破壊的初期化なので、 既に PLUGIN_DIR/plugin.json が存在する場合は
     make init をスキップして repo state を汚さないようにする (空ディレクトリだけ残った
     途中失敗状態を検出するため plugin.json まで確認する)。 Grafana テスト専用の session
-    scoped fixture のため、 共有 conftest.py には置かず本モジュール内に置く。 テスト側
+    スコープ fixture のため、 共有 conftest.py には置かず本モジュール内に置く。 テスト側
     からは @pytest.mark.usefixtures("init_grafana_plugin") で明示的に依存させる。
     """
     if (PLUGIN_DIR / "plugin.json").is_file():
