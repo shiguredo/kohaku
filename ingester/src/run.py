@@ -164,10 +164,12 @@ def initialize_log_table(con, client, args, target):
 def sync_log_for_init(con, client, args, target):
     try:
         initialize_log_table(con, client, args, target)
-    except duckdb.InvalidInputException as e:
-        # 対象 target で InvalidInputException が出ても残りの LOG_TARGETS を止めないため、
-        # stderr に記録して次の target へ進む。 発生要因の例: read_json のスキーマ不一致など。
-        print(f"InvalidInputException ({target}): {e}", file=sys.stderr)
+    except (duckdb.InvalidInputException, duckdb.IOException) as e:
+        # 対象 target で読み込みエラー (壊れた gzip、 read_json のスキーマ不一致等) が
+        # 出ても残りの LOG_TARGETS を止めないため、 stderr に記録して次の target へ進む。
+        # 発生要因の例: 壊れた gzip (IOException)、 read_json のスキーマ不一致
+        # (InvalidInputException)。
+        print(f"{type(e).__name__} ({target}): {e}", file=sys.stderr)
 
 
 def sync_log_for_update(con, client, args, target):
@@ -190,14 +192,14 @@ def sync_log_for_update(con, client, args, target):
                 args.update_maximum_load,
                 cursor_key,
             )
-    except duckdb.InvalidInputException as e:
-        # 対象 target で InvalidInputException (壊れた gzip、 read_json のスキーマ不一致等)
-        # が出ても残りの LOG_TARGETS を止めないため、 stderr に記録して次の target へ進む
+    except (duckdb.InvalidInputException, duckdb.IOException) as e:
+        # 対象 target で読み込みエラー (壊れた gzip、 read_json のスキーマ不一致等) が
+        # 出ても残りの LOG_TARGETS を止めないため、 stderr に記録して次の target へ進む
         # (sync_log_for_init と同じ方針)。 catch しないと単一の壊れたオブジェクトで update
         # 全体が中断し、 次サイクルもカーソル未進行のまま同じオブジェクトで固まる。
         # 該当 target 自体はカーソルが進まないため、 壊れたオブジェクトが除去されるまで
         # 同じ target で再発するが、 他 target への波及は防げる。
-        print(f"InvalidInputException ({target}): {e}", file=sys.stderr)
+        print(f"{type(e).__name__} ({target}): {e}", file=sys.stderr)
 
 
 def is_after_s3_cursor(obj_key, cursor_key):
