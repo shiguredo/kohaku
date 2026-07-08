@@ -628,7 +628,13 @@ def insert_log_from_s3(
         update_s3_objects_table(con, table_name, target_log_objects[0])
         con.commit()
     except Exception:
-        con.rollback()
+        # rollback が disk full 等で失敗すると元例外が __context__ に沈み、 stderr には
+        # rollback 起源の例外だけが出て根本原因の追跡が難しくなる。 rollback 例外は吸収し、
+        # 事実だけを stderr に残して元例外を維持する。
+        try:
+            con.rollback()
+        except Exception as rollback_error:
+            print(f"Rollback also failed: {rollback_error}", file=sys.stderr)
         raise
 
 
