@@ -98,7 +98,10 @@ services:
       - UPDATE_INTERVAL=${UPDATE_INTERVAL}
       - RETENTION_PERIOD=${RETENTION_PERIOD}
     depends_on:
-      - grafana
+      grafana:
+        condition: service_started
+      mc:
+        condition: service_completed_successfully
     networks:
       - kohaku
     volumes:
