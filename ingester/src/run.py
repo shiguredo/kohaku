@@ -595,7 +595,7 @@ def insert_log_from_s3(
     is_after_s3_cursor が True 判定して順次取得する。
 
     insert_log とカーソル更新は con.begin() / con.commit() で囲み、 途中失敗時は
-    con.rollback() で「行 insert とカーソル更新」 の原子性を保つ (中途半端な状態で
+    con.rollback() で「行 insert とカーソル更新」 を atomic に保つ (中途半端な状態で
     残さない)。
     """
     log_objects = list_objects(client, bucket, f"{prefix}/{table_name}/")
