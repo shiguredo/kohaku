@@ -56,13 +56,18 @@ if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
                            "${s3_ssl_args[@]}" \
                            init; then
   # init 失敗のまま update ループに入ると s3_objects テーブルが無い状態で update が
-  # CliUsageError で連続失敗するため、 init 失敗時はここで終了し、 systemd / docker の
-  # restart policy 側で再起動戦略を制御してもらう。
+  # CliUsageError で連続失敗するため、 init 失敗時はここで終了する。 systemd 経由
+  # (scripts/run-ingester.sh) は Restart= 設定で自動再起動、 docker 経由 (本スクリプト)
+  # は compose 側で restart 未設定のため運用者の手動 up が前提。
   echo "run.py init failed. exit to let the restart policy retry." >&2
   exit 1
 fi
 
-# 定期的にデータを更新
+# 定期的にデータを更新。 update / delete の失敗は while ループが継続するため、 一時的な
+# 障害 (S3 の一時不通等) は自然回復する。 一方、 恒久的なエラー (壊れた DB 等) は自動
+# 復帰しないため、 運用者が stderr の連続失敗を検知して手動対応する前提。 init との
+# 非対称性 (init は exit、 update/delete は継続) は意図的で、 update/delete を毎回 exit
+# させると一時障害でコンテナが停止するデメリットが大きいと判断した。
 while :;
 do
   if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
