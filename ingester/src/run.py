@@ -673,7 +673,9 @@ def capture_db_stat(db_path):
     """DB ファイルが存在すれば (mtime_ns, size) タプルを、 無ければ None を返す。
 
     main が args.func 実行前後で readonly コピー生成要否を判定するための初期値取得と、
-    should_create_readonly 内の現在値取得を共通化するためのヘルパー。
+    should_create_readonly 内の現在値取得を共通化するためのヘルパー。 秒粒度に丸められる
+    FS でも「同一秒 + 同一サイズ」 の同値ですり抜けるケースを排除するため、 mtime_ns
+    (ナノ秒精度整数) と size のペアを返す。
     """
     if not os.path.exists(db_path):
         return None
