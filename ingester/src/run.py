@@ -583,7 +583,7 @@ def insert_log_from_s3(
     """s3_objects カーソルより新しい S3 オブジェクトを古い順にバッチで取り込む。
 
     update 経路の中心関数。 呼び出し側 (sync_log_for_update) は cursor_key is not None
-    を保証する契約 (cursor_key は (last_modified, object_name) の 2 タプル)。 list_objects
+    を保証する前提 (cursor_key は (last_modified, object_name) の 2 タプル)。 list_objects
     (降順) と is_after_s3_cursor でカーソル以降の対象オブジェクトを絞り込み、 末尾側
     update_maximum_load 件 (古い側) を 1 回の update で取り込む。 カーソルはバッチ内最新
     までしか進めないため、 update_maximum_load を超えた新しい側は次回以降の update で

@@ -35,7 +35,7 @@ def test_delete_returns_without_copy_when_no_rows_deleted(tmp_path):
     """削除件数が 0 件の場合に DB コピー処理 (ATTACH + COPY + shutil.move) へ進まないことを確認する。
 
     「元 DB のバイト内容そのものが不変」 は DuckDB が R/W 接続を開いた時点で WAL ヘッダー等を
-    更新する可能性があるため保証しない (バージョン依存で fragile)。 契約は「COPY 経路が走って
+    更新する可能性があるため保証しない (バージョン依存で fragile)。 仕様は「COPY 経路が走って
     いない」 で、 inode 不変 + `.copy` 不在で担保する。
     """
     db_path = tmp_path / "delete_no_rows.db"
@@ -476,7 +476,7 @@ def test_update_rejects_missing_s3_credentials(tmp_path):
         )
 
     # 認証情報を None で明示し (full_args のデフォルトが None)、 require_s3_credentials
-    # まで到達したら必ず CliUsageError で落ちる契約にする。 他属性も full_args で埋めて
+    # まで到達したら必ず CliUsageError で落ちる前提にする。 他属性も full_args で埋めて
     # 「require_s3_credentials より先に他属性が参照されるリグレッション」 を AttributeError
     # で偽通過させない。
     args = SimpleNamespace(**full_args(db=str(db_path)))
