@@ -190,6 +190,35 @@ def test_should_create_readonly_returns_true_when_size_changed(tmp_path):
     assert run.should_create_readonly(str(db_path), initial_stat) is True
 
 
+def test_should_create_readonly_returns_false_when_db_missing_after_run(tmp_path):
+    """args.func 実行後に args.db が消失したケース (現在ファイル不在) は False を返すことを確認する。"""
+    missing = tmp_path / "missing.db"
+    # initial_stat があっても現在ファイルが無ければ False。
+    assert run.should_create_readonly(str(missing), (0, 0)) is False
+    # initial_stat が None (起動時から不在) でも False。
+    assert run.should_create_readonly(str(missing), None) is False
+
+
+# capture_db_stat
+
+
+def test_capture_db_stat_returns_none_when_db_missing(tmp_path):
+    """DB ファイルが存在しないとき None を返すことを確認する。"""
+    missing = tmp_path / "missing.db"
+    assert run.capture_db_stat(str(missing)) is None
+
+
+def test_capture_db_stat_returns_mtime_ns_and_size(tmp_path):
+    """DB ファイルが存在するとき (mtime_ns, size) タプルを返し、 st_mtime_ns と st_size と一致することを確認する。"""
+    db_path = tmp_path / "db.db"
+    db_path.write_bytes(b"payload")
+    stat_result = db_path.stat()
+    assert run.capture_db_stat(str(db_path)) == (
+        stat_result.st_mtime_ns,
+        stat_result.st_size,
+    )
+
+
 # create_readonly_copy
 
 
