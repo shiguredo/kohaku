@@ -49,7 +49,8 @@ BROKEN_DB_ERROR_PATTERNS = (
     "not a valid duckdb",
 )
 # 破損 DB を connect したときに DuckDB が送出しうる例外クラス。
-# prepare_db_for_init と raise_if_db_broken の except タプルで共有する。
+# is_db_broken の except タプル (prepare_db_for_init / raise_if_db_broken は is_db_broken
+# 経由でこの分類を共有する)。
 BROKEN_DB_CONNECT_ERRORS = (
     duckdb.IOException,
     duckdb.InternalException,
