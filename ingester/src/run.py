@@ -691,7 +691,7 @@ def should_create_readonly(db_path, initial_stat):
     は readonly も更新しない方針とし、 現在ファイルが無ければ False を返す。
 
     update / delete では実データ変更が無くても DuckDB の R/W オープン副作用で mtime が
-    進むため、 readonly が念のため再生成される (コストは shutil.copyfile 1 回分で許容する
+    進むため、 readonly が毎回再生成される (コストは shutil.copyfile 1 回分で許容する
     方針)。 no-op init だけは has_s3_objects_table を read_only=True にして再生成を
     防いでいる。
     """
