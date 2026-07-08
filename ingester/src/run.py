@@ -171,8 +171,8 @@ def sync_log_for_init(con, client, args, target):
 
 
 def sync_log_for_update(con, client, args, target):
+    cursor_key = get_s3_objects_cursor(con, target)
     try:
-        cursor_key = get_s3_objects_cursor(con, target)
         if cursor_key is None:
             # 対象 log_type が初登場するケース (init 時点で該当ターゲットの S3 オブジェクトが
             # 1 件も無く、s3_objects にも行が作られなかった状況であとから登場した場合)。
