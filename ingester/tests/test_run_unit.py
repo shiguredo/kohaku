@@ -343,6 +343,17 @@ def test_escape_sql_string_literal_rejects_control_characters(control_char):
         run.escape_sql_string_literal(value)
 
 
+def test_escape_sql_string_literal_error_message_shows_codepoint_and_index():
+    """制御文字拒否時のメッセージに U+XXXX と at index N が含まれることを確認する。"""
+    # `\x1f` を index 5 に配置。
+    value = "abcde\x1f/duck.db"
+    with pytest.raises(run.CliUsageError) as exc_info:
+        run.escape_sql_string_literal(value)
+    message = str(exc_info.value)
+    assert "U+001F" in message
+    assert "at index 5" in message
+
+
 # require_known_table の許可リスト検証
 
 
