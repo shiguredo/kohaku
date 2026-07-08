@@ -197,15 +197,13 @@ def sync_log_for_update(con, client, args, target):
                 cursor_key,
             )
     except (duckdb.InvalidInputException, duckdb.IOException) as e:
-        # 対象 target で読み込みエラー (壊れた gzip、 read_json のスキーマ不一致等) が
-        # 出ても残りの LOG_TARGETS を止めないため、 stderr に記録して次の target へ進む
-        # (sync_log_for_init と同じ方針)。 catch しないと単一の壊れたオブジェクトで update
-        # 全体が中断し、 次サイクルもカーソル未進行のまま同じオブジェクトで固まる。
-        # 該当 target 自体はカーソルが進まないため、 壊れたオブジェクトが除去されるまで
-        # 同じ target で再発するが、 他 target への波及は防げる。 なお IOException は
-        # DB 書き込み側 (disk full、 権限剥奪、 WAL 書き込み失敗等) でも発生し得るが、
-        # message で区別しないので同経路で握られる。 top-level の exit code は失敗を
-        # 示さないため、 per-target の stderr 出力を運用側で監視すること。
+        # sync_log_for_init と同じ方針で読み込みエラーを catch する (発生要因と DB
+        # 書き込み側 IOException の握り込み、 運用監視の必要性は sync_log_for_init の
+        # コメントを参照)。 加えて update 特有の挙動として、 catch しないと単一の壊れた
+        # オブジェクトで update 全体が中断し、 次サイクルもカーソル未進行のまま同じ
+        # オブジェクトで固まる。 該当 target 自体はカーソルが進まないため、 壊れた
+        # オブジェクトが除去されるまで同じ target で再発するが、 他 target への波及は
+        # 防げる。
         print(f"{type(e).__name__} ({target}): {e}", file=sys.stderr)
 
 
