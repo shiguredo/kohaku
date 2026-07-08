@@ -59,7 +59,7 @@ if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
   # CliUsageError で連続失敗するため、 init 失敗時はここで終了する。 systemd 経由
   # (scripts/run-ingester.sh) は Restart= 設定で自動再起動、 docker 経由 (本スクリプト)
   # は compose 側で restart 未設定のため運用者の手動 up が前提。
-  echo "run.py init failed. exit to let the restart policy retry." >&2
+  echo "run.py init failed. exiting; restart the container manually after fixing the cause." >&2
   exit 1
 fi
 
