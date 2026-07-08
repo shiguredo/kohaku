@@ -295,12 +295,14 @@ def prepare_db_for_init(db_path):
 
 
 def has_s3_objects_table(db_path):
-    """DB ファイルに s3_objects テーブルが存在するかを判定する。
+    """DB ファイルに s3_objects テーブルが存在するかを判定する。 DB ファイルが存在しない
+    場合は False を返す。
 
     init は完了判定に使い、 update は事前チェックに使う。 s3_objects テーブルの「存在」
     のみを見て、 行数や LOG_TARGETS テーブルの有無は見ない。 s3_objects 以外の中途半端な
-    状態 (カーソル行欠落、 LOG_TARGETS 欠落 等) からの復旧方針は initialize_log_table の
-    docstring を参照。
+    状態 (カーソル行欠落、 LOG_TARGETS 欠落 等) からの復旧方針は sync_log_for_update
+    (cursor_key is None 分岐) と initialize_log_table (LOG_TARGETS 欠落時の運用注意) を
+    参照。
     """
 
     if not os.path.exists(db_path):
