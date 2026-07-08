@@ -515,6 +515,11 @@ def delete(args):
 
     0o660 への chmod は COPY 経路の副次効果なので、 削除 0 件のときは正規化されない
     (元 DB のパーミッションは init / sync の umask で揃える前提)。
+
+    COPY 段階で失敗した場合、 元 DB は DELETE 済み・ 未圧縮のまま残る (with 節を抜けた
+    時点で commit 済み)。 例外が main まで伝播すると should_create_readonly /
+    create_readonly_copy は呼ばれないため、 .readonly は前回状態のまま残り、 次サイクル
+    の update / delete が成功したときに再生成される。
     """
     if not os.path.exists(args.db):
         raise FileNotFoundError(f"DB file not found: {args.db}. Run 'init' first.")
