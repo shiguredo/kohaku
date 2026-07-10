@@ -515,6 +515,69 @@ def test_update_skips_broken_object_and_continues_other_targets(
     assert "IOException (session_webhook):" in captured.err
 
 
+def test_update_skips_schema_mismatch_object_and_continues_other_targets(
+    s3_client, rustfs_endpoint, tmp_path, capsys
+):
+    """update 中に session_webhook の JSON parse 失敗オブジェクトが混じっても update 全体が中断しないことを確認する。
+
+    sync_log_for_update の InvalidInputException catch の仕様 (壊れた target で
+    update 全体を止めず、 他 target への波及を防ぐ) を担保する。
+    """
+    duckdb_filepath = str(tmp_path / "duck.db")
+    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
+
+    init(args)
+
+    with duckdb.connect(duckdb_filepath) as con:
+        con.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = con.fetchone()
+        assert result is not None
+        initial_rtc_count = result[0]
+        con.execute("SELECT COUNT(*) FROM session_webhook")
+        result = con.fetchone()
+        assert result is not None
+        initial_webhook_count = result[0]
+
+    # 有効な gzip 内に JSON として parse できないバイト列を投入することで、
+    # read_json が InvalidInputException で失敗する状況を作る (IOException ではない)。
+    now = datetime.datetime.now(datetime.UTC)
+    directory = now.strftime("%Y/%m/%d")
+    malformed_json = gzip.compress(b"this is not valid json{invalid")
+    s3_client.put_object(
+        BUCKET,
+        data_path(PREFIX, "session_webhook", directory),
+        io.BytesIO(malformed_json),
+        length=len(malformed_json),
+    )
+
+    # 正常な rtc_stats オブジェクトも同時に配置する。
+    new_log_file = os.path.join(LOG_DIR, "rtc_stats.jsonl")
+    with open(new_log_file, "rb") as data:
+        first_line = data.readline()
+    compressed = gzip.compress(first_line)
+    s3_client.put_object(
+        BUCKET,
+        data_path(PREFIX, "rtc_stats", directory),
+        io.BytesIO(compressed),
+        length=len(compressed),
+    )
+
+    update(args)
+
+    with duckdb.connect(duckdb_filepath) as con:
+        con.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = con.fetchone()
+        assert result is not None
+        assert result[0] == initial_rtc_count + 1
+        con.execute("SELECT COUNT(*) FROM session_webhook")
+        result = con.fetchone()
+        assert result is not None
+        assert result[0] == initial_webhook_count
+
+    captured = capsys.readouterr()
+    assert "InvalidInputException (session_webhook):" in captured.err
+
+
 def test_all_delete(s3_client, rustfs_endpoint, tmp_path):
     """保持期間外のデータだけで構成された場合に delete で全件削除されることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
