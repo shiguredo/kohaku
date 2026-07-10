@@ -619,7 +619,6 @@ def test_exit_with_stderr_writes_message_to_stderr_and_exits_with_code_1(capsys)
     with pytest.raises(SystemExit) as exc_info:
         run.exit_with_stderr("failure message")
     assert exc_info.value.code == 1
-    # stderr を取得する
     captured = capsys.readouterr()
     assert captured.err.strip() == "failure message"
 
@@ -651,7 +650,6 @@ def test_handle_cli_error_exits_for_s3_no_such_bucket(capsys):
     with pytest.raises(SystemExit) as exc_info:
         run.handle_cli_error(error, "my-bucket")
     assert exc_info.value.code == 1
-    # stderr を取得する
     captured = capsys.readouterr()
     assert "S3 bucket not found: my-bucket" in captured.err
 
@@ -662,7 +660,6 @@ def test_handle_cli_error_exits_for_other_s3_error(capsys):
     with pytest.raises(SystemExit) as exc_info:
         run.handle_cli_error(error, "my-bucket")
     assert exc_info.value.code == 1
-    # stderr を取得する
     captured = capsys.readouterr()
     assert "S3 error occurred (code=AccessDenied): access denied" in captured.err
     # bucket は NoSuchBucket 以外の経路では出力に混入しないことを確認する。
@@ -675,7 +672,6 @@ def test_handle_cli_error_exits_for_file_not_found_error(capsys):
     with pytest.raises(SystemExit) as exc_info:
         run.handle_cli_error(error, "my-bucket")
     assert exc_info.value.code == 1
-    # stderr を取得する
     captured = capsys.readouterr()
     assert "DB file not found: /tmp/missing.db" in captured.err
     # bucket は FileNotFoundError 経路では出力に混入しないことを確認する。
@@ -688,7 +684,6 @@ def test_handle_cli_error_exits_for_cli_usage_error(capsys):
     with pytest.raises(SystemExit) as exc_info:
         run.handle_cli_error(error, "my-bucket")
     assert exc_info.value.code == 1
-    # stderr を取得する
     captured = capsys.readouterr()
     assert "invalid input" in captured.err
     # bucket は CliUsageError 経路では出力に混入しないことを確認する。
