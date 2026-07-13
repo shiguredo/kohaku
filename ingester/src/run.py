@@ -152,7 +152,9 @@ def initialize_log_table(con, client, args, target):
     埋没する silent gap になる。 該当状態を作った場合は DB ファイルと .wal ファイルを
     削除してから init を再実行して整合を取り直すこと (bare init は has_s3_objects_table
     True で早期 return するため復旧しない。 .wal を残すと孤児 WAL が新規 DB に再生される
-    リスクがあるため対で削除する。 move_broken_db と同じ扱い)。
+    リスクがあるため対で削除する。 move_broken_db と同じ扱い)。 なおこの操作はローカルの
+    LOG_TARGETS 全データを破棄して S3 から再取得し直すことになり、 initial_maximum_load
+    上限で古いオブジェクトは再取得されない点に注意。
     """
     log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
     if len(log_objects) == 0:
