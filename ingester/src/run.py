@@ -696,8 +696,7 @@ def capture_db_stat(db_path):
     os.path.exists で先に弾かず try/except FileNotFoundError で受けているのは、 exists
     と stat の 2 コール間で削除された場合に FileNotFoundError が乗る TOCTOU を避けるため。
     捕捉するのは FileNotFoundError のみで、 PermissionError (SELinux / 親ディレクトリ
-    権限不足 等) は握らず伝播する。 main() で本関数は try の外側で呼ばれるため、
-    PermissionError は handle_cli_error を経由せず Python の生スタックトレースで終了する。
+    権限不足 等) は握らず伝播する。
     """
     try:
         stat_result = os.stat(db_path)
