@@ -513,9 +513,8 @@ def delete(args):
     (元 DB のパーミッションは init / sync の umask で揃える前提)。
 
     COPY 段階で失敗した場合、 元 DB は DELETE 済み・ 未圧縮のまま残る (with 節を抜けた
-    時点で commit 済み)。 例外が main まで伝播すると should_create_readonly /
-    create_readonly_copy は呼ばれないため、 .readonly は前回状態のまま残り、 次サイクル
-    の update / delete が成功したときに再生成される。
+    時点で commit 済み)。 例外が main まで伝播したときの .readonly の扱いは
+    should_create_readonly の docstring を参照。
     """
     if not os.path.exists(args.db):
         raise FileNotFoundError(f"DB file not found: {args.db}. Run 'init' first.")
@@ -710,6 +709,10 @@ def should_create_readonly(db_path, initial_stat):
     進むため、 readonly が毎回再生成される (コストは shutil.copyfile 1 回分で許容する
     方針)。 no-op init だけは has_s3_objects_table を read_only=True にして再生成を
     防いでいる。
+
+    args.func が例外を投げて main まで伝播した場合、 main() は本関数を呼ばずに
+    handle_cli_error 経由で終了するため、 .readonly は前回状態のまま残る。 次サイクル
+    で args.func が成功したときに再生成される。
     """
     current_stat = capture_db_stat(db_path)
     if current_stat is None:
