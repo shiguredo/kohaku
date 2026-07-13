@@ -697,8 +697,16 @@ def test_handle_cli_error_exits_for_file_not_found_or_cli_usage_error(
 @pytest.mark.parametrize(
     ("error", "match_pattern"),
     [
-        (ValueError("Unknown table name: evil_table"), "Unknown table name"),
-        (RuntimeError("unexpected"), "unexpected"),
+        pytest.param(
+            ValueError("Unknown table name: evil_table"),
+            "Unknown table name",
+            id="value-error",
+        ),
+        pytest.param(
+            RuntimeError("unexpected"),
+            "unexpected",
+            id="runtime-error",
+        ),
     ],
 )
 def test_handle_cli_error_reraises_non_handled_errors(error, match_pattern):
