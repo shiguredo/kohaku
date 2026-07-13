@@ -705,11 +705,10 @@ def capture_db_stat(db_path):
 def should_create_readonly(db_path, initial_stat):
     """initial_stat (mtime_ns, size) と現在の値を比較して、 readonly コピーを生成すべきかを返す。
 
-    DB ファイルが書き換わったかを mtime と st_size の両方で判定し、 どちらか異なれば
-    .readonly を生成する。 mtime は st_mtime_ns (ナノ秒精度整数) で保持し、 秒粒度に
-    丸められる FS でも「同一秒 + 同一サイズ」 の同値ですり抜けるケースを実質排除する。
-    args.db が args.func 実行後に消失したケース (initial_stat が None または現在ファイル不在)
-    は readonly も更新しない方針とし、 現在ファイルが無ければ False を返す。
+    capture_db_stat が返すタプルを initial_stat と比較し、 どちらか異なれば .readonly を
+    生成する (タプル構造の根拠は capture_db_stat の docstring 参照)。 args.db が args.func
+    実行後に消失したケース (initial_stat が None または現在ファイル不在) は readonly も
+    更新しない方針とし、 現在ファイルが無ければ False を返す。
 
     update / delete では実データ変更が無くても DuckDB の R/W オープン副作用で mtime が
     進むため、 readonly が毎回再生成される (コストは shutil.copyfile 1 回分で許容する
