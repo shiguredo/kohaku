@@ -149,7 +149,9 @@ def initialize_log_table(con, client, args, target):
     (例: 手動 DELETE FROM s3_objects) を作らないこと。 その状態から本関数が呼ばれると、
     create_log_table がテーブル既存で早期 return するためデータを取り込まず、 直後の
     update_s3_objects_table でカーソルだけ全体最新へ進んでしまい、 過去オブジェクトが
-    埋没する silent gap になる。 該当状態を作った場合は init を再実行して整合を取り直すこと。
+    埋没する silent gap になる。 該当状態を作った場合は DB ファイルを削除してから init を
+    再実行して整合を取り直すこと (bare init は has_s3_objects_table True で早期 return
+    するため復旧しない)。
     """
     log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
     if len(log_objects) == 0:
@@ -311,8 +313,7 @@ def has_s3_objects_table(db_path):
     init は完了判定に使い、 update は事前チェックに使う。 s3_objects テーブルの「存在」
     のみを見て、 行数や LOG_TARGETS テーブルの有無は見ない。 s3_objects の作成は init 内
     で LOG_TARGETS 取り込みより先に呼ばれるため、 テーブル存在 = init が create_s3_objects_table
-    まで到達した という判定に十分。 create 後の途中失敗で LOG_TARGETS 側が半端に残る
-    ケースは update 側の initialize_log_table でカバーする。
+    まで到達した という判定に十分。
     """
 
     if not os.path.exists(db_path):
