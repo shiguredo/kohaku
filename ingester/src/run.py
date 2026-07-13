@@ -821,6 +821,8 @@ def main():
     except Exception as error:
         handle_cli_error(error, args.s3_bucket)
 
+    # args.func が例外を投げると handle_cli_error 経由で sys.exit するため、 以下は成功時
+    # のみ実行される。 結果として .readonly は前回成功時点のまま保持される。
     if should_create_readonly(args.db, initial_stat):
         create_readonly_copy(args.db)
 
