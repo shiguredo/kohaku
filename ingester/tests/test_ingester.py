@@ -472,7 +472,7 @@ def test_update_skips_broken_object_and_continues_other_targets(
         initial_webhook_count = result[0]
 
     # 壊れた session_webhook オブジェクトを S3 に配置する。 gzip として復号できない生バイト
-    # 列を投入することで、 read_json が InvalidInputException で失敗する状況を作る。
+    # 列を投入することで、 read_json が IOException で失敗する状況を作る。
     now = datetime.datetime.now(datetime.UTC)
     directory = now.strftime("%Y/%m/%d")
     broken_data = b"this is not valid gzip data"
