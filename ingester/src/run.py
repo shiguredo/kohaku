@@ -691,6 +691,9 @@ def capture_db_stat(db_path):
     should_create_readonly 内の現在値取得を共通化するためのヘルパー。 秒粒度に丸められる
     FS でも「同一秒 + 同一サイズ」 の同値ですり抜けるケースを排除するため、 mtime_ns
     (ナノ秒精度整数) と size のペアを返す。
+
+    os.path.exists で先に弾かず try/except FileNotFoundError で受けているのは、 exists
+    と stat の 2 コール間で削除された場合に FileNotFoundError が乗る TOCTOU を避けるため。
     """
     try:
         stat_result = os.stat(db_path)
