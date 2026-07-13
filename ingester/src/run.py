@@ -149,9 +149,10 @@ def initialize_log_table(con, client, args, target):
     (例: 手動 DELETE FROM s3_objects) を作らないこと。 その状態から本関数が呼ばれると、
     create_log_table がテーブル既存で早期 return するためデータを取り込まず、 直後の
     update_s3_objects_table でカーソルだけ全体最新へ進んでしまい、 過去オブジェクトが
-    埋没する silent gap になる。 該当状態を作った場合は DB ファイルを削除してから init を
-    再実行して整合を取り直すこと (bare init は has_s3_objects_table True で早期 return
-    するため復旧しない)。
+    埋没する silent gap になる。 該当状態を作った場合は DB ファイルと .wal ファイルを
+    削除してから init を再実行して整合を取り直すこと (bare init は has_s3_objects_table
+    True で早期 return するため復旧しない。 .wal を残すと孤児 WAL が新規 DB に再生される
+    リスクがあるため対で削除する。 move_broken_db と同じ扱い)。
     """
     log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
     if len(log_objects) == 0:
