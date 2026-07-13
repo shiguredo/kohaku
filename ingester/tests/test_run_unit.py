@@ -666,27 +666,31 @@ def test_handle_cli_error_exits_for_other_s3_error(capsys):
     assert "my-bucket" not in captured.err
 
 
-def test_handle_cli_error_exits_for_file_not_found_error(capsys):
-    """FileNotFoundError のとき str(error) を stderr に書いて exit code 1 終了することを確認する。"""
-    error = FileNotFoundError("DB file not found: /tmp/missing.db")
+@pytest.mark.parametrize(
+    ("error", "expected_message"),
+    [
+        pytest.param(
+            FileNotFoundError("DB file not found: /tmp/missing.db"),
+            "DB file not found: /tmp/missing.db",
+            id="file-not-found",
+        ),
+        pytest.param(
+            run.CliUsageError("invalid input"),
+            "invalid input",
+            id="cli-usage-error",
+        ),
+    ],
+)
+def test_handle_cli_error_exits_for_file_not_found_or_cli_usage_error(
+    capsys, error, expected_message
+):
+    """FileNotFoundError / CliUsageError のとき str(error) を stderr に書いて exit code 1 終了することを確認する。"""
     with pytest.raises(SystemExit) as exc_info:
         run.handle_cli_error(error, "my-bucket")
     assert exc_info.value.code == 1
     captured = capsys.readouterr()
-    assert "DB file not found: /tmp/missing.db" in captured.err
-    # bucket は FileNotFoundError 経路では出力に混入しないことを確認する。
-    assert "my-bucket" not in captured.err
-
-
-def test_handle_cli_error_exits_for_cli_usage_error(capsys):
-    """CliUsageError のとき str(error) を stderr に書いて exit code 1 終了することを確認する。"""
-    error = run.CliUsageError("invalid input")
-    with pytest.raises(SystemExit) as exc_info:
-        run.handle_cli_error(error, "my-bucket")
-    assert exc_info.value.code == 1
-    captured = capsys.readouterr()
-    assert "invalid input" in captured.err
-    # bucket は CliUsageError 経路では出力に混入しないことを確認する。
+    assert expected_message in captured.err
+    # bucket は FileNotFoundError / CliUsageError 経路では出力に混入しないことを確認する。
     assert "my-bucket" not in captured.err
 
 
