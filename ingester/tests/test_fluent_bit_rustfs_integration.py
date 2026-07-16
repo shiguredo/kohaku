@@ -30,11 +30,12 @@ def count_objects(client: minio.Minio, prefix: str) -> int:
     return len(list(client.list_objects(BUCKET, prefix=prefix, recursive=True)))
 
 
-def decode_logs(logs: Any) -> str:
-    """ログ出力を文字列へ正規化する。bytes は UTF-8 で復号する。"""
-    if isinstance(logs, bytes):
-        return logs.decode("utf-8", errors="replace")
-    return str(logs)
+def decode_logs(logs: tuple[bytes, bytes]) -> str:
+    """fluent-bit コンテナの (stdout, stderr) を UTF-8 で復号して結合する。"""
+    stdout, stderr = logs
+    return stdout.decode("utf-8", errors="replace") + stderr.decode(
+        "utf-8", errors="replace"
+    )
 
 
 def create_test_log_dir(
@@ -88,7 +89,9 @@ def run_fluent_bit_and_wait(
                 )
         except WaitTimeoutError as error:
             fluent_bit_logs = decode_logs(fluent_bit.get_logs())
-            pytest.fail(f"{error}\n\nfluent-bit logs:\n{fluent_bit_logs}")
+            pytest.fail(
+                f"fluent-bit の待機に失敗しました: {error}\n\nfluent-bit のログ:\n{fluent_bit_logs}"
+            )
 
 
 def run_ingester_cli(
@@ -99,7 +102,6 @@ def run_ingester_cli(
     initial_maximum_load: int = 1000,
 ) -> subprocess.CompletedProcess[str]:
     """ingester の run.py を CLI として実行し、stdout/stderr を呼び出し元で検証できるようにする。"""
-    # run.py を CLI 経由で実行し、stdout/stderr を呼び出し元で検証できるようにする
     cmd = [
         "uv",
         "run",
@@ -132,7 +134,6 @@ def run_ingester_cli(
 
 def append_rtc_stats_log(log_dir: Path) -> None:
     """rtc_stats ログに 1 行追加し、新規オブジェクト送信の契機を作る。"""
-    # 既存ログ 1 行を複製して識別子だけ変え、新規オブジェクト送信を発生させる
     rtc_stats_path = log_dir / "rtc_stats.jsonl"
     first_line = rtc_stats_path.read_text(encoding="utf-8").splitlines()[0]
     data = json.loads(first_line)
@@ -148,9 +149,9 @@ def append_rtc_stats_log(log_dir: Path) -> None:
 def get_s3_cursor(
     con: duckdb.DuckDBPyConnection, log_type: str
 ) -> tuple[Any, ...] | None:
-    """指定ログ種別の S3 カーソル (object_name, last_modified) を返す。未登録時は None。"""
+    """指定ログ種別の S3 カーソル (last_modified, object_name) を返す。未登録時は None。"""
     return con.execute(
-        "SELECT object_name, last_modified FROM s3_objects WHERE type=?",
+        "SELECT last_modified, object_name FROM s3_objects WHERE type=?",
         (log_type,),
     ).fetchone()
 
@@ -165,7 +166,7 @@ def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path):
     state_dir = tmp_path / "state"
     state_dir.mkdir()
     config_path = tmp_path / "fluent-bit.yml"
-    create_fluent_bit_config(config_path)
+    create_fluent_bit_config(config_path, s3_bucket=BUCKET)
     duckdb_path = tmp_path / "duck.db"
 
     # RustFS と fluent-bit を同一 Docker network 上で接続する
@@ -202,7 +203,7 @@ def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path):
             )
 
             run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
-            assert run.returncode == 0, run.stderr
+            assert run.returncode == 0, f"init が失敗しました: {run.stderr}"
             assert duckdb_path.exists()
 
             with duckdb.connect(str(duckdb_path)) as con:
@@ -231,7 +232,7 @@ def test_runpy_init_skips_missing_target_without_invalid_input_exception(tmp_pat
     state_dir = tmp_path / "state"
     state_dir.mkdir()
     config_path = tmp_path / "fluent-bit.yml"
-    create_fluent_bit_config(config_path)
+    create_fluent_bit_config(config_path, s3_bucket=BUCKET)
     duckdb_path = tmp_path / "duck.db"
 
     with Network() as network:
@@ -268,8 +269,7 @@ def test_runpy_init_skips_missing_target_without_invalid_input_exception(tmp_pat
 
             run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
             # 欠損ターゲットがあっても init 全体は成功すること
-            assert run.returncode == 0, run.stderr
-            # 旧挙動で出ていた InvalidInputException が消えていること
+            assert run.returncode == 0, f"init が失敗しました: {run.stderr}"
             assert "InvalidInputException" not in run.stdout
             assert "InvalidInputException" not in run.stderr
 
@@ -290,7 +290,9 @@ def test_runpy_init_skips_missing_target_without_invalid_input_exception(tmp_pat
 
             # 未作成ターゲット (session_webhook) が欠損していても update 全体が成功すること
             update_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
-            assert update_run.returncode == 0, update_run.stderr
+            assert update_run.returncode == 0, (
+                f"update が失敗しました: {update_run.stderr}"
+            )
 
             with duckdb.connect(str(duckdb_path)) as con:
                 rtc_stats_count_after_update = fetch_scalar(
@@ -319,7 +321,7 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
     state_dir = tmp_path / "state"
     state_dir.mkdir()
     config_path = tmp_path / "fluent-bit.yml"
-    create_fluent_bit_config(config_path)
+    create_fluent_bit_config(config_path, s3_bucket=BUCKET)
     duckdb_path = tmp_path / "duck.db"
 
     with Network() as network:
@@ -354,7 +356,7 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
             )
 
             init_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
-            assert init_run.returncode == 0, init_run.stderr
+            assert init_run.returncode == 0, f"init が失敗しました: {init_run.stderr}"
 
             with duckdb.connect(str(duckdb_path)) as con:
                 before_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
@@ -374,7 +376,9 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
             )
 
             update_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
-            assert update_run.returncode == 0, update_run.stderr
+            assert update_run.returncode == 0, (
+                f"update が失敗しました: {update_run.stderr}"
+            )
 
             with duckdb.connect(str(duckdb_path)) as con:
                 after_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
@@ -390,7 +394,9 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
             update_run_again = run_ingester_cli(
                 ingester_dir, duckdb_path, endpoint, "update"
             )
-            assert update_run_again.returncode == 0, update_run_again.stderr
+            assert update_run_again.returncode == 0, (
+                f"update (再実行) が失敗しました: {update_run_again.stderr}"
+            )
 
             with duckdb.connect(str(duckdb_path)) as con:
                 final_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
@@ -430,5 +436,13 @@ def test_runpy_init_fails_when_bucket_not_found(tmp_path):
             )
 
             run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
-            assert run.returncode != 0
-            assert "S3 bucket not found" in run.stderr
+            # handle_cli_error → exit_with_stderr 経由で exit code 1 が返り、
+            # stderr に bucket 名込みのメッセージが出ることを担保する (DNS 解決失敗等の
+            # 別経路で偶発的に部分文字列が一致するケースを除外する)。
+            assert run.returncode == 1, (
+                f"NoSuchBucket 経路で exit code 1 を期待したが {run.returncode} でした: "
+                f"{run.stderr}"
+            )
+            assert f"S3 bucket not found: {BUCKET}" in run.stderr, (
+                f"stderr に 'S3 bucket not found: {BUCKET}' が含まれていません: {run.stderr}"
+            )

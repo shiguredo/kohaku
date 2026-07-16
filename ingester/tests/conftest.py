@@ -5,16 +5,18 @@ pytest はテストモジュールと同じディレクトリ階層を遡って 
 重複している接続情報やコンテナ起動処理を一箇所にまとめ、テストごとの揺れを防ぐ目的で用意している。
 """
 
-import subprocess
+import os
+import uuid
 from collections.abc import Iterator
-from pathlib import Path
 
 import pytest
 from testcontainers.core.container import DockerContainer
 
-
-# テスト用に作成する S3 バケット名 (test_ingester / test_fluent_bit で共通利用)
-BUCKET = "kohaku"
+# テスト用に作成する S3 バケット名 (test_ingester / test_fluent_bit で共通利用)。
+# pytest-xdist で並列実行したとき worker (= 別プロセス) ごとに別バケットを使うよう
+# PID + uuid で一意化する。 同一プロセス内では全テストが同じ BUCKET を共有する
+# (session スコープの RustFS コンテナ上で reset_bucket / make_bucket を回す現行設計)。
+BUCKET = f"kohaku-{os.getpid()}-{uuid.uuid4().hex[:8]}"
 # RustFS コンテナのアクセスキー (テスト専用)
 ACCESS_KEY = "kohakuadmin"
 # RustFS コンテナのシークレットキー (テスト専用)
@@ -48,15 +50,3 @@ def rustfs_container() -> Iterator[DockerContainer]:
 def rustfs_endpoint(rustfs_container: DockerContainer) -> str:
     """rustfs_container の公開エンドポイント (host:port) を返す。"""
     return f"{rustfs_container.get_container_host_ip()}:{rustfs_container.get_exposed_port(RUSTFS_PORT)}"
-
-
-@pytest.fixture(scope="session", autouse=True)
-def init_grafana_plugin() -> None:
-    """pytest セッション開始時に 1 回だけ Grafana プラグイン取得用の make init を実行する。
-
-    `make init` は plugins/ 配下に DuckDB datasource プラグインを配置する処理で、
-    test_grafana_integration.py が Grafana コンテナにマウントするときに必要。
-    idempotent なので tests/ 全体実行時に毎回走っても問題ない想定で autouse にしている。
-    """
-    repo_root = Path(__file__).resolve().parents[2]
-    subprocess.run(["make", "init"], cwd=repo_root, check=True)

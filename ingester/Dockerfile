@@ -3,26 +3,47 @@ FROM ubuntu:24.04
 ENV TZ=UTC
 
 RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl ca-certificates python3 tzdata \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl ca-certificates tzdata \
     && ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /var/lib/kohaku/duckdb
-
 RUN useradd --no-create-home --gid 0 kohaku
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | UV_INSTALL_DIR=/usr/local/bin sh
+# uv binary をバージョン pin で取得し、 sha256 を検証してから /usr/local/bin に配置する
+# (sha256 は同 Release から取得するためダウンロード破損のみ検出、 真正性は GitHub に依存)。
+# TARGETARCH は BuildKit が自動で amd64 / arm64 を設定する。
+ARG UV_VERSION=0.11.21
+ARG TARGETARCH
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+        amd64) UV_TARGET=x86_64-unknown-linux-gnu ;; \
+        arm64) UV_TARGET=aarch64-unknown-linux-gnu ;; \
+        *) echo "Unsupported TARGETARCH: '${TARGETARCH}'" >&2; exit 1 ;; \
+    esac; \
+    UV_TARBALL="uv-${UV_TARGET}.tar.gz"; \
+    UV_URL="https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/${UV_TARBALL}"; \
+    cd /tmp; \
+    curl -LsSf -o "${UV_TARBALL}" "${UV_URL}"; \
+    curl -LsSf -o "${UV_TARBALL}.sha256" "${UV_URL}.sha256"; \
+    sha256sum -c "${UV_TARBALL}.sha256"; \
+    tar -xzf "${UV_TARBALL}"; \
+    [ -d "uv-${UV_TARGET}" ] || { \
+        echo "Unexpected tarball structure: uv-${UV_TARGET}/ not found in ${UV_TARBALL}" >&2; \
+        exit 1; \
+    }; \
+    mv "uv-${UV_TARGET}/uv" /usr/local/bin/uv; \
+    rm -rf "uv-${UV_TARGET}" "${UV_TARBALL}" "${UV_TARBALL}.sha256"
 
-RUN mkdir -p /ingester \
+RUN mkdir -p /var/lib/kohaku/duckdb /ingester \
     && chown -R kohaku:root /var/lib/kohaku \
     && chmod -R g+rw /var/lib/kohaku \
-    && chown -R kohaku /ingester
+    && chown -R kohaku:root /ingester
 
 ENV HOME=/var/lib/kohaku
 
 WORKDIR /ingester
 
-COPY --chown=kohaku . /ingester
+COPY --chown=kohaku:root . /ingester
 
 USER kohaku
 

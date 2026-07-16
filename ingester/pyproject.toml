@@ -8,9 +8,9 @@ dependencies = [
   # Grafana DuckDB Data Source Plugin の DuckDB のバージョンにあわせる
   "duckdb==1.4.2",
   "minio>=7.2",
+  # duckdb が TIMESTAMPTZ カラムを Python に変換するときに内部で import するため必須。
   "pytz>=2026.1",
   "pyyaml>=6.0",
-  "uuid>=1.30",
 ]
 
 [dependency-groups]
@@ -22,6 +22,10 @@ test = [
   "jinja2",
   "pytest",
   "testcontainers[minio]",
+  # _make_s3_error が urllib3.HTTPResponse() を引数なしで構築するため、
+  # 間接依存にせずテスト依存として明示する。3.x で HTTPResponse の API が
+  # 変わる可能性があるので上限を切っておく。
+  "urllib3>=2.0,<3",
 ]
 
 [tool.ruff.lint]
@@ -31,6 +35,15 @@ extend-select = [
   # except 内の raise e を bare raise に置き換えるルール
   # https://docs.astral.sh/ruff/rules/verbose-raise/
   "TRY201",
+  # PEP 8 準拠の import 順序を強制するルール (isort 相当)
+  # https://docs.astral.sh/ruff/rules/#isort-i
+  "I",
+  # pytest スタイルの一貫性チェック (flake8-pytest-style)
+  # https://docs.astral.sh/ruff/rules/#flake8-pytest-style-pt
+  "PT",
+  # Python バージョンに応じた書き方を強制 (pyupgrade)
+  # https://docs.astral.sh/ruff/rules/#pyupgrade-up
+  "UP",
 ]
 
 [tool.pytest.ini_options]

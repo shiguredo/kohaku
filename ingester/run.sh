@@ -2,22 +2,48 @@
 
 set -euo pipefail
 
+# 必須環境変数を事前検証する。compose.yml の env や systemd EnvironmentFile の編集忘れに
+# よる unbound variable をスクリプト冒頭で一度に特定できるようにする。
+# 本スクリプトは docker / compose 経由で init + update ループ + delete を 1 プロセスで
+# 回すため、 全サブコマンドが参照する必須変数を冒頭でまとめて検証する。
+# scripts/run-ingester.sh は systemd 経由で 1 サブコマンドのみ実行する起動形態のため、
+# 検証する必須変数の組が異なる点に注意 (両ファイル変更時は対象サブコマンドを揃えること)。
+: "${DUCKDB_DB_PATH:?DUCKDB_DB_PATH is required}"
+: "${S3_ENDPOINT:?S3_ENDPOINT is required}"
+: "${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID is required}"
+: "${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY is required}"
+: "${S3_BUCKET:?S3_BUCKET is required}"
+: "${S3_PREFIX:?S3_PREFIX is required}"
+: "${RETENTION_PERIOD:?RETENTION_PERIOD is required}"
+: "${UPDATE_INTERVAL:?UPDATE_INTERVAL is required}"
+
 # grafana グループ (GID=0) と DB ファイルを共有するためグループ書き込みを許可する
 umask 0002
 
-# タイムゾーン設定 (/etc/localtime のリンク) と /var/lib/kohaku/duckdb の作成は
-# Dockerfile のビルド時に済ませているため、ここでは行わない。
-
 cd /ingester
+
+# S3_REGION のデフォルト ap-northeast-1 は compose.yml / compose.external-s3.yml にも
+# 同じ値が定義されている (意図的な二重管理)。 compose 経由ではコンテナに必ず値が渡るため
+# 本ファイルの :-ap-northeast-1 は実質未到達だが、 念のため compose 側とデフォルトを揃える。
 
 s3_ssl_args=()
 if [ "${S3_USE_SSL:-}" = "true" ]; then
   s3_ssl_args+=(--s3_use_ssl)
 fi
 
-initial_maximum_load="${INITIAL_MAXIMUM_LOAD:-100}"
-update_maximum_load="${UPDATE_MAXIMUM_LOAD:-100}"
+# 未設定なら引数自体を渡さず run.py の argparse デフォルトに委ねる
+initial_maximum_load_args=()
+if [ -n "${INITIAL_MAXIMUM_LOAD:-}" ]; then
+  initial_maximum_load_args=(--initial_maximum_load "${INITIAL_MAXIMUM_LOAD}")
+fi
 
+update_maximum_load_args=()
+if [ -n "${UPDATE_MAXIMUM_LOAD:-}" ]; then
+  update_maximum_load_args=(--update_maximum_load "${UPDATE_MAXIMUM_LOAD}")
+fi
+
+# update_maximum_load は update でのみ参照されるため、 init には渡さず update の呼び出し
+# にのみ展開する。
 # テーブル作成および初期データの挿入
 if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
                            --s3_endpoint "${S3_ENDPOINT}" \
@@ -26,14 +52,22 @@ if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
                            --s3_bucket "${S3_BUCKET}" \
                            --s3_prefix "${S3_PREFIX}" \
                            --s3_region "${S3_REGION:-ap-northeast-1}" \
-                           --initial_maximum_load "${initial_maximum_load}" \
+                           "${initial_maximum_load_args[@]}" \
                            "${s3_ssl_args[@]}" \
                            init; then
-  echo "run.py init failed. continue to update loop." >&2
+  # init 失敗のまま update ループに入ると s3_objects テーブルが無い状態で update が
+  # CliUsageError で連続失敗するため、 init 失敗時はここで終了する。 systemd 経由
+  # (scripts/run-ingester.sh) は Restart= 設定で自動再起動、 docker 経由 (本スクリプト)
+  # は compose 側で restart 未設定のため運用者の手動 up が前提。
+  echo "run.py init failed. exiting; restart the container manually after fixing the cause." >&2
+  exit 1
 fi
 
-# TODO: 他の定期実行の方法を検討する
-# 定期的にデータを更新
+# 定期的にデータを更新。 update / delete の失敗は while ループが継続するため、 一時的な
+# 障害 (S3 の一時不通等) は自然回復する。 一方、 恒久的なエラー (壊れた DB 等) は自動
+# 復帰しないため、 運用者が stderr の連続失敗を検知して手動対応する前提。 init との
+# 非対称性 (init は exit、 update/delete は継続) は意図的で、 update/delete を毎回 exit
+# させると一時障害でコンテナが停止するデメリットが大きいと判断した。
 while :;
 do
   if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
@@ -43,8 +77,8 @@ do
                              --s3_bucket "${S3_BUCKET}" \
                              --s3_prefix "${S3_PREFIX}" \
                              --s3_region "${S3_REGION:-ap-northeast-1}" \
-                             --initial_maximum_load "${initial_maximum_load}" \
-                             --update_maximum_load "${update_maximum_load}" \
+                             "${initial_maximum_load_args[@]}" \
+                             "${update_maximum_load_args[@]}" \
                              "${s3_ssl_args[@]}" \
                              update; then
     echo "run.py update failed. continue loop." >&2
