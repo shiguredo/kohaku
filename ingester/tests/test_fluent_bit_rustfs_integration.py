@@ -14,8 +14,8 @@ from .conftest import ACCESS_KEY, BUCKET, PREFIX, RUSTFS_IMAGE, RUSTFS_PORT, SEC
 from .fluent_bit_helper import create_fluent_bit_config
 from .helpers import WaitTimeoutError, wait_until
 
-# 使用する fluent-bit の Docker イメージ (タグ未指定で latest 相当)
-FLUENT_BIT_IMAGE = "fluent/fluent-bit"
+# 使用する fluent-bit の Docker イメージ
+FLUENT_BIT_IMAGE = "fluent/fluent-bit:5.0.9"
 
 
 def fetch_scalar(con: duckdb.DuckDBPyConnection, query: str) -> Any:
