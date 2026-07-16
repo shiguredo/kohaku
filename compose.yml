@@ -1,6 +1,6 @@
 services:
   fluent-bit:
-    image: fluent/fluent-bit
+    image: fluent/fluent-bit:5.0.9
     container_name: fluent-bit
     volumes:
       - ${SORA_LOG_PATH}:/log
