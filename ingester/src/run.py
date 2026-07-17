@@ -145,6 +145,11 @@ def initialize_log_table(con, client, args, target):
     initial_maximum_load を超える古い側は「古すぎるデータを取り込まない」ため意図的に
     取り込まない (insert_log_from_s3 が古い側からバッチ取り込みする方針と非対称なのが正解)。
 
+    create_log_table (テーブル作成) と update_s3_objects_table (カーソル登録) は con.begin() /
+    con.commit() で囲み、 途中失敗時は con.rollback() で「テーブル作成とカーソル登録」を atomic
+    に保つ (insert_log_from_s3 と同じ方針)。 これにより create 直後のプロセス停止による silent
+    gap (テーブル存在 + s3_objects 行無し) は自動的に回避される。
+
     運用上の注意: 「LOG_TARGETS テーブルは存在するが s3_objects のカーソル行が無い」 状態
     (例: 手動 DELETE FROM s3_objects) を作らないこと。 その状態から本関数が呼ばれると、
     create_log_table がテーブル既存で早期 return するためデータを取り込まず、 直後の
@@ -162,9 +167,21 @@ def initialize_log_table(con, client, args, target):
         return
 
     log_urls = get_target_urls(args.s3_bucket, log_objects[: args.initial_maximum_load])
-    create_log_table(con, target, log_urls)
-    # 先頭が全体最新
-    update_s3_objects_table(con, target, log_objects[0])
+    con.begin()
+    try:
+        create_log_table(con, target, log_urls)
+        # 先頭が全体最新
+        update_s3_objects_table(con, target, log_objects[0])
+        con.commit()
+    except Exception:
+        # rollback が disk full 等で失敗すると元例外が __context__ に沈み、 stderr には
+        # rollback 起源の例外だけが出て根本原因の追跡が難しくなる。 rollback 例外は吸収し、
+        # 事実だけを stderr に残して元例外を維持する (insert_log_from_s3 と同じ方針)。
+        try:
+            con.rollback()
+        except Exception as rollback_error:
+            print(f"Rollback also failed: {rollback_error}", file=sys.stderr)
+        raise
 
 
 def sync_log_for_init(con, client, args, target):
