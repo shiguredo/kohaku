@@ -465,10 +465,12 @@ def test_update(s3_client, rustfs_endpoint, tmp_path):
 def test_update_skips_broken_object_and_continues_other_targets(
     s3_client, rustfs_endpoint, tmp_path, capsys, broken_payload, expected_exc_name
 ):
-    """update 中に session_webhook の壊れたオブジェクトが混じっても update 全体が中断しないことを確認する。
+    """update 中に session_webhook の壊れたオブジェクトが混じっても update 全体が中断せず、壊れオブジェクト側の s3_objects カーソルが tx rollback で据置きになることを確認する。
 
     sync_log_for_update の (InvalidInputException, IOException) catch の仕様 (壊れた
     target で update 全体を止めず、 他 target への波及を防ぐ) を、 catch 対象の両例外型で担保する。
+    加えて insert_log_from_s3 の tx rollback 経路が effective になっていること (壊れオブジェクトで
+    cursor 更新が commit されない) を、 session_webhook cursor の据置きで直接検証する。
     - broken-gzip: gzip として復号できない生バイト列を投入すると DuckDB は IOException を送出する。
     - malformed-json: 有効な gzip 内に JSON parse できないバイト列を投入すると DuckDB は InvalidInputException を送出する。
     """
@@ -487,6 +489,12 @@ def test_update_skips_broken_object_and_continues_other_targets(
         result = con.fetchone()
         assert result is not None
         initial_webhook_count = result[0]
+        # rollback 検証用に、 update 前の session_webhook カーソルを保持しておく。
+        con.execute(
+            "SELECT last_modified, object_name FROM s3_objects WHERE type='session_webhook'"
+        )
+        initial_webhook_cursor = con.fetchone()
+        assert initial_webhook_cursor is not None
 
     # 壊れた session_webhook オブジェクトを S3 に配置する。
     now = datetime.datetime.now(datetime.UTC)
@@ -523,6 +531,13 @@ def test_update_skips_broken_object_and_continues_other_targets(
         result = con.fetchone()
         assert result is not None
         assert result[0] == initial_webhook_count
+        # insert_log_from_s3 の tx rollback が効いていれば、 壊れオブジェクトの cursor 更新は
+        # commit されず、 session_webhook カーソルは init 時点のまま据置きになる。 tx を抜いて
+        # MERGE だけ commit する回帰実装だとここで cursor が更新済みになって assert が落ちる。
+        con.execute(
+            "SELECT last_modified, object_name FROM s3_objects WHERE type='session_webhook'"
+        )
+        assert con.fetchone() == initial_webhook_cursor
 
     # stderr に catch 対象例外型 (session_webhook) が出力されていることを確認する。
     captured = capsys.readouterr()
