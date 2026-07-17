@@ -91,14 +91,9 @@ services:
     networks:
       - kohaku
     volumes:
-      - ./ingester:/ingester
-      - ingester-venv:/ingester/.venv
       - duckdb:/var/lib/kohaku
 
 volumes:
-  ingester-venv:
-    name: kohaku-ingester-venv
-    driver: local
   duckdb:
     name: kohaku-volume
     driver: local
