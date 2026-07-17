@@ -529,6 +529,79 @@ def test_update_skips_broken_object_and_continues_other_targets(
     assert f"{expected_exc_name} (session_webhook):" in captured.err
 
 
+@pytest.mark.parametrize(
+    ("broken_payload", "expected_exc_name"),
+    [
+        pytest.param(
+            b"this is not valid gzip data",
+            "IOException",
+            id="broken-gzip",
+        ),
+        pytest.param(
+            gzip.compress(b"this is not valid json{invalid"),
+            "InvalidInputException",
+            id="malformed-json",
+        ),
+    ],
+)
+def test_init_skips_broken_object_and_continues_other_targets(
+    s3_client_without_session_webhook,
+    rustfs_endpoint,
+    tmp_path,
+    capsys,
+    broken_payload,
+    expected_exc_name,
+):
+    """init 中に session_webhook の壊れたオブジェクトが混じっても init 全体が中断せず、他 target (rtc_stats) は取り込まれることを確認する。
+
+    sync_log_for_init の (InvalidInputException, IOException) catch の仕様 (壊れた target で
+    init 全体を止めず、 他 target への波及を防ぐ) を、 catch 対象の両例外型で担保する。
+    test_update_skips_broken_object_and_continues_other_targets と同構造の init 版で、
+    sync_log_for_update 側だけカバーされていた挙動の非対称を解消する。
+    - broken-gzip: gzip として復号できない生バイト列を投入すると DuckDB は IOException を送出する。
+    - malformed-json: 有効な gzip 内に JSON parse できないバイト列を投入すると DuckDB は InvalidInputException を送出する。
+    """
+    duckdb_filepath = str(tmp_path / "duck.db")
+
+    # s3_client_without_session_webhook は rtc_stats のみアップロード済み。
+    # そこに壊れた session_webhook オブジェクトを追加投入する。
+    now = datetime.datetime.now(datetime.UTC)
+    directory = now.strftime("%Y/%m/%d")
+    s3_client_without_session_webhook.put_object(
+        BUCKET,
+        data_path(PREFIX, "session_webhook", directory),
+        io.BytesIO(broken_payload),
+        length=len(broken_payload),
+    )
+
+    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
+
+    # init は壊れた session_webhook で例外を投げず完走することを確認する。
+    init(args)
+
+    assert os.path.exists(duckdb_filepath)
+
+    with duckdb.connect(duckdb_filepath) as con:
+        # rtc_stats は正常に取り込まれる。
+        con.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = con.fetchone()
+        assert result is not None
+        assert result[0] > 0
+
+        # session_webhook は create_log_table 段階で例外 → sync_log_for_init が catch → tx rollback
+        # のため、 テーブル自体が作成されない。
+        con.execute(
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='session_webhook'"
+        )
+        result = con.fetchone()
+        assert result is not None
+        assert result[0] == 0
+
+    # stderr に catch 対象例外型 (session_webhook) が出力されていることを確認する。
+    captured = capsys.readouterr()
+    assert f"{expected_exc_name} (session_webhook):" in captured.err
+
+
 def test_all_delete(s3_client, rustfs_endpoint, tmp_path):
     """保持期間外のデータだけで構成された場合に delete で全件削除されることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
