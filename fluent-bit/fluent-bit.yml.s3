@@ -10,13 +10,13 @@ pipeline:
       path: ${SORA_LOG_PATH}/rtc_stats.jsonl
       parser: json
       read_from_head: false
-      db: rtc_stats.db
+      db: /var/lib/fluent-bit/rtc_stats.db
       tag: rtc_stats
     - name: tail
       path: ${SORA_LOG_PATH}/session_webhook.jsonl
       parser: json
       read_from_head: false
-      db: session_webhook.db
+      db: /var/lib/fluent-bit/session_webhook.db
       tag: session_webhook
   outputs:
     - name: s3
