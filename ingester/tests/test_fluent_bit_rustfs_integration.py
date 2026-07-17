@@ -205,6 +205,10 @@ def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path):
             run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
             assert run.returncode == 0, f"init が失敗しました: {run.stderr}"
             assert duckdb_path.exists()
+            # main の最終ステップで生成される Grafana 参照用 .readonly コピーの存在を確認する
+            assert (tmp_path / "duck.db.readonly").exists(), (
+                ".readonly が生成されていません (main の readonly 生成経路確認)"
+            )
 
             with duckdb.connect(str(duckdb_path)) as con:
                 rtc_stats_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
@@ -272,6 +276,10 @@ def test_runpy_init_skips_missing_target_without_invalid_input_exception(tmp_pat
             assert run.returncode == 0, f"init が失敗しました: {run.stderr}"
             assert "InvalidInputException" not in run.stdout
             assert "InvalidInputException" not in run.stderr
+            # main の最終ステップで生成される Grafana 参照用 .readonly コピーの存在を確認する
+            assert (tmp_path / "duck.db.readonly").exists(), (
+                ".readonly が生成されていません (main の readonly 生成経路確認)"
+            )
 
             with duckdb.connect(str(duckdb_path)) as con:
                 rtc_stats_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
@@ -292,6 +300,10 @@ def test_runpy_init_skips_missing_target_without_invalid_input_exception(tmp_pat
             update_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
             assert update_run.returncode == 0, (
                 f"update が失敗しました: {update_run.stderr}"
+            )
+            # update 経路でも main の最終ステップで .readonly が生成されることを確認する
+            assert (tmp_path / "duck.db.readonly").exists(), (
+                ".readonly が生成されていません (main の readonly 生成経路確認)"
             )
 
             with duckdb.connect(str(duckdb_path)) as con:
@@ -357,6 +369,10 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
 
             init_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
             assert init_run.returncode == 0, f"init が失敗しました: {init_run.stderr}"
+            # main の最終ステップで生成される Grafana 参照用 .readonly コピーの存在を確認する
+            assert (tmp_path / "duck.db.readonly").exists(), (
+                ".readonly が生成されていません (main の readonly 生成経路確認)"
+            )
 
             with duckdb.connect(str(duckdb_path)) as con:
                 before_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
@@ -378,6 +394,10 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
             update_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
             assert update_run.returncode == 0, (
                 f"update が失敗しました: {update_run.stderr}"
+            )
+            # update 経路でも main の最終ステップで .readonly が生成されることを確認する
+            assert (tmp_path / "duck.db.readonly").exists(), (
+                ".readonly が生成されていません (main の readonly 生成経路確認)"
             )
 
             with duckdb.connect(str(duckdb_path)) as con:
