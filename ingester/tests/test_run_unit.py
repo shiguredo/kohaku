@@ -354,6 +354,44 @@ def test_escape_sql_string_literal_error_message_shows_codepoint_and_index():
     assert "at index 5" in message
 
 
+# load_columns の YAML 読み込み経路
+
+
+def test_load_columns_returns_dict_for_valid_yaml(tmp_path):
+    """columns_dir に正常な dict 形式の YAML があるとき、 target をキーに columns 辞書を返すことを確認する。"""
+    (tmp_path / "rtc_stats.yml").write_text("timestamp: TIMESTAMPTZ\nid: VARCHAR\n")
+    result = run.load_columns(targets=("rtc_stats",), columns_dir=str(tmp_path))
+    assert result == {"rtc_stats": {"timestamp": "TIMESTAMPTZ", "id": "VARCHAR"}}
+
+
+def test_load_columns_raises_runtime_error_when_file_missing(tmp_path):
+    """YAML ファイルが欠損している場合に RuntimeError を送出することを確認する。
+
+    handle_cli_error では拾わずトレースバックで上位に伝播する (デプロイ / イメージビルド不備)。
+    """
+    with pytest.raises(
+        RuntimeError, match="Column definition file not found"
+    ) as exc_info:
+        run.load_columns(targets=("rtc_stats",), columns_dir=str(tmp_path))
+    assert "rtc_stats.yml" in str(exc_info.value)
+
+
+def test_load_columns_raises_value_error_for_non_dict_yaml(tmp_path):
+    """YAML が dict でない (list 形式) 場合に ValueError を送出することを確認する。"""
+    (tmp_path / "rtc_stats.yml").write_text("- a\n- b\n")
+    with pytest.raises(ValueError, match="Invalid format") as exc_info:
+        run.load_columns(targets=("rtc_stats",), columns_dir=str(tmp_path))
+    assert "rtc_stats.yml" in str(exc_info.value)
+
+
+def test_load_columns_raises_value_error_for_empty_yaml(tmp_path):
+    """空 YAML (yaml.safe_load が None を返すケース) で ValueError を送出することを確認する。"""
+    (tmp_path / "rtc_stats.yml").write_text("")
+    with pytest.raises(ValueError, match="Invalid format") as exc_info:
+        run.load_columns(targets=("rtc_stats",), columns_dir=str(tmp_path))
+    assert "rtc_stats.yml" in str(exc_info.value)
+
+
 # require_known_table の許可リスト検証
 
 
