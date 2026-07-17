@@ -5,6 +5,7 @@ services:
     volumes:
       - ${SORA_LOG_PATH}:/log
       - ./fluent-bit.yml:/fluent-bit/etc/fluent-bit.yml
+      - fluent-bit-state:/var/lib/fluent-bit
     networks:
       - kohaku
     environment:
@@ -95,6 +96,9 @@ volumes:
     driver: local
   duckdb:
     name: kohaku-volume
+    driver: local
+  fluent-bit-state:
+    name: kohaku-fluent-bit-state
     driver: local
 
 networks:
