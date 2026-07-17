@@ -26,14 +26,14 @@ COPY ./dispose.patch .
 RUN patch -p 1 < dispose.patch
 
 RUN <<EOF
-    BUILD_TARGET=$(
-        case "${TARGETPLATFORM}" in
-            "linux/amd64" ) echo "Linux" ;;
-            "linux/arm64" ) echo "LinuxARM64" ;;
-            * ) echo "Unsupported platform: ${TARGETPLATFORM}" && exit 1 ;;
-        esac
-    )
-    go get github.com/grafana/sqlds/v4 && mage -v build:${BUILD_TARGET} build:GenerateManifestFile
+    set -eux
+    case "${TARGETPLATFORM}" in
+        "linux/amd64" ) BUILD_TARGET=Linux ;;
+        "linux/arm64" ) BUILD_TARGET=LinuxARM64 ;;
+        * ) echo "Unsupported platform: ${TARGETPLATFORM}" >&2; exit 1 ;;
+    esac
+    go get github.com/grafana/sqlds/v4
+    mage -v build:${BUILD_TARGET} build:GenerateManifestFile
 EOF
 
 FROM scratch
