@@ -85,6 +85,11 @@ services:
       context: ./ingester
       dockerfile: Dockerfile
     container_name: ingester
+    # PID 1 に Docker 組み込みの tini を据えて SIGTERM を子プロセスへ確実に届ける
+    init: true
+    # docker stop の SIGTERM から SIGKILL までの猶予を延ばし、 update / delete 中の DuckDB
+    # クリーンアップに十分な時間を確保する
+    stop_grace_period: 60s
     environment:
       - DUCKDB_DB_PATH=${DUCKDB_DB_PATH}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}

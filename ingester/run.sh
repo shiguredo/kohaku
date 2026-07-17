@@ -22,6 +22,34 @@ umask 0002
 
 cd /ingester
 
+# SIGTERM / SIGINT を受けたら実行中の子プロセスへ TERM を転送してから正常終了する。 tini が
+# PID 1 として動く前提 (compose.yml の init: true) で、 本スクリプトは tini の子として起動される。
+# bash は foreground の外部コマンド実行中に受けた trap を即評価しないため、 全ての長時間実行呼び出し
+# (uv run と sleep) を run_bg 経由で backgrounding + wait して trap 応答性を確保する。
+child_pid=0
+term_handler() {
+  if [ "${child_pid}" -ne 0 ]; then
+    kill -TERM "${child_pid}" 2>/dev/null || true
+    wait "${child_pid}" 2>/dev/null || true
+  fi
+  exit 0
+}
+trap term_handler TERM INT
+
+# コマンドを backgrounding + wait で実行し、 wait の exit code をそのまま返す。 set -e 下でも
+# wait の非ゼロ exit code で script が即死しないよう set +e で括る (呼び出し側が if ! ...; then
+# で判定する挙動を維持する)。
+run_bg() {
+  "$@" &
+  child_pid=$!
+  set +e
+  wait "${child_pid}"
+  local rc=$?
+  set -e
+  child_pid=0
+  return "${rc}"
+}
+
 # S3_REGION のデフォルト ap-northeast-1 は compose.yml / compose.external-s3.yml にも
 # 同じ値が定義されている (意図的な二重管理)。 compose 経由ではコンテナに必ず値が渡るため
 # 本ファイルの :-ap-northeast-1 は実質未到達だが、 念のため compose 側とデフォルトを揃える。
@@ -45,16 +73,16 @@ fi
 # update_maximum_load は update でのみ参照されるため、 init には渡さず update の呼び出し
 # にのみ展開する。
 # テーブル作成および初期データの挿入
-if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
-                           --s3_endpoint "${S3_ENDPOINT}" \
-                           --s3_access_key_id "${AWS_ACCESS_KEY_ID}" \
-                           --s3_secret_access_key "${AWS_SECRET_ACCESS_KEY}" \
-                           --s3_bucket "${S3_BUCKET}" \
-                           --s3_prefix "${S3_PREFIX}" \
-                           --s3_region "${S3_REGION:-ap-northeast-1}" \
-                           "${initial_maximum_load_args[@]}" \
-                           "${s3_ssl_args[@]}" \
-                           init; then
+if ! run_bg uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
+                                     --s3_endpoint "${S3_ENDPOINT}" \
+                                     --s3_access_key_id "${AWS_ACCESS_KEY_ID}" \
+                                     --s3_secret_access_key "${AWS_SECRET_ACCESS_KEY}" \
+                                     --s3_bucket "${S3_BUCKET}" \
+                                     --s3_prefix "${S3_PREFIX}" \
+                                     --s3_region "${S3_REGION:-ap-northeast-1}" \
+                                     "${initial_maximum_load_args[@]}" \
+                                     "${s3_ssl_args[@]}" \
+                                     init; then
   # init 失敗のまま update ループに入ると s3_objects テーブルが無い状態で update が
   # CliUsageError で連続失敗するため、 init 失敗時はここで終了する。 systemd 経由
   # (scripts/run-ingester.sh) は Restart= 設定で自動再起動、 docker 経由 (本スクリプト)
@@ -70,25 +98,25 @@ fi
 # させると一時障害でコンテナが停止するデメリットが大きいと判断した。
 while :;
 do
-  if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
-                             --s3_endpoint "${S3_ENDPOINT}" \
-                             --s3_access_key_id "${AWS_ACCESS_KEY_ID}" \
-                             --s3_secret_access_key "${AWS_SECRET_ACCESS_KEY}" \
-                             --s3_bucket "${S3_BUCKET}" \
-                             --s3_prefix "${S3_PREFIX}" \
-                             --s3_region "${S3_REGION:-ap-northeast-1}" \
-                             "${initial_maximum_load_args[@]}" \
-                             "${update_maximum_load_args[@]}" \
-                             "${s3_ssl_args[@]}" \
-                             update; then
+  if ! run_bg uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
+                                       --s3_endpoint "${S3_ENDPOINT}" \
+                                       --s3_access_key_id "${AWS_ACCESS_KEY_ID}" \
+                                       --s3_secret_access_key "${AWS_SECRET_ACCESS_KEY}" \
+                                       --s3_bucket "${S3_BUCKET}" \
+                                       --s3_prefix "${S3_PREFIX}" \
+                                       --s3_region "${S3_REGION:-ap-northeast-1}" \
+                                       "${initial_maximum_load_args[@]}" \
+                                       "${update_maximum_load_args[@]}" \
+                                       "${s3_ssl_args[@]}" \
+                                       update; then
     echo "run.py update failed. continue loop." >&2
   fi
 
-  if ! uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
-                             --retention_period "${RETENTION_PERIOD}" \
-                             delete; then
+  if ! run_bg uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
+                                       --retention_period "${RETENTION_PERIOD}" \
+                                       delete; then
     echo "run.py delete failed. continue loop." >&2
   fi
 
-  sleep "${UPDATE_INTERVAL}"
+  run_bg sleep "${UPDATE_INTERVAL}"
 done
