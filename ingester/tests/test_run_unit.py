@@ -45,7 +45,7 @@ def test_delete_returns_without_copy_when_no_rows_deleted(tmp_path):
 
     before_stat = db_path.stat()
 
-    args = SimpleNamespace(db=str(db_path), retention_period=1)
+    args = SimpleNamespace(**full_args(db=str(db_path), retention_period=1))
     run.delete(args)
 
     # DB ファイルが shutil.move で置き換わっていないこと (inode 不変)、 COPY 用一時ファイルが
@@ -72,7 +72,7 @@ def test_delete_handles_single_quote_in_db_path(tmp_path):
         con.execute("CREATE TABLE session_webhook (timestamp TIMESTAMPTZ)")
         con.execute("INSERT INTO rtc_stats VALUES (?)", (old_timestamp,))
 
-    args = SimpleNamespace(db=str(db_path), retention_period=1)
+    args = SimpleNamespace(**full_args(db=str(db_path), retention_period=1))
     run.delete(args)
 
     # delete 後、古い行が削除されていることを確認する。
@@ -104,7 +104,7 @@ def test_delete_restricts_db_file_permission(tmp_path):
         con.execute("CREATE TABLE session_webhook (timestamp TIMESTAMPTZ)")
         con.execute("INSERT INTO rtc_stats VALUES (?)", (old_timestamp,))
 
-    args = SimpleNamespace(db=str(db_path), retention_period=1)
+    args = SimpleNamespace(**full_args(db=str(db_path), retention_period=1))
     run.delete(args)
 
     # owner: rw, group: rw, other: なし
@@ -136,7 +136,7 @@ def test_delete_removes_stale_copy_files_before_start(tmp_path):
     stale_copy.write_bytes(b"stale copy payload")
     stale_wal.write_bytes(b"stale wal payload")
 
-    args = SimpleNamespace(db=str(db_path), retention_period=1)
+    args = SimpleNamespace(**full_args(db=str(db_path), retention_period=1))
     run.delete(args)
 
     # 残骸が掃除され、 delete が完走している (2 日前の行が削除されている) ことを確認する。
@@ -532,7 +532,7 @@ def test_update_or_delete_raises_file_not_found_when_db_missing(subcommand, tmp_
     handle_cli_error 経由でメッセージを統一する経路を担保する。
     """
     missing = tmp_path / "missing.db"
-    args = SimpleNamespace(db=str(missing))
+    args = SimpleNamespace(**full_args(db=str(missing)))
     with pytest.raises(FileNotFoundError, match="DB file not found"):
         subcommand(args)
 
