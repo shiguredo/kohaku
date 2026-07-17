@@ -711,7 +711,7 @@ def test_delete(s3_client, rustfs_endpoint, tmp_path):
 
 
 def test_delete_within_retention_period(s3_client, rustfs_endpoint, tmp_path):
-    """保持期間内のデータのみの場合に delete を実行しても削除されないことを確認する。"""
+    """保持期間外と期間内が混在する場合でも、 retention_period を長くとると誰も削除対象にならないことを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
     assert s3_client.bucket_exists(BUCKET)
