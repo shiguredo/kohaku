@@ -34,20 +34,30 @@ RUN set -eux; \
     mv "uv-${UV_TARGET}/uv" /usr/local/bin/uv; \
     rm -rf "uv-${UV_TARGET}" "${UV_TARBALL}" "${UV_TARBALL}.sha256"
 
+# /var/lib/kohaku (DB / .readonly の実体) と /ingester ディレクトリ自体を kohaku:root で
+# 用意する。 /ingester のディレクトリ chown は USER kohaku で uv sync が .venv を作れる
+# ようにするために必須 (COPY --chown はファイル単位の chown で、 ディレクトリ自体の
+# ownership は変えないため、 事前に kohaku:root にしておく必要がある)。 中身の再帰 chown
+# は COPY --chown が代わりに行うので不要。
 RUN mkdir -p /var/lib/kohaku/duckdb /ingester \
     && chown -R kohaku:root /var/lib/kohaku \
     && chmod -R g+rw /var/lib/kohaku \
-    && chown -R kohaku:root /ingester
+    && chown kohaku:root /ingester
 
 ENV HOME=/var/lib/kohaku
 
 WORKDIR /ingester
 
-COPY --chown=kohaku:root . /ingester
+# 依存の解決は pyproject.toml と uv.lock だけを先に COPY してレイヤキャッシュを効かせる。
+# src 変更で依存インストールが再走しないようにする。
+COPY --chown=kohaku:root pyproject.toml uv.lock /ingester/
+USER kohaku
+RUN uv sync --frozen --no-install-project
 
+# 残り (src / DUCKDB_COLUMNS / run.sh / tests 等) を COPY する。 依存に変化がなければ
+# 以降のレイヤだけが差し替わる。
+USER root
+COPY --chown=kohaku:root . /ingester
 USER kohaku
 
-# lock ファイルに基づいて依存を事前インストールする
-RUN uv sync --frozen
-
-ENTRYPOINT ["bash", "/ingester/run.sh"]
+ENTRYPOINT ["/ingester/run.sh"]
