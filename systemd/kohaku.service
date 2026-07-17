@@ -26,7 +26,8 @@ WorkingDirectory=/opt/kohaku/ingester
 # 起動タイムアウト
 TimeoutStartSec=10min
 # DuckDB ファイルが存在する場合のみ実行する
-ExecCondition=/bin/test -f ${DUCKDB_DB_PATH}
+# ${DUCKDB_DB_PATH:?...} で環境変数未定義時には journalctl にエラーを残す (silent スキップ回避)
+ExecCondition=/bin/sh -c 'test -f "${DUCKDB_DB_PATH:?DUCKDB_DB_PATH is required}"'
 # メインの ingester 更新処理を実行する
 ExecStart=/bin/sh /opt/kohaku/scripts/run-ingester.sh update
 # 更新処理完了後に古いデータを削除する
