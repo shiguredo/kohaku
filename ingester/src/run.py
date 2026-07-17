@@ -124,12 +124,10 @@ def init(args):
     )
 
     with duckdb.connect(args.db) as con:
-        con.execute("INSTALL icu")
-        con.execute("LOAD icu")
-
         # 取得済みの最後のオブジェクト情報を保存するテーブルを作成
         create_s3_objects_table(con)
 
+        # ICU (TIMESTAMPTZ 挙動と Grafana initSql に揃える目的) は s3_setup 内で LOAD する。
         s3_setup(con, args)
         for target in LOG_TARGETS:
             sync_log_for_init(con, client, args, target)
@@ -440,6 +438,13 @@ def remove_delete_incomplete_copy_files(copy_file):
 
 
 def s3_setup(con, args):
+    # INSTALL / LOAD icu は init / update の両経路で TIMESTAMPTZ を含むスキーマの read_json
+    # をタイムゾーン依存の挙動差から守るための予防的ロードで、 Grafana 側 datasource の
+    # initSql (INSTALL icu; LOAD icu) と挙動を揃える目的も持つ。 INSTALL は idempotent
+    # なので複数経路から呼んでも副作用は無い。 delete は S3 に触らない別経路 (in-memory
+    # DuckDB + ATTACH) のため本関数を通らず、 ICU も要求しないので LOAD しない。
+    con.execute("INSTALL icu")
+    con.execute("LOAD icu")
     con.execute("INSTALL httpfs")
     con.execute("LOAD httpfs")
     con.execute("SET s3_url_style='path'")
