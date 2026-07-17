@@ -73,16 +73,19 @@ def positive_int(value):
     return int_value
 
 
-def load_columns():
-    """LOG_TARGETS 各テーブルのカラム定義 YAML をロードして辞書として返す。
+def load_columns(targets=LOG_TARGETS, columns_dir=COLUMNS_DIR):
+    """targets 各テーブルのカラム定義 YAML を columns_dir から読み込んで辞書として返す。
 
     YAML 欠損はデプロイ / イメージビルド側の不備なので RuntimeError で送出し、
     handle_cli_error では拾わずトレースバック付きで上位に伝播させる (「Run 'init'」
     のようなユーザー向け 1 行メッセージにはしない)。
+
+    引数 targets / columns_dir はテスト時に tmp_path や 1 target 分の異常経路を検証するための
+    差し替え口で、 本番コードは引数なしで呼び LOG_TARGETS / COLUMNS_DIR のデフォルトを利用する。
     """
     duckdb_columns = {}
-    for target in LOG_TARGETS:
-        file_path = os.path.join(COLUMNS_DIR, f"{target}.yml")
+    for target in targets:
+        file_path = os.path.join(columns_dir, f"{target}.yml")
         if not os.path.exists(file_path):
             raise RuntimeError(f"Column definition file not found: {file_path}")
 
