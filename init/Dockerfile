@@ -9,11 +9,22 @@ ARG TARGETPLATFORM
 
 RUN apt -y update && apt -y install git curl g++
 
-RUN curl -LO https://go.dev/dl/go${GO_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz && tar -C /usr/local -xzf go${GO_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz
+# go tarball を dl.google.com から取得し、 同時に配布されている .sha256 (プレーン
+# テキストの 64 桁 hex) と突き合わせて完全性を確認する。 go.dev/dl/ の .sha256 は
+# ドキュメントページへの HTML リダイレクトを返すため、 tarball と .sha256 の両方が
+# 素の内容で配信される dl.google.com/go/ を用いる。 同一サーバから取得するため
+# 悪意ある差し替えを完全には防げないが、 転送破損や中間の書き換えは検出できる
+# (ingester/Dockerfile の uv verify-before-extract と同じ設計方針)。
+RUN curl -fLO https://dl.google.com/go/go${GO_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz \
+ && curl -fLO https://dl.google.com/go/go${GO_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz.sha256 \
+ && echo "$(cat go${GO_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz.sha256)  go${GO_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz" | sha256sum -c - \
+ && tar -C /usr/local -xzf go${GO_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz \
+ && rm go${GO_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz*
 
 ENV PATH=$PATH:/usr/local/go/bin:/root/go/bin
 
-RUN /usr/local/go/bin/go install github.com/magefile/mage@latest
+ARG MAGE_VERSION=v1.17.2
+RUN /usr/local/go/bin/go install github.com/magefile/mage@${MAGE_VERSION}
 
 WORKDIR /plugin
 
