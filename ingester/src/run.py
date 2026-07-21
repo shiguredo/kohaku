@@ -550,8 +550,15 @@ def delete(args):
     0o660 への chmod は COPY 経路の副次効果なので、 削除 0 件のときは正規化されない
     (元 DB のパーミッションは init / sync の umask で揃える前提)。
 
-    COPY 段階で失敗した場合、 元 DB は DELETE 済み・ 未圧縮のまま残る (with 節を抜けた
-    時点で commit 済み)。
+    con.begin() を明示的に呼ばないため DuckDB は auto-commit モードで動き、
+    delete_log_by_timestamp が発行する DELETE は SQL 実行のたびに即 commit される
+    (init の initialize_log_table や update の insert_log_from_s3 が LOG_TARGETS
+    の target ごとに con.begin() / con.commit() で囲むのと非対称)。 このため、
+    途中の target で例外が起きると直前までの target の DELETE は反映済みで、
+    残りは未反映のまま delete が中断される。 全 target の DELETE を通過した後の
+    COPY 段階で失敗した場合は全 DELETE が反映済みで、 元 DB は未圧縮のまま残る。
+    いずれもリトライ時は同じ retention_period で境界を計算し直すため、 反映済み分
+    は再実行しても同じ結果に収束する前提。
     """
     if not os.path.exists(args.db):
         raise FileNotFoundError(f"DB file not found: {args.db}. Run 'init' first.")
