@@ -151,17 +151,23 @@ def initialize_log_table(con, client, args, target):
     に保つ (insert_log_from_s3 と同じ方針)。 これにより create 直後のプロセス停止による silent
     gap (テーブル存在 + s3_objects 行無し) は自動的に回避される。
 
-    運用上の注意: 「LOG_TARGETS テーブルは存在するが s3_objects のカーソル行が無い」 状態
-    (例: 手動 DELETE FROM s3_objects) を作らないこと。 その状態から本関数が呼ばれると、
-    create_log_table がテーブル既存で早期 return するためデータを取り込まず、 直後の
-    update_s3_objects_table でカーソルだけ全体最新へ進んでしまい、 過去オブジェクトが
-    埋没する silent gap になる。 該当状態を作った場合は DB ファイルと .wal ファイルを
-    削除してから init を再実行して整合を取り直すこと (bare init は has_s3_objects_table
+    「LOG_TARGETS テーブルは存在するが s3_objects のカーソル行が無い」 状態 (例: 手動
+    DELETE FROM s3_objects、 s3_objects テーブル drop 後の init 再実行) で本関数を進めると、
+    create_log_table がテーブル既存で早期 return する一方 update_s3_objects_table はカーソル
+    を全体最新へ進めてしまい、 過去オブジェクトが埋没する silent gap になる。 これを防ぐ
+    ため冒頭で該当状態を CliUsageError で拒否する。 運用者は DB ファイルと .wal ファイル
+    を削除してから init を再実行して整合を取り直すこと (bare init は has_s3_objects_table
     True で早期 return するため復旧しない。 .wal を残すと孤児 WAL が新規 DB に再生される
     リスクがあるため対で削除する。 move_broken_db と同じ扱い)。 なおこの操作はローカルの
     LOG_TARGETS 全データを破棄して S3 から再取得し直すことになり、 initial_maximum_load
     上限で古いオブジェクトは再取得されない点に注意。
     """
+    if table_exists(con, target) and get_s3_objects_cursor(con, target) is None:
+        raise CliUsageError(
+            f"{target} table exists but s3_objects cursor is missing. "
+            "Delete DB file and its .wal, then run 'init' again."
+        )
+
     log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
     if len(log_objects) == 0:
         print(f"No log found for {target} in {args.s3_bucket}.", file=sys.stderr)
