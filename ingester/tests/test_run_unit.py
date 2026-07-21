@@ -522,6 +522,30 @@ def test_init_skips_when_s3_objects_table_exists(tmp_path, capsys):
 # update サブコマンドの初期化済み DB 必須チェック
 
 
+def test_initialize_log_table_rejects_silent_gap_state(tmp_path):
+    """LOG_TARGETS テーブルが存在するが s3_objects カーソル行が無い状態で
+    initialize_log_table が CliUsageError を送出することを確認する。
+
+    手動 DELETE FROM s3_objects や s3_objects テーブル drop 後の init 再実行で発生する
+    silent gap 前駆状態 (create_log_table がスキップされる一方で update_s3_objects_table
+    がカーソルを進めて過去オブジェクトが埋没する) をコード側で拒否する invariant を担保
+    する。 client には None を渡してもガードが早期に走るため list_objects まで到達しない。
+    到達してしまうリグレッションは AttributeError で顕在化する。
+    """
+    db_path = tmp_path / "silent_gap.db"
+    target = "rtc_stats"
+    with duckdb.connect(str(db_path)) as con:
+        con.execute(
+            "CREATE TABLE s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)"
+        )
+        con.execute(f"CREATE TABLE {target} (timestamp TIMESTAMPTZ)")
+
+    args = SimpleNamespace(**full_args(db=str(db_path)))
+    with duckdb.connect(str(db_path)) as con:  # noqa: SIM117
+        with pytest.raises(run.CliUsageError, match="s3_objects cursor is missing"):
+            run.initialize_log_table(con, None, args, target)
+
+
 def test_update_rejects_uninitialized_db(tmp_path):
     """s3_objects テーブルが無い DB に対して update が CliUsageError を送出することを確認する。
 
