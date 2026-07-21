@@ -851,8 +851,23 @@ def main():
     # args.func が例外を投げると handle_cli_error 経由で sys.exit するか、 未処理例外として
     # 上位へ再送出されるため、 以下は成功時のみ実行される。 結果として .readonly は前回
     # 成功時点のまま保持される。
-    if should_create_readonly(args.db, initial_stat):
-        create_readonly_copy(args.db)
+    # readonly コピーは Grafana が参照する派生物で、 args.func 本体の DB 更新が終わってから
+    # 生成する。 shutil.copyfile / os.chmod / shutil.move で PermissionError (SELinux / 親
+    # ディレクトリ権限不足 等) や OSError (disk full 等) が上がっても、 args.func は既に成功
+    # して DB 本体への変更は反映済み、 かつ .readonly は前回成功時点のファイルがそのまま残る
+    # ため Grafana の参照経路は壊れない。 したがって readonly 生成失敗は 1 回分の反映遅延に
+    # 留まる副作用と捉え、 process としては exit code 0 を維持して stderr に 1 行残すだけに
+    # する (次回の update / delete で改めて更新される)。 args.func 失敗と同じ経路で
+    # handle_cli_error に乗せて exit 1 にすると「DB 更新は成功したのに exit 1」 という
+    # 誤解を招くため、 意図的に別経路にしている。
+    try:
+        if should_create_readonly(args.db, initial_stat):
+            create_readonly_copy(args.db)
+    except Exception as error:
+        print(
+            f"Failed to update .readonly copy: {type(error).__name__}: {error}",
+            file=sys.stderr,
+        )
 
 
 if __name__ == "__main__":
