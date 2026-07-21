@@ -12,7 +12,8 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     depends_on:
-      - mc
+      mc:
+        condition: service_completed_successfully
     command: /fluent-bit/bin/fluent-bit -c /fluent-bit/etc/fluent-bit.yml
 
   # 外部 S3 互換ストレージ の初期設定用コンテナ
