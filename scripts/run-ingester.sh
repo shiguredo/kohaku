@@ -29,23 +29,23 @@ case "${SUBCOMMAND}" in
             --s3_prefix "${S3_PREFIX}" \
             --s3_region "${S3_REGION:-ap-northeast-1}"
 
-        # 未設定なら引数自体を渡さず run.py の argparse デフォルトに委ねる
+        # 未設定なら引数自体を渡さず run.py の argparse デフォルトに委ねる。
         if [ -n "${INITIAL_MAXIMUM_LOAD:-}" ]; then
             set -- "$@" --initial_maximum_load "${INITIAL_MAXIMUM_LOAD}"
         fi
 
-        # update_maximum_load は update でのみ参照されるため、update の時だけ渡す
+        # update_maximum_load は update でのみ参照されるため、update の時だけ渡す。
         if [ "${SUBCOMMAND}" = "update" ] && [ -n "${UPDATE_MAXIMUM_LOAD:-}" ]; then
             set -- "$@" --update_maximum_load "${UPDATE_MAXIMUM_LOAD}"
         fi
 
-        # --s3_use_ssl は action="store_true" のため、true の場合のみフラグを付与する
+        # --s3_use_ssl は action="store_true" のため、true の場合のみフラグを付与する。
         if [ "${S3_USE_SSL:-}" = "true" ]; then
             set -- "$@" --s3_use_ssl
         fi
         ;;
     delete)
-        # delete は S3 接続を行わないため S3 オプションは不要
+        # delete は S3 接続を行わないため S3 オプションは不要。
         : "${RETENTION_PERIOD:?RETENTION_PERIOD is required}"
         set -- \
             --db "${DUCKDB_DB_PATH}" \
