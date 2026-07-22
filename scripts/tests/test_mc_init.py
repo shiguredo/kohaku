@@ -73,7 +73,6 @@ def rustfs_env() -> Iterator[dict[str, object]]:
         pytest.fail(f"Docker Engine へ接続できないためテストを実行できません: {exc}")
 
     try:
-        # yield でテスト本体へ実行コンテキストを渡す。
         yield {"network": network_obj, "rustfs_obj": rustfs_obj}
     finally:
         # テスト成否にかかわらず後始末を必ず実行する。
