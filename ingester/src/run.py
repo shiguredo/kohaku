@@ -710,7 +710,7 @@ def delete_log_by_timestamp(con, table_name, timestamp):
 
     if not table_exists(con, table_name):
         # テーブルが存在しない場合はスキップする
-        # delete サブコマンドはテーブル名を指定して実行ではないため、テーブルが存在しない場合もエラーにはしない
+        # delete は全 target を処理するため、存在しないテーブルはエラーにせずスキップする
         print(f"Table {table_name} does not exist.", file=sys.stderr)
         return 0
 
