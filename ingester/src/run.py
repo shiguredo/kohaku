@@ -183,9 +183,9 @@ def initialize_log_table(con, client, args, target):
         update_s3_objects_table(con, target, log_objects[0])
         con.commit()
     except Exception:
-        # rollback が disk full 等で失敗すると元例外が __context__ に沈み、 stderr には
-        # rollback 起源の例外だけが出て根本原因の追跡が難しくなる。 rollback 例外は吸収し、
-        # 事実だけを stderr に残して元例外を維持する (insert_log_from_s3 と同じ方針)。
+        # rollback が disk full 等で失敗すると、 stderr では rollback 起源の例外が目立ち、
+        # 根本原因の追跡が難しくなる。 rollback 例外は吸収し、 事実だけを stderr に残して
+        # 元例外を維持する (insert_log_from_s3 と同じ方針)。
         try:
             con.rollback()
         except Exception as rollback_error:
