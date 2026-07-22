@@ -31,7 +31,6 @@ MC_INIT_REQUIRED_VARS = (
 
 
 def run_and_assert_success(container: DockerContainer) -> None:
-    # 一時コンテナを 1 回実行し、終了コードが 0 であることを検証する。
     try:
         container.start()
         wrapped = container.get_wrapped_container()
