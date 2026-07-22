@@ -24,8 +24,8 @@ cd /ingester
 
 # SIGTERM / SIGINT を受けたら実行中の子プロセスへ TERM を転送してから正常終了する。 tini が
 # PID 1 として動く前提 (compose.yml の init: true) で、 本スクリプトは tini の子として起動される。
-# bash は foreground の外部コマンド実行中に受けた trap を即評価しないため、 全ての長時間実行呼び出し
-# (uv run と sleep) を run_bg 経由で backgrounding + wait して trap 応答性を確保する。
+# bash は外部コマンドの実行中に trap をすぐ処理しないため、 長時間実行する uv run と sleep は
+# run_bg 経由で子プロセスとして起動し、 wait しながらシグナルを処理できるようにする。
 child_pid=0
 term_handler() {
   if [ "${child_pid}" -ne 0 ]; then
