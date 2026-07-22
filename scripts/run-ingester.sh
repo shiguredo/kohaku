@@ -34,7 +34,7 @@ case "${SUBCOMMAND}" in
             set -- "$@" --initial_maximum_load "${INITIAL_MAXIMUM_LOAD}"
         fi
 
-        # update_maximum_load は update でのみ参照されるため、update の時だけ渡す。
+        # update_maximum_load は update でのみ参照されるため、update の場合だけ渡す。
         if [ "${SUBCOMMAND}" = "update" ] && [ -n "${UPDATE_MAXIMUM_LOAD:-}" ]; then
             set -- "$@" --update_maximum_load "${UPDATE_MAXIMUM_LOAD}"
         fi
