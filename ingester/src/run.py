@@ -59,7 +59,7 @@ BROKEN_DB_CONNECT_ERRORS = (
 
 # Sora のログテーブル名兼 DuckDB のテーブル名
 LOG_TARGETS = (
-    # 現行のダッシュボードでは connection を使用していないため、使用したい場合にはコメントアウトを外します
+    # 現行のダッシュボードでは connection を使用していないため、使用する場合はコメントアウトを外す
     # "connection",
     "rtc_stats",
     "session_webhook",
