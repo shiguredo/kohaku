@@ -52,7 +52,7 @@ run_bg() {
 
 # S3_REGION のデフォルト ap-northeast-1 は compose.yml / compose.external-s3.yml にも
 # 同じ値が定義されている (意図的な二重管理)。 compose 経由ではコンテナに必ず値が渡るため
-# 本ファイルの :-ap-northeast-1 は実質未到達だが、 念のため compose 側とデフォルトを揃える。
+# 本ファイルの :-ap-northeast-1 は通常使われないが、 念のため compose 側とデフォルトを揃える。
 
 s3_ssl_args=()
 if [ "${S3_USE_SSL:-}" = "true" ]; then
