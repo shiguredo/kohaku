@@ -286,7 +286,7 @@ def test_grafana_can_query_duckdb_data(tmp_path):
 
         wait_for_grafana(base_url, auth_header)
 
-        # データソースの確認
+        # provision された datasource の name / type / uid を確認する
         datasource = request_json(
             f"{base_url}/api/datasources/name/{DATA_SOURCE_NAME}", headers=auth_header
         )
