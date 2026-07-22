@@ -69,7 +69,6 @@ def reset_bucket(s3_client: minio.Minio, bucket_name: str) -> None:
     s3_client.make_bucket(bucket_name)
 
 
-# rtc_stats の timestamp を period 日だけ過去にずらすヘルパー関数
 def update_timestamp_for_rtc_stats(
     con: duckdb.DuckDBPyConnection, obj: Sequence[Any], period: int
 ) -> None:
