@@ -348,8 +348,8 @@ def has_s3_objects_table(db_path):
         return False
 
     # read_only=True で開くことで、 s3_objects テーブル存在確認だけの目的で mtime や
-    # WAL を進めないようにする。 これで no-op init 経路 (has_s3_objects_table True で
-    # 早期 return) が readonly コピー再生成を毎回誘発することを防ぐ。
+    # WAL を進めないようにする。 これで init が何もせず終了する経路
+    # (has_s3_objects_table True で早期 return) が readonly コピー再生成を毎回誘発することを防ぐ。
     with duckdb.connect(db_path, read_only=True) as con:
         if not table_exists(con, "s3_objects"):
             return False
