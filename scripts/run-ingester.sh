@@ -13,7 +13,7 @@ SUBCOMMAND="${1:-}"
 case "${SUBCOMMAND}" in
     init|update)
         # init / update では S3 接続に関わる環境変数を事前検証する。systemd EnvironmentFile
-        # の編集忘れによる unbound variable をここで一度に特定できるようにする。
+        # の編集忘れによる未定義変数エラーをここで一度に特定できるようにする。
         : "${S3_ENDPOINT:?S3_ENDPOINT is required}"
         : "${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID is required}"
         : "${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY is required}"
