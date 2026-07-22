@@ -36,9 +36,9 @@ term_handler() {
 }
 trap term_handler TERM INT
 
-# コマンドを backgrounding + wait で実行し、 wait の exit code をそのまま返す。 set -e 下でも
-# wait の非ゼロ exit code で script が即死しないよう set +e で括る (呼び出し側が if ! ...; then
-# で判定する挙動を維持する)。
+# コマンドを子プロセスとして起動して wait し、 wait の exit code をそのまま返す。 set -e 下でも
+# wait の非ゼロ exit code で関数外へ抜けないよう、 一時的に set +e で括る
+# (呼び出し側が if ! ...; then で判定する挙動を維持する)。
 run_bg() {
   "$@" &
   child_pid=$!
