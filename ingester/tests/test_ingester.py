@@ -78,7 +78,7 @@ def update_timestamp_for_rtc_stats(
     now = datetime.datetime.now(datetime.UTC)
     timestamp = now - datetime.timedelta(days=period)
 
-    # 更新日時を更新するクエリを実行
+    # rtc_stats の timestamp を更新する
     con.execute(
         """
         UPDATE rtc_stats
