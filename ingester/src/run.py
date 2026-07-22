@@ -147,20 +147,21 @@ def initialize_log_table(con, client, args, target):
     取り込まない (insert_log_from_s3 が古い側からバッチ取り込みする方針と非対称なのが正解)。
 
     create_log_table (テーブル作成) と update_s3_objects_table (カーソル登録) は con.begin() /
-    con.commit() で囲み、 途中失敗時は con.rollback() で「テーブル作成とカーソル登録」を atomic
-    に保つ (insert_log_from_s3 と同じ方針)。 これにより create 直後のプロセス停止による silent
-    gap (テーブル存在 + s3_objects 行無し) は自動的に回避される。
+    con.commit() で囲み、 途中失敗時は con.rollback() で「テーブル作成とカーソル登録」を
+    まとめて取り消す (insert_log_from_s3 と同じ方針)。 これにより create 直後にプロセスが
+    停止しても、 テーブルだけが存在して s3_objects にカーソル行が無い状態は残らない。
 
     「LOG_TARGETS テーブルは存在するが s3_objects のカーソル行が無い」 状態 (例: 手動
     DELETE FROM s3_objects、 s3_objects テーブル drop 後の init 再実行) で本関数を進めると、
     create_log_table がテーブル既存で早期 return する一方 update_s3_objects_table はカーソル
-    を全体最新へ進めてしまい、 過去オブジェクトが埋没する silent gap になる。 これを防ぐ
+    を全体最新へ進めてしまい、 過去オブジェクトが取り込まれない状態になる。 これを防ぐ
     ため冒頭で該当状態を CliUsageError で拒否する。 運用者は DB ファイルと .wal ファイル
-    を削除してから init を再実行して整合を取り直すこと (bare init は has_s3_objects_table
-    True で早期 return するため復旧しない。 .wal を残すと孤児 WAL が新規 DB に再生される
-    リスクがあるため対で削除する。 move_broken_db と同じ扱い)。 なおこの操作はローカルの
-    LOG_TARGETS 全データを破棄して S3 から再取得し直すことになり、 initial_maximum_load
-    上限で古いオブジェクトは再取得されない点に注意。
+    を削除してから init を再実行して整合を取り直すこと。 init だけを再実行しても
+    has_s3_objects_table が True で早期 return するため復旧しない。 また .wal を残すと、
+    新規 DB に古い WAL が再生されるリスクがあるため、 DB ファイルと対で削除する
+    (move_broken_db と同じ扱い)。 なおこの操作はローカルの LOG_TARGETS 全データを破棄して
+    S3 から再取得し直すことになり、 initial_maximum_load 上限で古いオブジェクトは再取得されない
+    点に注意。
     """
     if table_exists(con, target) and get_s3_objects_cursor(con, target) is None:
         raise CliUsageError(
@@ -199,9 +200,9 @@ def sync_log_for_init(con, client, args, target):
         # 出ても残りの LOG_TARGETS を止めないため、 stderr に記録して次の target へ進む。
         # 発生要因の例: 壊れた gzip (IOException)、 read_json のスキーマ不一致
         # (InvalidInputException)。 なお IOException は DB 書き込み側 (disk full、
-        # 権限剥奪、 WAL 書き込み失敗等) でも発生し得るが、 message で区別しないので
-        # 同経路で握られる。 top-level の exit code は失敗を示さないため、 per-target
-        # の stderr 出力を運用側で監視すること。
+        # 権限剥奪、 WAL 書き込み失敗等) でも発生し得るが、 メッセージでは区別せず
+        # 同じ例外処理で捕捉する。 コマンド全体の exit code は失敗を示さないため、
+        # target ごとの stderr 出力を運用側で監視すること。
         print(f"{type(e).__name__} ({target}): {e}", file=sys.stderr)
 
 
@@ -226,13 +227,12 @@ def sync_log_for_update(con, client, args, target):
                 cursor_key,
             )
     except (duckdb.InvalidInputException, duckdb.IOException) as e:
-        # sync_log_for_init と同じ方針で読み込みエラーを catch する (発生要因と DB
-        # 書き込み側 IOException の握り込み、 運用監視の必要性は sync_log_for_init の
-        # コメントを参照)。 加えて update 特有の挙動として、 catch しないと単一の壊れた
-        # オブジェクトで update 全体が中断し、 次サイクルもカーソル未進行のまま同じ
-        # オブジェクトで固まる。 該当 target 自体はカーソルが進まないため、 壊れた
-        # オブジェクトが除去されるまで同じ target で再発するが、 他 target への波及は
-        # 防げる。
+        # 読み込みエラーは stderr に記録して次の target へ進む。 IOException は
+        # 読み込み側だけでなく DB 書き込み側でも発生し得るが、 メッセージでは区別せず
+        # 同じ例外処理で捕捉する。 catch しないと単一の壊れたオブジェクトで update 全体が
+        # 中断し、 次サイクルもカーソル未進行のまま同じオブジェクトで止まり続ける。
+        # 該当 target のカーソルは進まないため、 壊れたオブジェクトが除去されるまで同じ
+        # target で再発するが、 他 target の更新は継続できる。
         print(f"{type(e).__name__} ({target}): {e}", file=sys.stderr)
 
 
