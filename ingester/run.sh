@@ -59,7 +59,7 @@ if [ "${S3_USE_SSL:-}" = "true" ]; then
   s3_ssl_args+=(--s3_use_ssl)
 fi
 
-# 未設定なら引数自体を渡さず run.py の argparse デフォルトに委ねる
+# 未設定なら引数自体を渡さず run.py の argparse デフォルトに委ねる。
 initial_maximum_load_args=()
 if [ -n "${INITIAL_MAXIMUM_LOAD:-}" ]; then
   initial_maximum_load_args=(--initial_maximum_load "${INITIAL_MAXIMUM_LOAD}")
