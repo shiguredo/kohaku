@@ -35,7 +35,7 @@ def test_delete_returns_without_copy_when_no_rows_deleted(tmp_path):
     """削除件数が 0 件の場合に DB コピー処理 (ATTACH + COPY + shutil.move) へ進まないことを確認する。
 
     「元 DB のバイト内容そのものが不変」 は DuckDB が R/W 接続を開いた時点で WAL ヘッダー等を
-    更新する可能性があるため保証しない (バージョン依存で fragile)。 仕様は「COPY 経路が走って
+    更新する可能性があるため保証しない (バージョン差で変わり得る)。 仕様は「COPY 経路が走って
     いない」 で、 inode 不変 + `.copy` 不在で担保する。
     """
     db_path = tmp_path / "delete_no_rows.db"
