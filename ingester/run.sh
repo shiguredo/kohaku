@@ -17,7 +17,7 @@ set -euo pipefail
 : "${RETENTION_PERIOD:?RETENTION_PERIOD is required}"
 : "${UPDATE_INTERVAL:?UPDATE_INTERVAL is required}"
 
-# grafana グループ (GID=0) と DB ファイルを共有するためグループ書き込みを許可する
+# Grafana グループ (GID=0) と DB ファイルを共有するためグループ書き込みを許可する
 umask 0002
 
 cd /ingester
