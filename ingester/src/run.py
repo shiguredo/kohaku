@@ -179,7 +179,7 @@ def initialize_log_table(con, client, args, target):
     con.begin()
     try:
         create_log_table(con, target, log_urls)
-        # 先頭が全体最新
+        # log_objects は降順なので、先頭が全体の最新オブジェクト
         update_s3_objects_table(con, target, log_objects[0])
         con.commit()
     except Exception:
