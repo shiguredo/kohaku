@@ -67,7 +67,6 @@ def run_fluent_bit_and_wait(
     expected_prefix_counts: dict[str, int],
 ) -> None:
     """fluent-bit コンテナを起動し、期待件数に到達するまで待機する。タイムアウトすると pytest.fail。"""
-    # fluent-bit を起動し、期待オブジェクト数に達するまで待機する
     with (
         DockerContainer(FLUENT_BIT_IMAGE)
         .with_env("AWS_ACCESS_KEY_ID", ACCESS_KEY)
