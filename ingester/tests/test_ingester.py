@@ -602,8 +602,8 @@ def test_init_skips_broken_object_and_continues_other_targets(
         assert result is not None
         assert result[0] > 0
 
-        # session_webhook は create_log_table 段階で例外 → sync_log_for_init が catch → tx rollback
-        # のため、 テーブル自体が作成されない。
+        # session_webhook は create_log_table で例外が発生し、 sync_log_for_init が捕捉して
+        # rollback するため、 テーブル自体が作成されない。
         con.execute(
             "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='session_webhook'"
         )
