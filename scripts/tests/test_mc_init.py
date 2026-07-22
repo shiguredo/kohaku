@@ -249,7 +249,7 @@ def test_mc_init_accepts_zero_retry_interval() -> None:
     assert "MC_INIT_RETRY_INTERVAL must be a non-negative integer" not in stderr, (
         f"MC_INIT_RETRY_INTERVAL=0 がバリデーションで弾かれました: {stderr}"
     )
-    # バリデーション層を通過してリトライループへ進んだ証拠
+    # バリデーション層を通過してリトライループへ進んだことを確認する
     assert "Timed out waiting for storage endpoint" in stderr, (
         f"バリデーション通過後にリトライループへ進んだ形跡がありません: {stderr}"
     )
