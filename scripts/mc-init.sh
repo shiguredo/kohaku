@@ -22,7 +22,7 @@ case "${MC_INIT_RETRY_INTERVAL}" in
 esac
 
 # mc コマンドで参照する必須環境変数を事前検証する。compose.yml の env や
-# EnvironmentFile の編集忘れによる unbound variable を、 mc への接続を試みる前に
+# EnvironmentFile の編集忘れによる未定義変数エラーを、 mc への接続を試みる前に
 # 一度に特定できるようにする。
 : "${S3_ENDPOINT:?S3_ENDPOINT is required}"
 : "${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID is required}"
