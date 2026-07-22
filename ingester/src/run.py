@@ -592,7 +592,7 @@ def delete(args):
 
     try:
         with duckdb.connect() as con:
-            # DB サイズ削減のため、DB ファイルをコピーする
+            # DB サイズ削減のため、COPY FROM DATABASE で DB を詰め直す
             con.execute(f"ATTACH '{escape_sql_string_literal(args.db)}' AS db")
             con.execute(f"ATTACH '{escape_sql_string_literal(copy_file)}' AS copy")
             con.execute("COPY FROM DATABASE db TO copy")
