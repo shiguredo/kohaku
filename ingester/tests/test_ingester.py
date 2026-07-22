@@ -465,12 +465,11 @@ def test_update(s3_client, rustfs_endpoint, tmp_path):
 def test_update_skips_broken_object_and_continues_other_targets(
     s3_client, rustfs_endpoint, tmp_path, capsys, broken_payload, expected_exc_name
 ):
-    """update 中に session_webhook の壊れたオブジェクトが混じっても update 全体が中断せず、壊れオブジェクト側の s3_objects カーソルが tx rollback で据置きになることを確認する。
+    """壊れた session_webhook オブジェクトがあっても update が完走することを確認する。
 
-    sync_log_for_update の (InvalidInputException, IOException) catch の仕様 (壊れた
-    target で update 全体を止めず、 他 target への波及を防ぐ) を、 catch 対象の両例外型で担保する。
-    加えて insert_log_from_s3 の tx rollback 経路が effective になっていること (壊れオブジェクトで
-    cursor 更新が commit されない) を、 session_webhook cursor の据置きで直接検証する。
+    sync_log_for_update が捕捉する両例外型で、 壊れた target があっても他 target への
+    波及を防ぐことを確認する。 あわせて insert_log_from_s3 の rollback により、
+    壊れたオブジェクトのカーソル更新が残らないことを session_webhook カーソルで検証する。
     - broken-gzip: gzip として復号できない生バイト列を投入すると DuckDB は IOException を送出する。
     - malformed-json: 有効な gzip 内に JSON parse できないバイト列を投入すると DuckDB は InvalidInputException を送出する。
     """
