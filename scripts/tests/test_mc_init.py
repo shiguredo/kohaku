@@ -20,7 +20,7 @@ RETENTION_PERIOD = "7"
 SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 MC_INIT_SCRIPT_PATH = SCRIPTS_DIR / "mc-init.sh"
 
-# mc-init.sh が要求する必須環境変数 (:? の検証順)
+# mc-init.sh が要求する必須環境変数 (シェルの必須変数チェック順)
 MC_INIT_REQUIRED_VARS = (
     "S3_ENDPOINT",
     "AWS_ACCESS_KEY_ID",
