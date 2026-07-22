@@ -190,7 +190,7 @@ def test_mc_init_rejects_missing_required_var(missing_var: str) -> None:
     ],
 )
 def test_mc_init_rejects_invalid_max_retries(invalid_value: str) -> None:
-    """MC_INIT_MAX_RETRIES が正の整数でないと exit 非 0 で 'must be a positive integer' を出すことを確認する。
+    """MC_INIT_MAX_RETRIES が正の整数でない場合に、エラー終了することを確認する。
 
     空文字は ``${MC_INIT_MAX_RETRIES:-5}`` のフォールバックで 5 に置換されてバリデーション
     層に到達しないため、 本テストの対象から外している。
