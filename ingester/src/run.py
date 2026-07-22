@@ -629,7 +629,7 @@ def delete(args):
                 f"Failed to cleanup incomplete copy files: {cleanup_error}",
                 file=sys.stderr,
             )
-        # return code を 0 以外にするため例外を呼び出し元に投げる
+        # delete の失敗として呼び出し元へ伝えるため例外を再送出する
         raise
 
 
