@@ -1,6 +1,6 @@
 """scripts/run-ingester.sh の必須環境変数バリデーションとサブコマンド分岐をテストする。
 
-systemd EnvironmentFile の編集忘れによる unbound variable を検出する `:?` の防御層が
+systemd EnvironmentFile の編集忘れによる未定義変数エラーを検出する `:?` の防御層が
 init / update / delete のサブコマンドごとに正しく動作することを bash イメージで検証する。
 合わせて未知サブコマンドが Usage 表示で拒否されることも確認する。
 
