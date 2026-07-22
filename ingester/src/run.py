@@ -144,7 +144,8 @@ def initialize_log_table(con, client, args, target):
     無ければ何もしない。
 
     initial_maximum_load を超える古い側は「古すぎるデータを取り込まない」ため意図的に
-    取り込まない (insert_log_from_s3 が古い側からバッチ取り込みする方針と非対称なのが正解)。
+    取り込まない。 init は最新側だけを取り込み、 update は取りこぼしを避けるため古い側から
+    バッチ取り込みする。
 
     create_log_table (テーブル作成) と update_s3_objects_table (カーソル登録) は con.begin() /
     con.commit() で囲み、 途中失敗時は con.rollback() で「テーブル作成とカーソル登録」を
