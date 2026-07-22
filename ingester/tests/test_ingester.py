@@ -467,7 +467,7 @@ def test_update_skips_broken_object_and_continues_other_targets(
 ):
     """壊れた session_webhook オブジェクトがあっても update が完走することを確認する。
 
-    sync_log_for_update が捕捉する両例外型で、 壊れた target があっても他 target への
+    sync_log_for_update が捕捉する両例外型で、 壊れた target があっても他の target への
     波及を防ぐことを確認する。 あわせて insert_log_from_s3 の rollback により、
     壊れたオブジェクトのカーソル更新が残らないことを session_webhook カーソルで検証する。
     - broken-gzip: gzip として復号できない生バイト列を投入すると DuckDB は IOException を送出する。
@@ -520,7 +520,7 @@ def test_update_skips_broken_object_and_continues_other_targets(
     # update は壊れた session_webhook で例外を投げず完走することを確認する。
     update(args)
 
-    # rtc_stats は新規オブジェクトが取り込まれ件数が増え、 session_webhook は据置きになる。
+    # rtc_stats は新規オブジェクトが取り込まれ件数が増え、 session_webhook は変わらない。
     with duckdb.connect(duckdb_filepath) as con:
         con.execute("SELECT COUNT(*) FROM rtc_stats")
         result = con.fetchone()
