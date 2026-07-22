@@ -216,7 +216,7 @@ def test_mc_init_rejects_invalid_max_retries(invalid_value: str) -> None:
     ],
 )
 def test_mc_init_rejects_invalid_retry_interval(invalid_value: str) -> None:
-    """MC_INIT_RETRY_INTERVAL が非負整数でないと exit 非 0 で 'must be a non-negative integer' を出すことを確認する。
+    """MC_INIT_RETRY_INTERVAL が非負整数でない場合に、エラー終了することを確認する。
 
     空文字は ``${MC_INIT_RETRY_INTERVAL:-2}`` のフォールバックで 2 に置換されてバリデーション
     層に到達しないため、 本テストの対象から外している。
