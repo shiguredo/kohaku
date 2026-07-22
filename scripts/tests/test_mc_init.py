@@ -184,7 +184,7 @@ def test_mc_init_rejects_missing_required_var(missing_var: str) -> None:
     [
         "abc",  # 非数値
         "0",  # 0 は明示的に弾かれる
-        "-1",  # 負数 (case の `*[!0-9]*` でマッチして弾かれる)
+        "-1",  # 負数
     ],
 )
 def test_mc_init_rejects_invalid_max_retries(invalid_value: str) -> None:
@@ -210,7 +210,7 @@ def test_mc_init_rejects_invalid_max_retries(invalid_value: str) -> None:
     "invalid_value",
     [
         "abc",  # 非数値
-        "-1",  # 負数 (case の `*[!0-9]*` でマッチして弾かれる)
+        "-1",  # 負数
     ],
 )
 def test_mc_init_rejects_invalid_retry_interval(invalid_value: str) -> None:
