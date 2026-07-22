@@ -13,7 +13,7 @@ case "${MC_INIT_MAX_RETRIES}" in
     exit 1
     ;;
 esac
-# RETRY_INTERVAL は 0 (即時リトライ) を許容するが、 非数値は sleep が失敗するため弾く。
+# RETRY_INTERVAL は 0 (即時リトライ) を許容するが、 非数値は sleep が失敗するため拒否する。
 case "${MC_INIT_RETRY_INTERVAL}" in
   *[!0-9]*)
     echo "MC_INIT_RETRY_INTERVAL must be a non-negative integer: ${MC_INIT_RETRY_INTERVAL}" >&2
