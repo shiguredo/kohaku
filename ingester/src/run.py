@@ -607,8 +607,8 @@ def delete(args):
     except Exception:
         # 削除する前にデバッグ情報 (存在有無 + サイズ) を stderr に残す。 ディスクフルや
         # パーミッションエラー等の原因究明の手がかりを消さないため。 stat 失敗で元例外を
-        # 上書きしないよう、 診断出力自体は best-effort に留める (exists と getsize を
-        # 分けると TOCTOU で FileNotFoundError が乗る)。
+        # 上書きしないよう、 診断出力の失敗は無視する。 存在確認とサイズ取得を分けると、
+        # その間にファイル状態が変わって FileNotFoundError が発生する可能性がある。
         for path in (copy_file, f"{copy_file}.wal"):
             try:
                 size = os.stat(path).st_size
@@ -620,8 +620,8 @@ def delete(args):
             )
         # ATTACH / COPY / chmod / move のいずれかが失敗した後、 残った copy_file と
         # copy_file.wal を削除する。 削除中に PermissionError 等が出ても、 元例外
-        # (ATTACH 失敗、 COPY 失敗、 ディスクフル 等) を上書きしないよう best-effort に
-        # 留める。
+        # (ATTACH 失敗、 COPY 失敗、 ディスクフル 等) を上書きしないよう、 掃除の失敗は
+        # stderr に記録するだけに留める。
         try:
             remove_delete_incomplete_copy_files(copy_file)
         except OSError as cleanup_error:
