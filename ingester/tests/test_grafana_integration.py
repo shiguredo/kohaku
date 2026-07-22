@@ -215,7 +215,7 @@ def init_grafana_plugin() -> None:
 
     `make init` は repo root の Makefile で plugins/motherduck-duckdb-datasource を取得し、
     Grafana コンテナにマウントするときに必要となる。 副作用として repo root に plugins/ と
-    rustfs/ を作る破壊的初期化なので、 既に PLUGIN_DIR/plugin.json が存在する場合は
+    rustfs/ を作成するため、 既に PLUGIN_DIR/plugin.json が存在する場合は
     make init をスキップして repo state を汚さないようにする (空ディレクトリだけ残った
     途中失敗状態を検出するため plugin.json まで確認する)。 Grafana テスト専用の session
     スコープ fixture のため、 共有 conftest.py には置かず本モジュール内に置く。 テスト側
