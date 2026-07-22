@@ -72,7 +72,7 @@ fi
 
 # update_maximum_load は update でのみ参照されるため、 init には渡さず update の呼び出し
 # にのみ展開する。
-# テーブル作成および初期データの挿入
+# init でテーブル作成と初期取り込みを行う。
 if ! run_bg uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
                                      --s3_endpoint "${S3_ENDPOINT}" \
                                      --s3_access_key_id "${AWS_ACCESS_KEY_ID}" \
