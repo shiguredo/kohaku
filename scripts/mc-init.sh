@@ -57,9 +57,9 @@ done
 
 mc mb --ignore-existing "${S3_ALIAS}/${S3_BUCKET}"
 
-# mc ilm rule add は冪等ではなく、 同じパラメータで複数回実行するとルールが累積するため、
-# 既存ルールを一度全削除してから追加し直す。 初回実行でルールが無いケースを吸収するため
-# 失敗を許容する。 mc-init.sh は docker / docker-compose 経由で新規バケットにのみ
-# 使われる前提で、 既存運用バケットの ILM 設定を消す心配は無い。
+# mc ilm rule add は同じ設定のルールを重複追加するため、 既存ルールを一度全削除してから
+# 追加し直す。 初回実行でルールが無いケースを吸収するため失敗を許容する。 mc-init.sh は
+# Docker Compose 経由で新規バケットにのみ使われる前提で、 既存運用バケットの ILM 設定を
+# 消す心配は無い。
 mc ilm rule remove --all --force "${S3_ALIAS}/${S3_BUCKET}" 2>/dev/null || true
 mc ilm rule add --expire-days "${RETENTION_PERIOD}" "${S3_ALIAS}/${S3_BUCKET}"
