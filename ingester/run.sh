@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # 必須環境変数を事前検証する。compose.yml の env や systemd EnvironmentFile の編集忘れに
-# よる unbound variable をスクリプト冒頭で一度に特定できるようにする。
+# よる未定義変数エラーをスクリプト冒頭で一度に特定できるようにする。
 # 本スクリプトは docker / compose 経由で init + update ループ + delete を 1 プロセスで
 # 回すため、 全サブコマンドが参照する必須変数を冒頭でまとめて検証する。
 # scripts/run-ingester.sh は systemd 経由で 1 サブコマンドのみ実行する起動形態のため、
