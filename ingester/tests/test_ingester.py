@@ -76,7 +76,6 @@ def update_timestamp_for_rtc_stats(
     org_timestamp, connection_id, rtc_id, rtc_type = obj
 
     now = datetime.datetime.now(datetime.UTC)
-    # 指定された期間だけ過去に更新
     timestamp = now - datetime.timedelta(days=period)
 
     # 更新日時を更新するクエリを実行
