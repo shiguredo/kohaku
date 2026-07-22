@@ -91,11 +91,10 @@ if ! run_bg uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
   exit 1
 fi
 
-# 定期的にデータを更新。 update / delete の失敗は while ループが継続するため、 一時的な
-# 障害 (S3 の一時不通等) は自然回復する。 一方、 恒久的なエラー (壊れた DB 等) は自動
-# 復帰しないため、 運用者が stderr の連続失敗を検知して手動対応する前提。 init との
-# 非対称性 (init は exit、 update/delete は継続) は意図的で、 update/delete を毎回 exit
-# させると一時障害でコンテナが停止するデメリットが大きいと判断した。
+# 定期的にデータを更新する。 update / delete の失敗時も while ループを継続するため、
+# S3 の一時不通等は次回以降の実行で回復できる。 一方、 壊れた DB 等は自動復帰しないため、
+# 運用者が stderr の連続失敗を検知して手動対応する前提。 init は初期化に失敗した時点で
+# 継続できないため終了するが、 update/delete は一時障害からの復旧を待つためループを継続する。
 while :;
 do
   if ! run_bg uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
