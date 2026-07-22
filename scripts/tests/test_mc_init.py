@@ -235,7 +235,7 @@ def test_mc_init_rejects_invalid_retry_interval(invalid_value: str) -> None:
 
 
 def test_mc_init_accepts_zero_retry_interval() -> None:
-    """MC_INIT_RETRY_INTERVAL=0 (即時リトライ) がバリデーションで弾かれず、 リトライループへ進むことを確認する。
+    """MC_INIT_RETRY_INTERVAL=0 を有効な値として扱うことを確認する。
 
     bash イメージには mc コマンドが無いため接続ループは必ず失敗するが、 その失敗は
     'must be a non-negative integer' ではなく後段の Timed out 経路で起きる。 これにより
