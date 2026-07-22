@@ -36,9 +36,17 @@ else
   endpoint_scheme=http
 fi
 
+# mc alias set の第 3・ 4 引数として access key / secret を渡すと `ps -ef` や
+# /proc/<pid>/cmdline から観測できるため、 mc が読む MC_HOST_<alias> 環境変数
+# 経由で credentials を持たせて argv 露出を避ける。 access key / secret に
+# `:` `@` `/` 等 URL の予約文字を含む場合はここで URL encode が必要になるが、
+# rustfs 既定のキー体系はケース外のためそのまま埋め込む。
+MC_HOST_KEY="MC_HOST_${S3_ALIAS}"
+MC_HOST_VAL="${endpoint_scheme}://${AWS_ACCESS_KEY_ID}:${AWS_SECRET_ACCESS_KEY}@${S3_ENDPOINT}"
+export "${MC_HOST_KEY}=${MC_HOST_VAL}"
+
 i=0
-while ! mc alias set "${S3_ALIAS}" "${endpoint_scheme}://${S3_ENDPOINT}" "${AWS_ACCESS_KEY_ID}" "${AWS_SECRET_ACCESS_KEY}" >/dev/null 2>&1 \
-   || ! mc ls "${S3_ALIAS}" >/dev/null 2>&1; do
+while ! mc ls "${S3_ALIAS}" >/dev/null 2>&1; do
   i=$((i + 1))
   if [ "${i}" -ge "${MC_INIT_MAX_RETRIES}" ]; then
     echo "Timed out waiting for storage endpoint: ${endpoint_scheme}://${S3_ENDPOINT}" >&2
