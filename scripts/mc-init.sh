@@ -6,7 +6,7 @@ MC_INIT_MAX_RETRIES="${MC_INIT_MAX_RETRIES:-5}"
 MC_INIT_RETRY_INTERVAL="${MC_INIT_RETRY_INTERVAL:-2}"
 
 # while ループの [ "${i}" -ge "${MC_INIT_MAX_RETRIES}" ] が非数値で失敗するのを防ぐ。
-# MAX_RETRIES は 1 以上 (1 だと初回失敗で即タイムアウトする) を要求する。
+# MC_INIT_MAX_RETRIES は 1 以上 (1 だと初回失敗で即タイムアウトする) を要求する。
 case "${MC_INIT_MAX_RETRIES}" in
   *[!0-9]*|0)
     echo "MC_INIT_MAX_RETRIES must be a positive integer: ${MC_INIT_MAX_RETRIES}" >&2
