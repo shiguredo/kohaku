@@ -17,7 +17,7 @@ from testcontainers.core.exceptions import ContainerStartException
 BASH_IMAGE = "bash:5"
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "run-ingester.sh"
 
-# init / update が要求する必須環境変数 (run-ingester.sh の :? 順)
+# init / update が要求する必須環境変数 (run-ingester.sh の必須変数チェック順)
 S3_REQUIRED_VARS = (
     "DUCKDB_DB_PATH",
     "S3_ENDPOINT",
