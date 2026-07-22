@@ -527,9 +527,10 @@ def test_initialize_log_table_rejects_silent_gap_state(tmp_path):
     initialize_log_table が CliUsageError を送出することを確認する。
 
     手動 DELETE FROM s3_objects や s3_objects テーブル drop 後の init 再実行で発生する
-    silent gap 前駆状態 (create_log_table がスキップされる一方で update_s3_objects_table
-    がカーソルを進めて過去オブジェクトが埋没する) をコード側で拒否する invariant を担保
-    する。 client には None を渡してもガードが早期に走るため list_objects まで到達しない。
+    「テーブルはあるがカーソル行が無い状態」 をコード側で拒否することを担保する。
+    この状態で処理を続けると、 create_log_table がスキップされる一方でカーソルだけが進み、
+    過去オブジェクトが取り込まれない。 client には None を渡してもガードが早期に走るため
+    list_objects まで到達しない。
     到達してしまうリグレッションは AttributeError で顕在化する。
     """
     db_path = tmp_path / "silent_gap.db"
