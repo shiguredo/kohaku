@@ -253,7 +253,7 @@ def test_mc_init_accepts_zero_retry_interval() -> None:
     assert "Timed out waiting for storage endpoint" in stderr, (
         f"バリデーション通過後にリトライループへ進んだ形跡がありません: {stderr}"
     )
-    # mc コマンドが見つからず接続失敗 → MAX_RETRIES 到達で exit 1 になる
+    # mc コマンドが見つからないため接続に失敗し、最大リトライ回数に達して exit 1 になる
     assert status_code != 0, (
         f"mc コマンド未インストール環境で正常終了してはいけません: {stderr}"
     )
