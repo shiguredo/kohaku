@@ -530,9 +530,9 @@ def test_update_skips_broken_object_and_continues_other_targets(
         result = con.fetchone()
         assert result is not None
         assert result[0] == initial_webhook_count
-        # insert_log_from_s3 の tx rollback が効いていれば、 壊れオブジェクトの cursor 更新は
-        # commit されず、 session_webhook カーソルは init 時点のまま据置きになる。 tx を抜いて
-        # MERGE だけ commit する回帰実装だとここで cursor が更新済みになって assert が落ちる。
+        # insert_log_from_s3 の rollback が効いていれば、 壊れたオブジェクトのカーソル更新は
+        # 残らず、 session_webhook カーソルは init 時点のままになる。 カーソル更新だけが
+        # 残ってしまう実装に戻ると、 ここで更新済みカーソルが検出される。
         con.execute(
             "SELECT last_modified, object_name FROM s3_objects WHERE type='session_webhook'"
         )
