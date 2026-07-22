@@ -428,7 +428,7 @@ def escape_sql_string_literal(path_literal):
     for i, c in enumerate(path_literal):
         if ord(c) < 0x20 or ord(c) == 0x7F:
             # path_literal[:40]!r はログが肥大化しないように先頭の 40 文字に絞る。 また
-            # repr で制御文字を `\xNN` 形式に視覚化し、 ログ表示や grep を壊さないようにする。
+            # repr で制御文字を `\xNN` 形式に視覚化し、 ログ表示や検索への影響を避ける。
             raise CliUsageError(
                 "SQL string literal must not contain control characters: "
                 f"U+{ord(c):04X} at index {i} in {path_literal[:40]!r}"
