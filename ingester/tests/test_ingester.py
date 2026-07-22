@@ -239,7 +239,7 @@ def test_init(s3_client, rustfs_endpoint, tmp_path):
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
         assert result is not None
-        # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
+        # RustFS のログオブジェクトが DuckDB に 1 件以上取り込まれていることを確認する
         assert result[0] > 0
         # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
         assert result[0] == len(objects)
@@ -284,7 +284,7 @@ def test_re_init(s3_client, rustfs_endpoint, tmp_path):
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
         assert result is not None
-        # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
+        # RustFS のログオブジェクトが DuckDB に 1 件以上取り込まれていることを確認する
         assert result[0] > 0
         # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
         assert result[0] == len(objects)
@@ -348,7 +348,7 @@ def test_file_count_limit_for_init(s3_client, rustfs_endpoint, tmp_path):
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
         assert result is not None
-        # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
+        # RustFS のログオブジェクトが DuckDB に 1 件以上取り込まれていることを確認する
         assert result[0] > 0
         # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数より少ないことを確認する
         assert result[0] < len(objects)
@@ -387,7 +387,7 @@ def test_update(s3_client, rustfs_endpoint, tmp_path):
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
         assert result is not None
-        # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
+        # RustFS のログオブジェクトが DuckDB に 1 件以上取り込まれていることを確認する
         assert result[0] > 0
         # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
         assert result[0] == len(objects)
@@ -632,7 +632,7 @@ def test_all_delete(s3_client, rustfs_endpoint, tmp_path):
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
         assert result is not None
-        # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
+        # RustFS のログオブジェクトが DuckDB に 1 件以上取り込まれていることを確認する
         assert result[0] > 0
         # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
         assert result[0] == len(objects)
@@ -676,7 +676,7 @@ def test_delete(s3_client, rustfs_endpoint, tmp_path):
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
         assert result is not None
-        # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
+        # RustFS のログオブジェクトが DuckDB に 1 件以上取り込まれていることを確認する
         assert result[0] > 0
         # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
         assert result[0] == len(objects)
@@ -725,7 +725,7 @@ def test_delete_within_retention_period(s3_client, rustfs_endpoint, tmp_path):
         duckdb_connection.execute("SELECT COUNT(*) FROM rtc_stats")
         result = duckdb_connection.fetchone()
         assert result is not None
-        # RustFS にオブジェクトがアップロードできずに、RustFS と DuckDB のデータ数が 0 ではないことを確認する
+        # RustFS のログオブジェクトが DuckDB に 1 件以上取り込まれていることを確認する
         assert result[0] > 0
         # 取得したデータ数が、RustFS にアップロードしたオブジェクトの数と一致することを確認する
         assert result[0] == len(objects)
