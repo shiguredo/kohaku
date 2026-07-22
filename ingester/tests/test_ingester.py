@@ -566,10 +566,10 @@ def test_init_skips_broken_object_and_continues_other_targets(
     broken_payload,
     expected_exc_name,
 ):
-    """init 中に session_webhook の壊れたオブジェクトが混じっても init 全体が中断せず、他 target (rtc_stats) は取り込まれることを確認する。
+    """壊れた session_webhook オブジェクトがあっても init が完走することを確認する。
 
-    sync_log_for_init の (InvalidInputException, IOException) catch の仕様 (壊れた target で
-    init 全体を止めず、 他 target への波及を防ぐ) を、 catch 対象の両例外型で担保する。
+    sync_log_for_init が捕捉する両例外型で、 壊れた target があっても他の target への
+    波及を防ぎ、 rtc_stats は取り込まれることを確認する。
     test_update_skips_broken_object_and_continues_other_targets と同構造の init 版で、
     sync_log_for_update 側だけカバーされていた挙動の非対称を解消する。
     - broken-gzip: gzip として復号できない生バイト列を投入すると DuckDB は IOException を送出する。
