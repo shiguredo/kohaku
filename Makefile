@@ -48,7 +48,7 @@ download:
 	rm motherduck-duckdb-datasource-${GRAFANA_DUCKDB_DATASOURCE_VERSION}.zip
 
 
-# 監視用設定をまとめて作成する
+# Fluent Bit、Grafana、Kohaku 保存領域のホスト側設定をまとめて反映する
 setup: setup-fluent-bit setup-grafana setup-kohaku
 
 define ENV_FLUENT_BIT
