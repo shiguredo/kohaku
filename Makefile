@@ -117,7 +117,7 @@ fluent-bit-yml:
 	echo "$$ENV_FLUENT_BIT" | tee fluent-bit.yml 1>/dev/null
 	cat ./fluent-bit/fluent-bit.yml.s3 | tee -a fluent-bit.yml 1>/dev/null
 
-# rustfs 向けの fluent-bit を設定する
+# RustFS 向け Fluent Bit のホスト側設定と systemd drop-in を反映する
 setup-fluent-bit-for-rustfs: fluent-bit-yml-for-rustfs
 	mkdir -p /etc/fluent-bit
 	cp ./fluent-bit.yml /etc/fluent-bit/
