@@ -31,8 +31,7 @@ clean:
 	rm -rf ./rustfs/data ./rustfs/logs
 	-docker network rm -f kohaku-network
 
-# 独自でビルドが必要になったとき用
-# init 配下をビルドしてプラグインを配置する
+# DuckDB データソースプラグインを取得し、init 配下のビルド成果物を配置する
 build: download
 	make -C init
 	mkdir -p plugins
