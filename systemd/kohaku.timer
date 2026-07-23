@@ -1,5 +1,5 @@
 [Unit]
-# タイマーの説明
+# Kohaku の ingester 更新タイマー
 Description=Update DB
 
 [Timer]

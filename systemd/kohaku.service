@@ -1,5 +1,5 @@
 [Unit]
-# サービスの説明
+# Kohaku の ingester 更新サービス
 Description=WebRTC Stats Analyzer Kohaku
 # network-online.target を起動対象に含める
 Wants=network-online.target
