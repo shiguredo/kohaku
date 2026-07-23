@@ -284,14 +284,18 @@ def move_broken_db(db_path):
     """DB ファイルが破損していると判断した場合に .broken.<timestamp> へリネームする。
 
     タイムスタンプはマイクロ秒まで含めて crash loop による連続退避時の衝突を抑える。
+    wal → 本体 の順で退避する。 途中で失敗しても本体が元位置に残るため、 次回起動時に
+    is_db_broken が破損を再検出して同関数を呼び直せる。 本体は退避先に移ったのに wal
+    だけ元位置に取り残される状態を構造的に作らずに済む。
     """
     timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%d%H%M%S%f")
     broken_db_path = f"{db_path}.broken.{timestamp}"
-    shutil.move(db_path, broken_db_path)
 
     wal_path = f"{db_path}.wal"
     if os.path.exists(wal_path):
         shutil.move(wal_path, f"{broken_db_path}.wal")
+
+    shutil.move(db_path, broken_db_path)
 
     return broken_db_path
 
