@@ -139,7 +139,7 @@ ifeq ($(filter init clean,$(MAKECMDGOALS)),)
 include .env
 endif
 
-# Grafana のプロビジョニング設定を反映する
+# Grafana の起動設定とプロビジョニング設定を反映する
 setup-grafana:
 	grep GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS /etc/default/grafana-server >/dev/null 2>&1 || echo 'GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=motherduck-duckdb-datasource' | tee -a /etc/default/grafana-server
 	grep GF_PATHS_DATA /etc/default/grafana-server >/dev/null 2>&1 || echo 'GF_PATHS_DATA=/var/lib/grafana' | tee -a /etc/default/grafana-server
