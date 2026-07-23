@@ -53,7 +53,7 @@ COPY --chown=kohaku:root pyproject.toml uv.lock /ingester/
 USER kohaku
 RUN uv sync --frozen --no-install-project
 
-# 残り (src / DUCKDB_COLUMNS / run.sh / tests 等) を COPY する。 依存に変化がなければ
+# 残りのファイル (src、DUCKDB_COLUMNS、run.sh、tests など) を COPY する。 依存に変化がなければ
 # 以降のレイヤだけが差し替わる。
 USER root
 COPY --chown=kohaku:root . /ingester
