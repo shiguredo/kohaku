@@ -39,7 +39,7 @@ build: download
 
 GRAFANA_DUCKDB_DATASOURCE_VERSION ?= 0.4.0
 
-# Grafana 用の DuckDB データソースを取得する
+# Grafana 用 DuckDB データソースプラグインを取得する
 download:
 	rm -rf plugins/motherduck-duckdb-datasource
 	rm -f motherduck-duckdb-datasource-${GRAFANA_DUCKDB_DATASOURCE_VERSION}.zip
@@ -112,7 +112,7 @@ setup-fluent-bit: fluent-bit-yml
 	echo "$$SYSTEMD_FLUENT_BIT" | tee /etc/systemd/system/fluent-bit.service.d/override.conf 1>/dev/null
 	systemctl daemon-reload
 
-# fluent-bit の標準設定ファイルを生成する
+# Fluent Bit の標準設定ファイルを生成する
 fluent-bit-yml:
 	echo "$$ENV_FLUENT_BIT" | tee fluent-bit.yml 1>/dev/null
 	cat ./fluent-bit/fluent-bit.yml.s3 | tee -a fluent-bit.yml 1>/dev/null
@@ -129,7 +129,7 @@ setup-fluent-bit-for-rustfs: fluent-bit-yml-for-rustfs
 	echo "$$SYSTEMD_FLUENT_BIT" | tee /etc/systemd/system/fluent-bit.service.d/override.conf 1>/dev/null
 	systemctl daemon-reload
 
-# rustfs 向けの fluent-bit 設定ファイルを生成する
+# RustFS 向けの Fluent Bit 設定ファイルを生成する
 fluent-bit-yml-for-rustfs:
 	echo "$$ENV_FLUENT_BIT_FOR_RUSTFS" | tee fluent-bit.yml 1>/dev/null
 	cat ./fluent-bit/fluent-bit.yml.rustfs | tee -a fluent-bit.yml 1>/dev/null
