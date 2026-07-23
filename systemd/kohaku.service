@@ -1,7 +1,7 @@
 [Unit]
 # サービスの説明
 Description=WebRTC Stats Analyzer Kohaku
-# ネットワークがオンラインになるのを希望する
+# network-online.target を起動対象に含める
 Wants=network-online.target
 # ネットワークがオンラインになった後に起動する
 After=network-online.target
