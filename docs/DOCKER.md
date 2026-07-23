@@ -5,7 +5,7 @@ Fluent Bit, RustFS, ingester, Grafana を Docker コンテナ上に用意する�
 Sora の log ディレクトリを Fluent Bit の Docker コンテナ上にマウントして、
 Sora のログを Fluent Bit が RustFS の Docker コンテナへ送信します
 
-RustFS の Docker コンテナ上のログは Grafana の Docker コンテナを通して、グラフなどで確認します
+RustFS の Docker コンテナに保存したログは ingester が DuckDB に取り込み、Grafana の Docker コンテナからグラフなどで確認します
 
 ## この構成の位置付け
 
