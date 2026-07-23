@@ -34,7 +34,7 @@ RUN set -eux; \
     mv "uv-${UV_TARGET}/uv" /usr/local/bin/uv; \
     rm -rf "uv-${UV_TARGET}" "${UV_TARBALL}" "${UV_TARBALL}.sha256"
 
-# /var/lib/kohaku (DB / .readonly の実体) と /ingester ディレクトリ自体を kohaku:root で
+# DuckDB ファイルと読み取り専用コピーの配置先になる /var/lib/kohaku と /ingester を kohaku:root で
 # 用意する。 /ingester のディレクトリ chown は USER kohaku で uv sync が .venv を作れる
 # ようにするために必須 (COPY --chown はファイル単位の chown で、 ディレクトリ自体の
 # ownership は変えないため、 事前に kohaku:root にしておく必要がある)。 中身の再帰 chown
