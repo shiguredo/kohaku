@@ -11,7 +11,7 @@ After=network-online.target
 Type=oneshot
 # 実行ユーザー
 User=kohaku
-# 初回起動時の最大負荷値
+# 初回読み込み時の最大件数
 Environment=INITIAL_MAXIMUM_LOAD=100
 # update 1 回あたりの最大読み込み件数
 Environment=UPDATE_MAXIMUM_LOAD=100
