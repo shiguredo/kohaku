@@ -32,7 +32,7 @@ TimeoutStartSec=10min
 # ExecCondition 側で未定義を通過させて ExecStartPre で失敗判定する構成に分ける。
 ExecCondition=/bin/sh -c '[ -z "${DUCKDB_DB_PATH:-}" ] || test -f "${DUCKDB_DB_PATH}"'
 ExecStartPre=/bin/sh -c ': "${DUCKDB_DB_PATH:?DUCKDB_DB_PATH is required}"'
-# メインの ingester 更新処理を実行する
+# ingester の更新処理を実行する
 ExecStart=/bin/sh /opt/kohaku/scripts/run-ingester.sh update
 # 更新処理完了後に古いデータを削除する
 ExecStartPost=/bin/sh /opt/kohaku/scripts/run-ingester.sh delete
