@@ -47,7 +47,7 @@ ENV HOME=/var/lib/kohaku
 
 WORKDIR /ingester
 
-# 依存の解決は pyproject.toml と uv.lock だけを先に COPY してレイヤキャッシュを効かせる。
+# 依存の解決は pyproject.toml と uv.lock だけを先に COPY してレイヤーキャッシュを効かせる。
 # src 変更で依存インストールが再走しないようにする。
 COPY --chown=kohaku:root pyproject.toml uv.lock /ingester/
 USER kohaku
