@@ -1,6 +1,6 @@
 # Docker Compose による構築手順
 
-Fluent Bit, RustFS, Grafana を Docker コンテナ上に用意する手順です
+Fluent Bit, RustFS, ingester, Grafana を Docker コンテナ上に用意する手順です
 
 Sora の log ディレクトリを Fluent Bit の Docker コンテナ上にマウントして、
 Sora のログを Fluent Bit が RustFS の Docker コンテナへ送信します
