@@ -100,7 +100,7 @@ export ENV_FLUENT_BIT_FOR_RUSTFS
 export ENV_FLUENT_BIT_SYSTEMD
 export SYSTEMD_FLUENT_BIT
 
-# fluent-bit の設定を反映する
+# Fluent Bit のホスト側設定と systemd drop-in を反映する
 setup-fluent-bit: fluent-bit-yml
 	mkdir -p /etc/fluent-bit
 	cp ./fluent-bit.yml /etc/fluent-bit/
