@@ -17,7 +17,7 @@ https://grafana.com/docs/grafana/latest/setup-grafana/installation/ の手順で
 
 Grafana は 12.4.x 系をインストールしてください
 
-下記のコマンドでは、現時点の 12.4.x 系の最新版である 12.4.3 をインストールしています
+下記のコマンドでは、動作確認済みの 12.4.3 をインストールしています
 
 ```bash
 sudo apt-get install grafana=12.4.3
