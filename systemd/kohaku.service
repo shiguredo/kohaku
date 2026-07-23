@@ -23,7 +23,7 @@ Environment=UV_CACHE_DIR=/opt/kohaku/ingester/.cache
 Environment=HOME=/opt/kohaku
 # 作業ディレクトリ
 WorkingDirectory=/opt/kohaku/ingester
-# 起動タイムアウト
+# 起動処理のタイムアウト
 TimeoutStartSec=10min
 # DuckDB ファイルがない場合は init 前としてスキップする。 DUCKDB_DB_PATH 未定義
 # はユニット失敗として Restart=on-failure と journalctl に確実に残す。
