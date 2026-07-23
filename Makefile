@@ -3,7 +3,7 @@
 COMPOSE_RUSTFS := compose.yml
 COMPOSE_EXTERNAL_S3 := compose.external-s3.yml
 
-# 初期データを作成して権限を整える
+# プラグインを準備して RustFS の保存ディレクトリを作成する
 init: build
 	mkdir -p rustfs/data  rustfs/logs
 
