@@ -134,7 +134,7 @@ fluent-bit-yml-for-rustfs:
 	echo "$$ENV_FLUENT_BIT_FOR_RUSTFS" | tee fluent-bit.yml 1>/dev/null
 	cat ./fluent-bit/fluent-bit.yml.rustfs | tee -a fluent-bit.yml 1>/dev/null
 
-# init と clean だけは .env 不要にし、setup 系は従来どおり .env を必須にする
+# init と clean だけは .env 不要にし、setup-* ターゲットは従来どおり .env を必須にする
 ifeq ($(filter init clean,$(MAKECMDGOALS)),)
 include .env
 endif
