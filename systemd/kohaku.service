@@ -26,10 +26,10 @@ WorkingDirectory=/opt/kohaku/ingester
 # 起動タイムアウト
 TimeoutStartSec=10min
 # DuckDB ファイルがない場合は init 前としてスキップする。 DUCKDB_DB_PATH 未定義
-# は unit failure 化して Restart=on-failure と journalctl に確実に残したいが、
-# ExecCondition の中で :? を使うと condition skip 扱いになって失敗化しない。 かつ
-# ExecCondition は ExecStartPre より先に走るため、 ExecCondition 側で未定義を通過
-# させて ExecStartPre で失敗判定する構成に分ける。
+# はユニット失敗として Restart=on-failure と journalctl に確実に残す。
+# ExecCondition の中で :? を使うと条件未成立によるスキップ扱いになり、
+# ユニット失敗にならない。 ExecCondition は ExecStartPre より先に走るため、
+# ExecCondition 側で未定義を通過させて ExecStartPre で失敗判定する構成に分ける。
 ExecCondition=/bin/sh -c '[ -z "${DUCKDB_DB_PATH:-}" ] || test -f "${DUCKDB_DB_PATH}"'
 ExecStartPre=/bin/sh -c ': "${DUCKDB_DB_PATH:?DUCKDB_DB_PATH is required}"'
 # メインの ingester 更新処理を実行する
