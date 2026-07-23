@@ -23,6 +23,9 @@ def full_args(**overrides) -> dict[str, object]:
         "initial_maximum_load": 100,
         "update_maximum_load": 100,
     }
+    unknown = sorted(set(overrides) - set(defaults))
+    if unknown:
+        raise TypeError(f"未知の override キー: {unknown}")
     defaults.update(overrides)
     return defaults
 
