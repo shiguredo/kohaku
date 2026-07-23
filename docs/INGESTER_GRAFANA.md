@@ -1,10 +1,10 @@
 # Ingester + Grafana サーバーの構築手順
 
-Ubuntu 24.04 上で動作を確認しています
+Ubuntu 24.04 上で動作を確認しています。
 
 ## 概要
 
-このサーバーでは、RustFS または Amazon S3 からログを取得して DuckDB で管理し、Grafana でログを視覚化します
+このサーバーでは、RustFS または Amazon S3 からログを取得して DuckDB で管理し、Grafana でログを視覚化します。
 
 ## 前提条件
 
@@ -13,11 +13,11 @@ Ubuntu 24.04 上で動作を確認しています
 
 ## Grafana のインストール
 
-https://grafana.com/docs/grafana/latest/setup-grafana/installation/ の手順で Grafana をインストールします
+https://grafana.com/docs/grafana/latest/setup-grafana/installation/ の手順で Grafana をインストールします。
 
-Grafana は 12.4.x 系をインストールしてください
+Grafana は 12.4.x 系をインストールしてください。
 
-下記のコマンドでは、動作確認済みの 12.4.3 をインストールしています
+下記のコマンドでは、動作確認済みの 12.4.3 をインストールしています。
 
 ```bash
 sudo apt-get install grafana=12.4.3
@@ -25,7 +25,7 @@ sudo apt-get install grafana=12.4.3
 
 ## kohaku リポジトリをクローン
 
-任意のディレクトリで kohaku を取得します
+任意のディレクトリで kohaku を取得します。
 
 ```bash
 git clone https://github.com/shiguredo/kohaku.git kohaku
@@ -33,13 +33,13 @@ git clone https://github.com/shiguredo/kohaku.git kohaku
 
 ## 環境変数の準備
 
-.env ファイルに、Amazon S3 または RustFS へのアクセスに必要な設定をおこないます
+`.env` ファイルに、Amazon S3 または RustFS へのアクセスに必要な設定を行います。
 
-設定項目のテンプレートは .env.common.template に用意してありますので、これを利用して設定します
+設定項目のテンプレートは `.env.common.template` に用意してありますので、これを利用して設定します。
 
-テンプレート内の設定項目はコメントアウトされています。下記の Ingester + Grafana の設定に必要な項目のコメントアウトを外した上で、環境に合わせて値を設定してください
+テンプレート内の設定項目はコメントアウトされています。下記の Ingester + Grafana の設定に必要な項目のコメントアウトを外したうえで、環境に合わせて値を設定してください。
 
-Grafana の待受ポートは `.env` の `GRAFANA_HTTP_PORT` で設定します
+Grafana の待受ポートは `.env` の `GRAFANA_HTTP_PORT` で設定します。
 
 ```bash
 cd kohaku
@@ -47,7 +47,7 @@ cp .env.common.template .env
 vim .env
 ```
 
-Ingester + Grafana の設定に必要な項目は下記のとおりです
+Ingester + Grafana の設定に必要な項目は下記のとおりです。
 
 ### 共通の項目
 
@@ -73,9 +73,9 @@ Ingester + Grafana の設定に必要な項目は下記のとおりです
 
 ## Grafana プラグインの準備
 
-Grafana 上で DuckDB を Data Source として使用するための、 [Grafana DuckDB Data Source Plugin](https://github.com/motherduckdb/grafana-duckdb-datasource) を準備します
+Grafana 上で DuckDB をデータソースとして使用するための、[Grafana DuckDB Data Source Plugin](https://github.com/motherduckdb/grafana-duckdb-datasource) を準備します。
 
-プラグインの準備には docker コマンドを使用していますので、docker コマンドの実行ユーザを docker グループに追加してから、下記を実行してください
+プラグインの準備には Docker コマンドを使用します。Docker コマンドの実行ユーザーを docker グループに追加してから、下記を実行してください。
 
 ```bash
 make build
@@ -83,7 +83,7 @@ make build
 
 ## 準備したプラグインの設置
 
-準備したプラグインを Grafana の指定のディレクトリへコピーします
+準備したプラグインを Grafana の指定のディレクトリへコピーします。
 
 ```bash
 sudo cp -r ./plugins /var/lib/grafana/
@@ -92,46 +92,46 @@ sudo chown -R grafana:grafana /var/lib/grafana/plugins
 
 ## 環境変数で Grafana を設定
 
-下記のコマンドを実行して、Grafana を設定します
+下記のコマンドを実行して、Grafana を設定します。
 
-設定内容は .env の内容に従っておこないます
+設定内容は `.env` の内容に従って設定します。
 
-`GRAFANA_HTTP_PORT` を変更した場合は、その値が Grafana の待受ポートとして設定されます
+`GRAFANA_HTTP_PORT` を変更した場合は、その値が Grafana の待受ポートとして設定されます。
 
 ```bash
 sudo make setup-grafana
 ```
 
-## Kohaku ユーザの作成
+## Kohaku ユーザーの作成
 
-systemd で Kohaku を実行するためのユーザを用意します
+systemd で Kohaku を実行するためのユーザーを用意します。
 
 ```bash
 sudo useradd -M -s /sbin/nologin kohaku
 ```
 
-現在の Kohaku の設定を行なっているユーザが kohaku ユーザ権限で、設定を行えるように /etc/sudoers.d/kohaku を作成して、下記を設定します
+現在の Kohaku の設定を行っているユーザーが、Kohaku の実行ユーザーである `kohaku` として必要な操作を実行できるように、`/etc/sudoers.d/kohaku` を作成して下記を設定します。
 
 ```bash
 sudo EDITOR=vi visudo -f /etc/sudoers.d/kohaku
 ```
 
-実行ユーザ は現在 Kohaku の設定を行なっているユーザに置き換えてください
+`実行ユーザー` は現在 Kohaku の設定を行っているユーザー名に置き換えてください。
 
 ```/etc/sudoers.d/kohaku
-実行ユーザ ALL=(kohaku) NOPASSWD: ALL
+実行ユーザー ALL=(kohaku) NOPASSWD: ALL
 ```
 
 また、Kohaku と Grafana で DB ファイルを共有するため、
-grafana ユーザを 上記で追加した kohaku ユーザのグループに追加して、DB ファイルにアクセスできるようにします
+`grafana` ユーザーを上記で追加した `kohaku` ユーザーのグループに追加して、DB ファイルにアクセスできるようにします。
 
 ```bash
 sudo usermod -aG kohaku grafana
 ```
 
-## duckdb の DB ファイル保存等に使用する kohaku ディレクトリの作成
+## DuckDB の DB ファイル保存に使用する Kohaku ディレクトリの作成
 
-下記のコマンドで、/var/lib/kohaku にディレクトリを作成します
+下記のコマンドで、`/var/lib/kohaku` にディレクトリを作成します。
 
 ```bash
 sudo make setup-kohaku
@@ -139,11 +139,11 @@ sudo make setup-kohaku
 
 ## uv のインストール
 
-ingester を実行する環境を構築します
+ingester を実行する環境を構築します。
 
-ingester の実行環境は uv で管理することを想定しているため、uv をインストールします
+ingester の実行環境は uv で管理することを想定しているため、uv をインストールします。
 
-下記のコマンドは Astral 社が提供する公式インストールスクリプトを sudo で実行します。実行前にスクリプトの内容を確認することを推奨します
+下記のコマンドは Astral 社が提供する公式インストールスクリプトを sudo で実行します。実行前にスクリプトの内容を確認することを推奨します。
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sudo env UV_INSTALL_DIR="/opt/uv/bin" sh
@@ -151,9 +151,9 @@ curl -LsSf https://astral.sh/uv/install.sh | sudo env UV_INSTALL_DIR="/opt/uv/bi
 
 ## Kohaku 管理用の systemd の unit ファイルの準備
 
-Kohaku 管理用の systemd の unit ファイルを /etc/systemd/system/ 以下にコピーします
+Kohaku 管理用の systemd の unit ファイルを `/etc/systemd/system/` 以下にコピーします。
 
-本手順以外のユーザやパス等を使用する場合は、適宜 kohaku.service や kohaku.timer を変更して、systemctl で操作できるようにしてください
+本手順以外のユーザーやパスなどを使用する場合は、適宜 `kohaku.service` や `kohaku.timer` を変更して、systemctl で操作できるようにしてください。
 
 ```bash
 sudo cp systemd/kohaku.service /etc/systemd/system/
@@ -163,9 +163,9 @@ sudo systemctl daemon-reload
 
 ## Kohaku ディレクトリの設置
 
-ingester を systemd 経由で実行するための環境を /opt/kohaku に設置します
+ingester を systemd 経由で実行するための環境を `/opt/kohaku` に設置します。
 
-ingester の実行に必要な `ingester` および `scripts` ディレクトリと、これまでの手順で編集した `.env` ファイルのみを配置します
+ingester の実行に必要な `ingester` および `scripts` ディレクトリと、これまでの手順で編集した `.env` ファイルのみを配置します。
 
 ```bash
 # 作業用に clone 済みのリポジトリをローカルから clone する
@@ -189,11 +189,11 @@ sudo chown -R kohaku:kohaku /opt/kohaku
 
 ## テーブル作成および初期データの挿入
 
-DB へのテーブル作成および初期データの挿入は下記の手順でおこないます
+DB へのテーブル作成および初期データの挿入は下記の手順で行います。
 
-Fluent Bit から RustFS または Amazon S3 へログデータが送られてきてから下記を実行します
+Fluent Bit から RustFS または Amazon S3 へログデータが送られてきてから、下記を実行します。
 
-ログデータの保存状況は mc コマンド等で確認してください
+ログデータの保存状況は mc コマンドなどで確認してください。
 
 ```bash
 set -a
@@ -205,16 +205,16 @@ sudo -E -u kohaku HOME=/opt/kohaku /bin/sh /opt/kohaku/scripts/run-ingester.sh i
 popd
 ```
 
-## Grafana, Kohaku の起動
+## Grafana、Kohaku の起動
 
-systemctl を使用して起動します
+systemctl を使用して起動します。
 
 ```bash
 sudo systemctl start grafana-server
 sudo systemctl start kohaku.timer
 ```
 
-サーバー再起動時などに自動起動させる場合は下記を実行します
+サーバー再起動時などに自動起動させる場合は、下記を実行します。
 
 ```bash
 sudo systemctl enable grafana-server

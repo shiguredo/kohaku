@@ -1,10 +1,10 @@
 # Sora + Fluent Bit サーバーの構築手順
 
-Ubuntu 24.04 上で動作を確認しています
+Ubuntu 24.04 上で動作を確認しています。
 
 ## 概要
 
-このサーバーでは、Sora のログを Fluent Bit を使って RustFS または Amazon S3 へ転送します
+このサーバーでは、Sora のログを Fluent Bit を使って RustFS または Amazon S3 へ転送します。
 
 ## 前提条件
 
@@ -13,11 +13,11 @@ Ubuntu 24.04 上で動作を確認しています
 
 ## Fluent Bit のインストール
 
-https://docs.fluentbit.io/manual/installation/getting-started-with-fluent-bit の手順で、動作確認済みの Fluent Bit 5.0.x 系をインストールします
+https://docs.fluentbit.io/manual/installation/getting-started-with-fluent-bit の手順で、動作確認済みの Fluent Bit 5.0.x 系をインストールします。
 
 ## kohaku リポジトリをクローン
 
-任意のディレクトリで kohaku を取得します
+任意のディレクトリで kohaku を取得します。
 
 ```bash
 git clone https://github.com/shiguredo/kohaku.git kohaku
@@ -25,11 +25,11 @@ git clone https://github.com/shiguredo/kohaku.git kohaku
 
 ## 環境変数の準備
 
-.env ファイルに、Sora のログディレクトリのパスや RustFS または Amazon S3 へのアクセスに必要な設定をおこないます
+`.env` ファイルに、Sora のログディレクトリのパスや RustFS または Amazon S3 へのアクセスに必要な設定を行います。
 
-設定項目のテンプレートは .env.common.template に用意してありますので、これを利用して設定します
+設定項目のテンプレートは `.env.common.template` に用意してありますので、これを利用して設定します。
 
-テンプレート内の設定項目はコメントアウトされています。下記の Fluent Bit の設定に必要な項目のコメントアウトを外した上で、環境に合わせて値を設定してください
+テンプレート内の設定項目はコメントアウトされています。下記の Fluent Bit の設定に必要な項目のコメントアウトを外したうえで、環境に合わせて値を設定してください。
 
 ```bash
 cd kohaku
@@ -37,7 +37,7 @@ cp .env.common.template .env
 vim .env
 ```
 
-Fluent Bit の設定に必要な項目は下記のとおりです
+Fluent Bit の設定に必要な項目は下記のとおりです。
 
 ### 共通の項目
 
@@ -46,7 +46,7 @@ Fluent Bit の設定に必要な項目は下記のとおりです
 - `AWS_SECRET_ACCESS_KEY` - S3 互換ストレージのシークレットキー
 - `S3_BUCKET` - バケット名
 - `S3_PREFIX` - S3 プレフィックス
-- `S3_USE_SSL` - Storage へ接続する際の TLS の利用の有無（true または false）
+- `S3_USE_SSL` - S3 互換ストレージへ接続する際に TLS を利用するかどうか（`true` または `false`）
 
 ### Amazon S3 以外の S3 互換ストレージを利用する場合
 
@@ -58,9 +58,9 @@ Fluent Bit の設定に必要な項目は下記のとおりです
 
 ## Fluent Bit の設定
 
-下記のいずれかのコマンドで fluent-bit.yml を生成して、systemd の設定をおこないます
+下記のいずれかのコマンドで fluent-bit.yml を生成して、systemd の設定を行います。
 
-これらのコマンドは、Fluent Bit の systemd 起動時に使用する認証情報を `/etc/fluent-bit/kohaku.env` に保存します
+これらのコマンドは、Fluent Bit の systemd 起動時に使用する認証情報を `/etc/fluent-bit/kohaku.env` に保存します。
 
 - Amazon S3 の場合
 
@@ -76,7 +76,7 @@ sudo make setup-fluent-bit-for-rustfs
 
 ### 既に Fluent Bit を利用している場合
 
-他の用途で Fluent Bit を利用している場合は、下記のコマンドで生成される fluent-bit.yml を参考にして、適宜既存の設定に追加または変更してください
+他の用途で Fluent Bit を利用している場合は、下記のコマンドで生成される fluent-bit.yml を参考にして、適宜既存の設定に追加または変更してください。
 
 - Amazon S3 の場合
 
@@ -92,22 +92,22 @@ make fluent-bit-yml-for-rustfs
 
 ## Fluent Bit による収集対象のログファイル
 
-Kohaku は、.env ファイルの `SORA_LOG_PATH` に指定したディレクトリ以下のログファイルを対象にログを収集します
+Kohaku は、`.env` ファイルの `SORA_LOG_PATH` に指定したディレクトリ以下のログファイルを対象にログを収集します。
 
 - rtc_stats.jsonl
 - session_webhook.jsonl
 
-ログ収集時の Fluent Bit の設定は、上記の make で生成された fluent-bit.yml でご確認ください
+ログ収集時の Fluent Bit の設定は、上記の make で生成された fluent-bit.yml で確認してください。
 
 ## Fluent Bit の起動
 
-Fluent Bit を起動します
+Fluent Bit を起動します。
 
 ```bash
 sudo systemctl start fluent-bit
 ```
 
-サーバー再起動時などに自動起動させる場合は下記を実行します
+サーバー再起動時などに自動起動させる場合は、下記を実行します。
 
 ```bash
 sudo systemctl enable fluent-bit
