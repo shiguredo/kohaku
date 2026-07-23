@@ -11,5 +11,5 @@ OnUnitInactiveSec=5min
 Unit=kohaku.service
 
 [Install]
-# タイマーターゲットで有効化する
+# timers.target で有効化する
 WantedBy=timers.target

@@ -43,5 +43,5 @@ Restart=on-failure
 RestartSec=5min
 
 [Install]
-# マルチユーザーターゲットで有効化する
+# multi-user.target で有効化する
 WantedBy=multi-user.target
