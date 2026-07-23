@@ -66,7 +66,7 @@ services:
       context: ./ingester
       dockerfile: Dockerfile
     container_name: ingester
-    # PID 1 に Docker 組み込みの tini を据えて SIGTERM を子プロセスへ確実に届ける
+    # PID 1 に init プロセスを置き、SIGTERM の転送と終了した子プロセスの後始末を行う
     init: true
     # docker stop の SIGTERM から SIGKILL までの猶予を延ばし、 update / delete 中の DuckDB
     # クリーンアップに十分な時間を確保する
