@@ -106,7 +106,7 @@ setup-fluent-bit: fluent-bit-yml
 	cp ./fluent-bit.yml /etc/fluent-bit/
 	echo "$$ENV_FLUENT_BIT_SYSTEMD" | tee /etc/fluent-bit/kohaku.env 1>/dev/null
 	chmod 600 /etc/fluent-bit/kohaku.env
-	# fluent-bit の tail input が inode / offset を保存する db ファイルを永続化する
+	# Fluent Bit の tail input が inode / offset を保存する DB ファイルを永続化する
 	mkdir -p /var/lib/fluent-bit
 	mkdir -p /etc/systemd/system/fluent-bit.service.d
 	echo "$$SYSTEMD_FLUENT_BIT" | tee /etc/systemd/system/fluent-bit.service.d/override.conf 1>/dev/null
@@ -123,7 +123,7 @@ setup-fluent-bit-for-rustfs: fluent-bit-yml-for-rustfs
 	cp ./fluent-bit.yml /etc/fluent-bit/
 	echo "$$ENV_FLUENT_BIT_SYSTEMD" | tee /etc/fluent-bit/kohaku.env 1>/dev/null
 	chmod 600 /etc/fluent-bit/kohaku.env
-	# fluent-bit の tail input が inode / offset を保存する db ファイルを永続化する
+	# Fluent Bit の tail input が inode / offset を保存する DB ファイルを永続化する
 	mkdir -p /var/lib/fluent-bit
 	mkdir -p /etc/systemd/system/fluent-bit.service.d
 	echo "$$SYSTEMD_FLUENT_BIT" | tee /etc/systemd/system/fluent-bit.service.d/override.conf 1>/dev/null
