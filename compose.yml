@@ -32,7 +32,7 @@ services:
       - ${RUSTFS_BASE_DIR}/data:/data
       - ${RUSTFS_BASE_DIR}/logs:/logs
 
-  # rustfs の初期設定用コンテナ
+  # RustFS の初期設定用コンテナ
   mc:
     image: minio/mc:RELEASE.2025-07-21T05-28-08Z
     container_name: mc
@@ -53,7 +53,7 @@ services:
       - /bin/sh
       - /scripts/mc-init.sh
 
-  # motherduck-duckdb-datasource は./plugins に展開済みの想定
+  # motherduck-duckdb-datasource は ./plugins に展開済みの想定
   grafana:
     image: grafana/grafana:12.4.3-ubuntu
     container_name: grafana
@@ -88,7 +88,7 @@ services:
     container_name: ingester
     # PID 1 に init プロセスを置き、SIGTERM の転送と終了した子プロセスの後始末を行う
     init: true
-    # docker stop の SIGTERM から SIGKILL までの猶予を延ばし、 update / delete 中の
+    # docker stop の SIGTERM から SIGKILL までの猶予を延ばし、 update/delete 中の
     # DuckDB 書き込みや後処理に十分な時間を確保する
     stop_grace_period: 60s
     environment:
