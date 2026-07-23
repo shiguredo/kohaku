@@ -25,7 +25,7 @@ Environment=HOME=/opt/kohaku
 WorkingDirectory=/opt/kohaku/ingester
 # 起動タイムアウト
 TimeoutStartSec=10min
-# DuckDB ファイルが存在する場合のみ実行する (init 前は skip)。 DUCKDB_DB_PATH 未定義
+# DuckDB ファイルがない場合は init 前としてスキップする。 DUCKDB_DB_PATH 未定義
 # は unit failure 化して Restart=on-failure と journalctl に確実に残したいが、
 # ExecCondition の中で :? を使うと condition skip 扱いになって失敗化しない。 かつ
 # ExecCondition は ExecStartPre より先に走るため、 ExecCondition 側で未定義を通過
