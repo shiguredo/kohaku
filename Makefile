@@ -23,7 +23,7 @@ down:
 down-external-s3:
 	docker compose -f $(COMPOSE_EXTERNAL_S3) down --rmi local
 
-# 作業用ファイルとボリュームを削除する
+# 生成ファイル、Docker ボリューム、RustFS の保存データを削除する
 clean:
 	rm -rf ./plugins ./fluent-bit.yml
 	rm -rf init/dist
