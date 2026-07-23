@@ -902,3 +902,16 @@ def test_raise_if_db_broken_propagates_non_broken_errors(tmp_path):
     finally:
         # tmp ディレクトリのクリーンアップが失敗しないようにパーミッションを戻す
         os.chmod(db_path, 0o600)
+
+
+# full_args
+
+
+def test_full_args_rejects_unknown_override_key():
+    """未知の override キーを渡すと TypeError で拒否されることを確認する。
+
+    テスト側で属性名を typo したときに黙って通過することを防ぐガードが機能する
+    ことを担保する。
+    """
+    with pytest.raises(TypeError, match="未知の override キー"):
+        full_args(unknown_key="value")
