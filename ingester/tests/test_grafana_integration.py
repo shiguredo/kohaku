@@ -68,7 +68,7 @@ def request_json(
     except urllib.error.HTTPError as error:
         detail = error.read().decode("utf-8", errors="replace")
         raise RuntimeError(
-            f"{method} {url} failed with HTTP {error.code}: {detail}"
+            f"{method} {url} が HTTP {error.code} で失敗しました: {detail}"
         ) from error
     if not payload:
         return None
