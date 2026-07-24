@@ -7,7 +7,7 @@ ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETPLATFORM
 
-RUN apt -y update && apt -y install git curl g++
+RUN apt-get -y update && apt-get -y install git curl g++
 
 # go tarball を dl.google.com から取得し、 同時に配布されている .sha256 (プレーン
 # テキストの 64 桁 hex) と突き合わせて完全性を確認する。 go.dev/dl/ の .sha256 は
