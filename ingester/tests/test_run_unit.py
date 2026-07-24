@@ -904,6 +904,27 @@ def test_raise_if_db_broken_propagates_non_broken_errors(tmp_path):
         os.chmod(db_path, 0o600)
 
 
+# is_db_broken
+
+
+def test_is_db_broken_does_not_replay_wal_for_healthy_db_with_broken_wal(tmp_path):
+    """正常 DB に破損 WAL が併存しても False を返すことを確認する。
+
+    is_db_broken は read_only=True で開くため WAL 再生を行わない。 これにより
+    「DB 本体は正常だが WAL が破損」 のケースを破損扱いにしない (WAL 再生の副作用で
+    破損状態を書き換えないための設計意図)。 read_only=False へ regression すると、
+    duckdb は WAL 再生を試みて IOException を送出し、 is_db_broken が True を
+    返すか例外を送出するため、 本テストは失敗する。
+    """
+    db_path = tmp_path / "healthy_with_broken_wal.db"
+    wal_path = tmp_path / "healthy_with_broken_wal.db.wal"
+    with duckdb.connect(str(db_path)) as con:
+        con.execute("CREATE TABLE t(id INTEGER)")
+    wal_path.write_bytes(b"broken wal data")
+
+    assert run.is_db_broken(str(db_path)) is False
+
+
 # full_args
 
 
