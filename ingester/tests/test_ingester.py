@@ -609,6 +609,17 @@ def test_init_skips_broken_object_and_continues_other_targets(
         assert result is not None
         assert result[0] == 0
 
+        # initialize_log_table の rollback が effective なら、 テーブルと同時にカーソル
+        # 登録も巻き戻り、 s3_objects の session_webhook 行は入らない。 「create_log_table
+        # 失敗 → update_s3_objects_table スキップ」 だけの実装に戻ると、 テーブル未作成
+        # なのに s3_objects にカーソル行だけ残る非対称状態が検出される
+        # (test_update_skips_broken_object_and_continues_other_targets の
+        # initial_webhook_cursor 検証と対称)。
+        con.execute("SELECT COUNT(*) FROM s3_objects WHERE type='session_webhook'")
+        result = con.fetchone()
+        assert result is not None
+        assert result[0] == 0
+
     # stderr に catch 対象例外型 (session_webhook) が出力されていることを確認する。
     captured = capsys.readouterr()
     assert f"{expected_exc_name} (session_webhook):" in captured.err
