@@ -80,8 +80,7 @@ def load_columns(targets=LOG_TARGETS, columns_dir=COLUMNS_DIR):
     handle_cli_error では拾わずトレースバック付きで上位に伝播させる (「Run 'init'」
     のようなユーザー向け 1 行メッセージにはしない)。
 
-    引数 targets / columns_dir はテスト時に tmp_path や 1 target 分の異常経路を検証するための
-    差し替え口で、 本番コードは引数なしで呼び LOG_TARGETS / COLUMNS_DIR のデフォルトを利用する。
+    引数はデフォルトで LOG_TARGETS / COLUMNS_DIR を利用する。
     """
     duckdb_columns = {}
     for target in targets:
