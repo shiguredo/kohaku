@@ -10,7 +10,7 @@ import pytest
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.network import Network
 
-from .conftest import ACCESS_KEY, BUCKET, PREFIX, RUSTFS_IMAGE, RUSTFS_PORT, SECRET_KEY
+from .conftest import ACCESS_KEY, BUCKET, PREFIX, SECRET_KEY
 from .fluent_bit_helper import create_fluent_bit_config
 from .helpers import WaitTimeoutError, wait_until
 
@@ -155,8 +155,9 @@ def get_s3_cursor(
     ).fetchone()
 
 
-def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path):
+def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path, rustfs_network_ready):
     """fluent-bit 経由で RustFS に保存したログを init で取り込めることを確認する。"""
+    network, endpoint, client = rustfs_network_ready
     repo_root = Path(__file__).resolve().parents[2]
     ingester_dir = repo_root / "ingester"
     source_log_dir = ingester_dir / "tests" / "log"
@@ -168,62 +169,44 @@ def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path):
     create_fluent_bit_config(config_path, s3_bucket=BUCKET)
     duckdb_path = tmp_path / "duck.db"
 
-    # RustFS と fluent-bit を同一 Docker network 上で接続する
-    with Network() as network:
-        with (
-            DockerContainer(RUSTFS_IMAGE)
-            .with_env("RUSTFS_ACCESS_KEY", ACCESS_KEY)
-            .with_env("RUSTFS_SECRET_KEY", SECRET_KEY)
-            .with_network(network)
-            .with_network_aliases("rustfs")
-            .with_exposed_ports(RUSTFS_PORT) as rustfs
-        ):
-            endpoint = f"{rustfs.get_container_host_ip()}:{rustfs.get_exposed_port(RUSTFS_PORT)}"
-            client = minio.Minio(
-                endpoint,
-                access_key=ACCESS_KEY,
-                secret_key=SECRET_KEY,
-                secure=False,
-            )
+    run_fluent_bit_and_wait(
+        network,
+        log_dir,
+        config_path,
+        state_dir,
+        client,
+        {
+            f"{PREFIX}/rtc_stats/": 1,
+            f"{PREFIX}/session_webhook/": 1,
+        },
+    )
 
-            wait_until(lambda: client.list_buckets() is not None)
-            client.make_bucket(BUCKET)
+    run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
+    assert run.returncode == 0, f"init が失敗しました: {run.stderr}"
+    assert duckdb_path.exists()
+    # main の最終ステップで生成される Grafana 参照用 .readonly コピーの存在を確認する
+    assert (tmp_path / "duck.db.readonly").exists(), (
+        ".readonly が生成されていません (main の readonly 生成経路確認)"
+    )
 
-            run_fluent_bit_and_wait(
-                network,
-                log_dir,
-                config_path,
-                state_dir,
-                client,
-                {
-                    f"{PREFIX}/rtc_stats/": 1,
-                    f"{PREFIX}/session_webhook/": 1,
-                },
-            )
+    with duckdb.connect(str(duckdb_path)) as con:
+        rtc_stats_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
+        session_webhook_count = fetch_scalar(
+            con, "SELECT COUNT(*) FROM session_webhook"
+        )
+        s3_objects_count = fetch_scalar(con, "SELECT COUNT(*) FROM s3_objects")
 
-            run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
-            assert run.returncode == 0, f"init が失敗しました: {run.stderr}"
-            assert duckdb_path.exists()
-            # main の最終ステップで生成される Grafana 参照用 .readonly コピーの存在を確認する
-            assert (tmp_path / "duck.db.readonly").exists(), (
-                ".readonly が生成されていません (main の readonly 生成経路確認)"
-            )
-
-            with duckdb.connect(str(duckdb_path)) as con:
-                rtc_stats_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
-                session_webhook_count = fetch_scalar(
-                    con, "SELECT COUNT(*) FROM session_webhook"
-                )
-                s3_objects_count = fetch_scalar(con, "SELECT COUNT(*) FROM s3_objects")
-
-            assert rtc_stats_count > 0
-            assert session_webhook_count > 0
-            # LOG_TARGETS が 2 種類のため、カーソルテーブルも 2 行になる
-            assert s3_objects_count == 2
+    assert rtc_stats_count > 0
+    assert session_webhook_count > 0
+    # LOG_TARGETS が 2 種類のため、カーソルテーブルも 2 行になる
+    assert s3_objects_count == 2
 
 
-def test_runpy_init_skips_missing_target_without_invalid_input_exception(tmp_path):
+def test_runpy_init_skips_missing_target_without_invalid_input_exception(
+    tmp_path, rustfs_network_ready
+):
     """session_webhook が存在しない場合でも init が成功し、InvalidInputException を出力しないことを確認する。"""
+    network, endpoint, client = rustfs_network_ready
     repo_root = Path(__file__).resolve().parents[2]
     ingester_dir = repo_root / "ingester"
     source_log_dir = ingester_dir / "tests" / "log"
@@ -238,92 +221,73 @@ def test_runpy_init_skips_missing_target_without_invalid_input_exception(tmp_pat
     create_fluent_bit_config(config_path, s3_bucket=BUCKET)
     duckdb_path = tmp_path / "duck.db"
 
-    with Network() as network:
-        with (
-            DockerContainer(RUSTFS_IMAGE)
-            .with_env("RUSTFS_ACCESS_KEY", ACCESS_KEY)
-            .with_env("RUSTFS_SECRET_KEY", SECRET_KEY)
-            .with_network(network)
-            .with_network_aliases("rustfs")
-            .with_exposed_ports(RUSTFS_PORT) as rustfs
-        ):
-            endpoint = f"{rustfs.get_container_host_ip()}:{rustfs.get_exposed_port(RUSTFS_PORT)}"
-            client = minio.Minio(
-                endpoint,
-                access_key=ACCESS_KEY,
-                secret_key=SECRET_KEY,
-                secure=False,
-            )
+    run_fluent_bit_and_wait(
+        network,
+        log_dir,
+        config_path,
+        state_dir,
+        client,
+        {
+            # rtc_stats だけが RustFS に保存されることを待機条件にする
+            f"{PREFIX}/rtc_stats/": 1,
+        },
+    )
 
-            wait_until(lambda: client.list_buckets() is not None)
-            client.make_bucket(BUCKET)
+    run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
+    # 欠損ターゲットがあっても init 全体は成功すること
+    assert run.returncode == 0, f"init が失敗しました: {run.stderr}"
+    assert "InvalidInputException" not in run.stdout
+    assert "InvalidInputException" not in run.stderr
+    # main の最終ステップで生成される Grafana 参照用 .readonly コピーの存在を確認する
+    assert (tmp_path / "duck.db.readonly").exists(), (
+        ".readonly が生成されていません (main の readonly 生成経路確認)"
+    )
 
-            run_fluent_bit_and_wait(
-                network,
-                log_dir,
-                config_path,
-                state_dir,
-                client,
-                {
-                    # rtc_stats だけが RustFS に保存されることを待機条件にする
-                    f"{PREFIX}/rtc_stats/": 1,
-                },
-            )
+    with duckdb.connect(str(duckdb_path)) as con:
+        rtc_stats_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
+        session_webhook_table_count = fetch_scalar(
+            con,
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='session_webhook'",
+        )
+        s3_objects_count = fetch_scalar(con, "SELECT COUNT(*) FROM s3_objects")
 
-            run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
-            # 欠損ターゲットがあっても init 全体は成功すること
-            assert run.returncode == 0, f"init が失敗しました: {run.stderr}"
-            assert "InvalidInputException" not in run.stdout
-            assert "InvalidInputException" not in run.stderr
-            # main の最終ステップで生成される Grafana 参照用 .readonly コピーの存在を確認する
-            assert (tmp_path / "duck.db.readonly").exists(), (
-                ".readonly が生成されていません (main の readonly 生成経路確認)"
-            )
+    # rtc_stats は通常どおり取り込まれること
+    assert rtc_stats_count > 0
+    # 欠損している session_webhook テーブルは作成されないこと
+    assert session_webhook_table_count == 0
+    # rtc_stats のみ取り込まれるため、カーソルテーブルも 1 行になる
+    assert s3_objects_count == 1
 
-            with duckdb.connect(str(duckdb_path)) as con:
-                rtc_stats_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
-                session_webhook_table_count = fetch_scalar(
-                    con,
-                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='session_webhook'",
-                )
-                s3_objects_count = fetch_scalar(con, "SELECT COUNT(*) FROM s3_objects")
+    # 未作成ターゲット (session_webhook) が欠損していても update 全体が成功すること
+    update_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
+    assert update_run.returncode == 0, f"update が失敗しました: {update_run.stderr}"
+    # update 経路でも main の最終ステップで .readonly が生成されることを確認する
+    assert (tmp_path / "duck.db.readonly").exists(), (
+        ".readonly が生成されていません (main の readonly 生成経路確認)"
+    )
 
-            # rtc_stats は通常どおり取り込まれること
-            assert rtc_stats_count > 0
-            # 欠損している session_webhook テーブルは作成されないこと
-            assert session_webhook_table_count == 0
-            # rtc_stats のみ取り込まれるため、カーソルテーブルも 1 行になる
-            assert s3_objects_count == 1
+    with duckdb.connect(str(duckdb_path)) as con:
+        rtc_stats_count_after_update = fetch_scalar(
+            con, "SELECT COUNT(*) FROM rtc_stats"
+        )
+        session_webhook_table_count_after_update = fetch_scalar(
+            con,
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='session_webhook'",
+        )
+        s3_objects_count_after_update = fetch_scalar(
+            con, "SELECT COUNT(*) FROM s3_objects"
+        )
 
-            # 未作成ターゲット (session_webhook) が欠損していても update 全体が成功すること
-            update_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
-            assert update_run.returncode == 0, (
-                f"update が失敗しました: {update_run.stderr}"
-            )
-            # update 経路でも main の最終ステップで .readonly が生成されることを確認する
-            assert (tmp_path / "duck.db.readonly").exists(), (
-                ".readonly が生成されていません (main の readonly 生成経路確認)"
-            )
-
-            with duckdb.connect(str(duckdb_path)) as con:
-                rtc_stats_count_after_update = fetch_scalar(
-                    con, "SELECT COUNT(*) FROM rtc_stats"
-                )
-                session_webhook_table_count_after_update = fetch_scalar(
-                    con,
-                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='session_webhook'",
-                )
-                s3_objects_count_after_update = fetch_scalar(
-                    con, "SELECT COUNT(*) FROM s3_objects"
-                )
-
-            assert rtc_stats_count_after_update == rtc_stats_count
-            assert session_webhook_table_count_after_update == 0
-            assert s3_objects_count_after_update == 1
+    assert rtc_stats_count_after_update == rtc_stats_count
+    assert session_webhook_table_count_after_update == 0
+    assert s3_objects_count_after_update == 1
 
 
-def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
+def test_runpy_update_only_imports_new_objects_and_updates_cursor(
+    tmp_path, rustfs_network_ready
+):
     """update が差分のみを取り込み、カーソル更新後の再実行で重複しないことを確認する。"""
+    network, endpoint, client = rustfs_network_ready
     repo_root = Path(__file__).resolve().parents[2]
     ingester_dir = repo_root / "ingester"
     source_log_dir = ingester_dir / "tests" / "log"
@@ -335,133 +299,98 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(tmp_path):
     create_fluent_bit_config(config_path, s3_bucket=BUCKET)
     duckdb_path = tmp_path / "duck.db"
 
-    with Network() as network:
-        with (
-            DockerContainer(RUSTFS_IMAGE)
-            .with_env("RUSTFS_ACCESS_KEY", ACCESS_KEY)
-            .with_env("RUSTFS_SECRET_KEY", SECRET_KEY)
-            .with_network(network)
-            .with_network_aliases("rustfs")
-            .with_exposed_ports(RUSTFS_PORT) as rustfs
-        ):
-            endpoint = f"{rustfs.get_container_host_ip()}:{rustfs.get_exposed_port(RUSTFS_PORT)}"
-            client = minio.Minio(
-                endpoint,
-                access_key=ACCESS_KEY,
-                secret_key=SECRET_KEY,
-                secure=False,
-            )
-            wait_until(lambda: client.list_buckets() is not None)
-            client.make_bucket(BUCKET)
+    run_fluent_bit_and_wait(
+        network,
+        log_dir,
+        config_path,
+        state_dir,
+        client,
+        {
+            f"{PREFIX}/rtc_stats/": 1,
+            f"{PREFIX}/session_webhook/": 1,
+        },
+    )
 
-            run_fluent_bit_and_wait(
-                network,
-                log_dir,
-                config_path,
-                state_dir,
-                client,
-                {
-                    f"{PREFIX}/rtc_stats/": 1,
-                    f"{PREFIX}/session_webhook/": 1,
-                },
-            )
+    init_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
+    assert init_run.returncode == 0, f"init が失敗しました: {init_run.stderr}"
+    # main の最終ステップで生成される Grafana 参照用 .readonly コピーの存在を確認する
+    assert (tmp_path / "duck.db.readonly").exists(), (
+        ".readonly が生成されていません (main の readonly 生成経路確認)"
+    )
 
-            init_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
-            assert init_run.returncode == 0, f"init が失敗しました: {init_run.stderr}"
-            # main の最終ステップで生成される Grafana 参照用 .readonly コピーの存在を確認する
-            assert (tmp_path / "duck.db.readonly").exists(), (
-                ".readonly が生成されていません (main の readonly 生成経路確認)"
-            )
+    with duckdb.connect(str(duckdb_path)) as con:
+        before_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
+        before_cursor = get_s3_cursor(con, "rtc_stats")
 
-            with duckdb.connect(str(duckdb_path)) as con:
-                before_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
-                before_cursor = get_s3_cursor(con, "rtc_stats")
+    append_rtc_stats_log(log_dir)
+    rtc_stats_object_count_before = count_objects(client, f"{PREFIX}/rtc_stats/")
+    run_fluent_bit_and_wait(
+        network,
+        log_dir,
+        config_path,
+        state_dir,
+        client,
+        {f"{PREFIX}/rtc_stats/": rtc_stats_object_count_before + 1},
+    )
 
-            append_rtc_stats_log(log_dir)
-            rtc_stats_object_count_before = count_objects(
-                client, f"{PREFIX}/rtc_stats/"
-            )
-            run_fluent_bit_and_wait(
-                network,
-                log_dir,
-                config_path,
-                state_dir,
-                client,
-                {f"{PREFIX}/rtc_stats/": rtc_stats_object_count_before + 1},
-            )
+    update_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
+    assert update_run.returncode == 0, f"update が失敗しました: {update_run.stderr}"
+    # update 経路でも main の最終ステップで .readonly が生成されることを確認する
+    assert (tmp_path / "duck.db.readonly").exists(), (
+        ".readonly が生成されていません (main の readonly 生成経路確認)"
+    )
 
-            update_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
-            assert update_run.returncode == 0, (
-                f"update が失敗しました: {update_run.stderr}"
-            )
-            # update 経路でも main の最終ステップで .readonly が生成されることを確認する
-            assert (tmp_path / "duck.db.readonly").exists(), (
-                ".readonly が生成されていません (main の readonly 生成経路確認)"
-            )
+    with duckdb.connect(str(duckdb_path)) as con:
+        after_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
+        after_cursor = get_s3_cursor(con, "rtc_stats")
 
-            with duckdb.connect(str(duckdb_path)) as con:
-                after_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
-                after_cursor = get_s3_cursor(con, "rtc_stats")
+    assert after_count > before_count
+    assert after_cursor is not None
+    assert before_cursor is not None
+    # 新規オブジェクト取り込み後は cursor が進む
+    assert after_cursor != before_cursor
 
-            assert after_count > before_count
-            assert after_cursor is not None
-            assert before_cursor is not None
-            # 新規オブジェクト取り込み後は cursor が進む
-            assert after_cursor != before_cursor
+    # 新規ログなしの update では重複取り込みしないことを確認する
+    update_run_again = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
+    assert update_run_again.returncode == 0, (
+        f"update (再実行) が失敗しました: {update_run_again.stderr}"
+    )
 
-            # 新規ログなしの update では重複取り込みしないことを確認する
-            update_run_again = run_ingester_cli(
-                ingester_dir, duckdb_path, endpoint, "update"
-            )
-            assert update_run_again.returncode == 0, (
-                f"update (再実行) が失敗しました: {update_run_again.stderr}"
-            )
-
-            with duckdb.connect(str(duckdb_path)) as con:
-                final_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
-                final_cursor = get_s3_cursor(con, "rtc_stats")
-            assert final_count == after_count
-            # 新規ログがない update では cursor も進まない
-            assert final_cursor == after_cursor
+    with duckdb.connect(str(duckdb_path)) as con:
+        final_count = fetch_scalar(con, "SELECT COUNT(*) FROM rtc_stats")
+        final_cursor = get_s3_cursor(con, "rtc_stats")
+    assert final_count == after_count
+    # 新規ログがない update では cursor も進まない
+    assert final_cursor == after_cursor
 
 
-def test_runpy_init_fails_when_bucket_not_found(tmp_path):
+def test_runpy_init_fails_when_bucket_not_found(tmp_path, rustfs_network_stack):
     """S3 バケット未作成時に init が失敗し、エラーメッセージを返すことを確認する。"""
+    _, endpoint = rustfs_network_stack
     repo_root = Path(__file__).resolve().parents[2]
     ingester_dir = repo_root / "ingester"
     duckdb_path = tmp_path / "duck.db"
 
-    with Network() as network:
-        with (
-            DockerContainer(RUSTFS_IMAGE)
-            .with_env("RUSTFS_ACCESS_KEY", ACCESS_KEY)
-            .with_env("RUSTFS_SECRET_KEY", SECRET_KEY)
-            .with_network(network)
-            .with_network_aliases("rustfs")
-            .with_exposed_ports(RUSTFS_PORT) as rustfs
-        ):
-            endpoint = f"{rustfs.get_container_host_ip()}:{rustfs.get_exposed_port(RUSTFS_PORT)}"
+    wait_until(
+        lambda: (
+            minio.Minio(
+                endpoint,
+                access_key=ACCESS_KEY,
+                secret_key=SECRET_KEY,
+                secure=False,
+            ).list_buckets()
+            is not None
+        )
+    )
 
-            wait_until(
-                lambda: (
-                    minio.Minio(
-                        endpoint,
-                        access_key=ACCESS_KEY,
-                        secret_key=SECRET_KEY,
-                        secure=False,
-                    ).list_buckets()
-                    is not None
-                )
-            )
-
-            run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
-            # handle_cli_error → exit_with_stderr 経由で exit code 1 が返り、
-            # stderr に bucket 名込みのメッセージが出ることを担保する (DNS 解決失敗等の
-            # 別経路で偶発的に部分文字列が一致するケースを除外する)。
-            assert run.returncode == 1, (
-                f"NoSuchBucket 経路で exit code 1 を期待したが {run.returncode} でした: "
-                f"{run.stderr}"
-            )
-            assert f"S3 bucket not found: {BUCKET}" in run.stderr, (
-                f"stderr に 'S3 bucket not found: {BUCKET}' が含まれていません: {run.stderr}"
-            )
+    run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
+    # handle_cli_error → exit_with_stderr 経由で exit code 1 が返り、
+    # stderr に bucket 名込みのメッセージが出ることを担保する (DNS 解決失敗等の
+    # 別経路で偶発的に部分文字列が一致するケースを除外する)。
+    assert run.returncode == 1, (
+        f"NoSuchBucket 経路で exit code 1 を期待したが {run.returncode} でした: "
+        f"{run.stderr}"
+    )
+    assert f"S3 bucket not found: {BUCKET}" in run.stderr, (
+        f"stderr に 'S3 bucket not found: {BUCKET}' が含まれていません: {run.stderr}"
+    )
