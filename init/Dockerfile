@@ -9,11 +9,11 @@ ARG TARGETPLATFORM
 
 RUN apt-get -y update && apt-get -y install git curl g++
 
-# go tarball を dl.google.com から取得し、 同時に配布されている .sha256 (プレーン
-# テキストの 64 桁 hex) と突き合わせて完全性を確認する。 go.dev/dl/ の .sha256 は
-# ドキュメントページへの HTML リダイレクトを返すため、 tarball と .sha256 の両方が
-# 素の内容で配信される dl.google.com/go/ を用いる。 同一サーバから取得するため
-# 悪意ある差し替えを完全には防げないが、 転送破損や中間の書き換えは検出できる
+# go tarball を dl.google.com から取得し、同時に配布されている .sha256 (プレーン
+# テキストの 64 桁hex) と突き合わせて完全性を確認する。go.dev/dl/ の .sha256 は
+# ドキュメントページへの HTML リダイレクトを返すため、tarball と .sha256 の両方が
+# 素の内容で配信される dl.google.com/go/ を用いる。同一サーバから取得するため
+# 悪意ある差し替えを完全には防げないが、転送破損や中間の書き換えは検出できる
 # (ingester/Dockerfile の uv verify-before-extract と同じ設計方針)。
 RUN curl -fLO https://dl.google.com/go/go${GO_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz \
  && curl -fLO https://dl.google.com/go/go${GO_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz.sha256 \

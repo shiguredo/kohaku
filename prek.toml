@@ -34,7 +34,7 @@ hooks = [
 ]
 
 # ingester 配下の Python コードを ty で型チェックする
-# ty は preview 中の Astral 製型チェッカーで、公式 pre-commit hook が無いため local 定義
+# ty は preview 中の Astral 製型チェッカーで、公式 pre-commit hook が無いためlocal 定義
 [[repos]]
 repo = "local"
 hooks = [

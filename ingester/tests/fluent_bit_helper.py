@@ -2,7 +2,7 @@ from pathlib import Path
 
 from jinja2 import Template
 
-# fluent-bit からアクセスする S3 エンドポイント (同一 Docker network 上の rustfs ホスト名を解決)
+# fluent-bit からアクセスする S3 エンドポイント (同一Docker network 上の rustfs ホスト名を解決)
 FLUENT_BIT_S3_ENDPOINT = "http://rustfs:9000"
 # fluent-bit コンテナ内で監視対象とするログディレクトリパス
 FLUENT_BIT_SORA_LOG_PATH = "/log"

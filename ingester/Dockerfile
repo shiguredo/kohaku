@@ -35,8 +35,8 @@ RUN set -eux; \
     rm -rf "uv-${UV_TARGET}" "${UV_TARBALL}" "${UV_TARBALL}.sha256"
 
 # DuckDB ファイルと読み取り専用コピーの配置先になる /var/lib/kohaku と /ingester を kohaku:root で
-# 用意する。 USER kohaku で uv sync が .venv を作れるように、/ingester ディレクトリ
-# 自体の所有者を事前に kohaku:root にしておく必要がある。 COPY --chown はコピーする
+# 用意する。USER kohaku で uv sync が .venv を作れるように、/ingester ディレクトリ
+# 自体の所有者を事前に kohaku:root にしておく必要がある。COPY --chown はコピーする
 # 中身の所有者変更を行うため、コピー後の再帰 chown は不要。
 RUN mkdir -p /var/lib/kohaku/duckdb /ingester \
     && chown -R kohaku:root /var/lib/kohaku \
@@ -53,7 +53,7 @@ COPY --chown=kohaku:root pyproject.toml uv.lock /ingester/
 USER kohaku
 RUN uv sync --frozen --no-install-project
 
-# 残りのファイル (src、DUCKDB_COLUMNS、run.sh、tests など) を COPY する。 依存に変化がなければ
+# 残りのファイル (src、DUCKDB_COLUMNS、run.sh、tests など) を COPY する。依存に変化がなければ
 # 以降のレイヤだけが差し替わる。
 USER root
 COPY --chown=kohaku:root . /ingester

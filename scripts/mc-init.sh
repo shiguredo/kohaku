@@ -13,7 +13,7 @@ case "${MC_INIT_MAX_RETRIES}" in
     exit 1
     ;;
 esac
-# RETRY_INTERVAL は 0 (即時リトライ) を許容するが、 非数値は sleep が失敗するため拒否する。
+# RETRY_INTERVAL は 0 (即時リトライ) を許容するが、非数値は sleep が失敗するため拒否する。
 case "${MC_INIT_RETRY_INTERVAL}" in
   *[!0-9]*)
     echo "MC_INIT_RETRY_INTERVAL must be a non-negative integer: ${MC_INIT_RETRY_INTERVAL}" >&2
@@ -22,7 +22,7 @@ case "${MC_INIT_RETRY_INTERVAL}" in
 esac
 
 # mc コマンドで参照する必須環境変数を事前検証する。compose.yml の env や
-# EnvironmentFile の編集忘れによる未定義変数エラーを、 mc への接続を試みる前に
+# EnvironmentFile の編集忘れによる未定義変数エラーを、mc への接続を試みる前に
 # 一度に特定できるようにする。
 : "${S3_ENDPOINT:?S3_ENDPOINT is required}"
 : "${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID is required}"
@@ -37,8 +37,8 @@ else
 fi
 
 # mc alias set の第 3・ 4 引数として access key / secret を渡すと `ps -ef` や
-# /proc/<pid>/cmdline から観測できるため、 mc が読む MC_HOST_<alias> 環境変数
-# 経由で認証情報を渡してコマンドライン引数への露出を避ける。 access key / secret に
+# /proc/<pid>/cmdline から観測できるため、mc が読むMC_HOST_<alias> 環境変数
+# 経由で認証情報を渡してコマンドライン引数への露出を避ける。access key / secret に
 # `:` `@` `/` 等 URL の予約文字を含む場合はここで URL エンコードが必要になるが、
 # RustFS 既定のキー体系は対象外のためそのまま埋め込む。
 MC_HOST_KEY="MC_HOST_${S3_ALIAS}"
@@ -57,9 +57,9 @@ done
 
 mc mb --ignore-existing "${S3_ALIAS}/${S3_BUCKET}"
 
-# mc ilm rule add は同じ設定のルールを重複追加するため、 既存ルールを一度全削除してから
-# 追加し直す。 初回実行でルールが無いケースを吸収するため失敗を許容する。 mc-init.sh は
-# Docker Compose 経由で新規バケットにのみ使われる前提で、 既存運用バケットの ILM 設定を
+# mc ilm rule add は同じ設定のルールを重複追加するため、既存ルールを一度全削除してから
+# 追加し直す。初回実行でルールが無いケースを吸収するため失敗を許容する。mc-init.sh は
+# Docker Compose 経由で新規バケットにのみ使われる前提で、既存運用バケットの ILM 設定を
 # 消す心配は無い。
 mc ilm rule remove --all --force "${S3_ALIAS}/${S3_BUCKET}" 2>/dev/null || true
 mc ilm rule add --expire-days "${RETENTION_PERIOD}" "${S3_ALIAS}/${S3_BUCKET}"

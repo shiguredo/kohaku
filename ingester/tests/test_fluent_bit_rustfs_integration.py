@@ -198,7 +198,7 @@ def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path, rustfs_network_ready):
 
     assert rtc_stats_count > 0
     assert session_webhook_count > 0
-    # LOG_TARGETS が 2 種類のため、カーソルテーブルも 2 行になる
+    # LOG_TARGETS が 2 種類のため、カーソルテーブルも2 行になる
     assert s3_objects_count == 2
 
 
@@ -234,7 +234,7 @@ def test_runpy_init_skips_missing_target_without_invalid_input_exception(
     )
 
     run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "init")
-    # 欠損ターゲットがあっても init 全体は成功すること
+    # 欠損ターゲットがあってもinit 全体は成功すること
     assert run.returncode == 0, f"init が失敗しました: {run.stderr}"
     assert "InvalidInputException" not in run.stdout
     assert "InvalidInputException" not in run.stderr
@@ -255,13 +255,13 @@ def test_runpy_init_skips_missing_target_without_invalid_input_exception(
     assert rtc_stats_count > 0
     # 欠損している session_webhook テーブルは作成されないこと
     assert session_webhook_table_count == 0
-    # rtc_stats のみ取り込まれるため、カーソルテーブルも 1 行になる
+    # rtc_stats のみ取り込まれるため、カーソルテーブルも1 行になる
     assert s3_objects_count == 1
 
-    # 未作成ターゲット (session_webhook) が欠損していても update 全体が成功すること
+    # 未作成ターゲット (session_webhook) が欠損していてもupdate 全体が成功すること
     update_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
     assert update_run.returncode == 0, f"update が失敗しました: {update_run.stderr}"
-    # update 経路でも main の最終ステップで .readonly が生成されることを確認する
+    # update 経路でもmain の最終ステップで .readonly が生成されることを確認する
     assert (tmp_path / "duck.db.readonly").exists(), (
         ".readonly が生成されていません (main の readonly 生成経路確認)"
     )
@@ -335,7 +335,7 @@ def test_runpy_update_only_imports_new_objects_and_updates_cursor(
 
     update_run = run_ingester_cli(ingester_dir, duckdb_path, endpoint, "update")
     assert update_run.returncode == 0, f"update が失敗しました: {update_run.stderr}"
-    # update 経路でも main の最終ステップで .readonly が生成されることを確認する
+    # update 経路でもmain の最終ステップで .readonly が生成されることを確認する
     assert (tmp_path / "duck.db.readonly").exists(), (
         ".readonly が生成されていません (main の readonly 生成経路確認)"
     )

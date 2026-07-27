@@ -3,10 +3,10 @@ set -eu
 
 SUBCOMMAND="${1:-}"
 
-# 本スクリプトは systemd 経由で 1 サブコマンドのみ実行する起動形態のため、 サブコマンド
-# 共通の DB パスを冒頭で検証し、 init/update と delete で異なる必須変数は case 内で個別に
-# 検証する。 ingester/run.sh は Docker Compose 経由で全サブコマンドを 1 プロセスで回す
-# 起動形態のため、 検証する必須変数の組が異なる点に注意 (両ファイル変更時は対象サブコマンド
+# 本スクリプトは systemd 経由で 1 サブコマンドのみ実行する起動形態のため、サブコマンド
+# 共通の DB パスを冒頭で検証し、init/update と delete で異なる必須変数は case 内で個別に
+# 検証する。ingester/run.sh は Docker Compose 経由で全サブコマンドを 1 プロセスで回す
+# 起動形態のため、検証する必須変数の組が異なる点に注意 (両ファイル変更時は対象サブコマンド
 # を揃えること)。
 : "${DUCKDB_DB_PATH:?DUCKDB_DB_PATH is required}"
 
@@ -45,7 +45,7 @@ case "${SUBCOMMAND}" in
         fi
         ;;
     delete)
-        # delete は S3 接続を行わないため S3 オプションは不要。
+        # delete は S3 接続を行わないためS3 オプションは不要。
         : "${RETENTION_PERIOD:?RETENTION_PERIOD is required}"
         set -- \
             --db "${DUCKDB_DB_PATH}" \

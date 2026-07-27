@@ -182,8 +182,8 @@ def initialize_log_table(con, client, args, target):
         update_s3_objects_table(con, target, log_objects[0])
         con.commit()
     except Exception:
-        # rollback が disk full 等で失敗すると、 stderr では rollback 起源の例外が目立ち、
-        # 根本原因の追跡が難しくなる。 rollback 例外は吸収し、 事実だけを stderr に残して
+        # rollback が disk full 等で失敗すると、stderr では rollback 起源の例外が目立ち、
+        # 根本原因の追跡が難しくなる。rollback 例外は吸収し、事実だけを stderr に残して
         # 元例外を維持する (insert_log_from_s3 と同じ方針)。
         try:
             con.rollback()
@@ -196,12 +196,12 @@ def sync_log_for_init(con, client, args, target):
     try:
         initialize_log_table(con, client, args, target)
     except (duckdb.InvalidInputException, duckdb.IOException) as e:
-        # 対象 target で読み込みエラー (壊れた gzip、 read_json のスキーマ不一致等) が
-        # 出ても残りの LOG_TARGETS を止めないため、 stderr に記録して次の target へ進む。
-        # 発生要因の例: 壊れた gzip (IOException)、 read_json のスキーマ不一致
-        # (InvalidInputException)。 なお IOException は DB 書き込み側 (disk full、
-        # 権限剥奪、 WAL 書き込み失敗等) でも発生し得るが、 メッセージでは区別せず
-        # 同じ例外処理で捕捉する。 コマンド全体の exit code は失敗を示さないため、
+        # 対象 target で読み込みエラー (壊れた gzip、read_json のスキーマ不一致等) が
+        # 出ても残りの LOG_TARGETS を止めないため、stderr に記録して次の target へ進む。
+        # 発生要因の例: 壊れた gzip (IOException)、read_json のスキーマ不一致
+        # (InvalidInputException)。なお IOException は DB 書き込み側 (disk full、
+        # 権限剥奪、WAL 書き込み失敗等) でも発生し得るが、メッセージでは区別せず
+        # 同じ例外処理で捕捉する。コマンド全体の exit code は失敗を示さないため、
         # target ごとの stderr 出力を運用側で監視すること。
         print(f"{type(e).__name__} ({target}): {e}", file=sys.stderr)
 
@@ -227,12 +227,12 @@ def sync_log_for_update(con, client, args, target):
                 cursor_key,
             )
     except (duckdb.InvalidInputException, duckdb.IOException) as e:
-        # 読み込みエラーは stderr に記録して次の target へ進む。 IOException は
-        # 読み込み側だけでなく DB 書き込み側でも発生し得るが、 メッセージでは区別せず
-        # 同じ例外処理で捕捉する。 catch しないと単一の壊れたオブジェクトで update 全体が
-        # 中断し、 次サイクルもカーソル未進行のまま同じオブジェクトで止まり続ける。
-        # 該当 target のカーソルは進まないため、 壊れたオブジェクトが除去されるまで同じ
-        # target で再発するが、 他 target の更新は継続できる。
+        # 読み込みエラーは stderr に記録して次の target へ進む。IOException は
+        # 読み込み側だけでなく DB 書き込み側でも発生し得るが、メッセージでは区別せず
+        # 同じ例外処理で捕捉する。catch しないと単一の壊れたオブジェクトで update 全体が
+        # 中断し、次サイクルもカーソル未進行のまま同じオブジェクトで止まり続ける。
+        # 該当 target のカーソルは進まないため、壊れたオブジェクトが除去されるまで同じ
+        # target で再発するが、他 target の更新は継続できる。
         print(f"{type(e).__name__} ({target}): {e}", file=sys.stderr)
 
 
@@ -350,8 +350,8 @@ def has_s3_objects_table(db_path):
     if not os.path.exists(db_path):
         return False
 
-    # read_only=True で開くことで、 s3_objects テーブル存在確認だけの目的で mtime や
-    # WAL を進めないようにする。 これで init が何もせず終了する経路
+    # read_only=True で開くことで、s3_objects テーブル存在確認だけの目的で mtime や
+    # WAL を進めないようにする。これで init が何もせず終了する経路
     # (has_s3_objects_table True で早期 return) が readonly コピー再生成を毎回誘発することを防ぐ。
     with duckdb.connect(db_path, read_only=True) as con:
         if not table_exists(con, "s3_objects"):
@@ -430,8 +430,8 @@ def escape_sql_string_literal(path_literal):
     """
     for i, c in enumerate(path_literal):
         if ord(c) < 0x20 or ord(c) == 0x7F:
-            # path_literal[:40]!r はログが肥大化しないように先頭の 40 文字に絞る。 また
-            # repr で制御文字を `\xNN` 形式に視覚化し、 ログ表示や検索への影響を避ける。
+            # path_literal[:40]!r はログが肥大化しないように先頭の 40 文字に絞る。また
+            # repr で制御文字を `\xNN` 形式に視覚化し、ログ表示や検索への影響を避ける。
             raise CliUsageError(
                 "SQL string literal must not contain control characters: "
                 f"U+{ord(c):04X} at index {i} in {path_literal[:40]!r}"
@@ -452,10 +452,10 @@ def remove_delete_incomplete_copy_files(copy_file):
 
 def s3_setup(con, args):
     # INSTALL / LOAD icu は init / update の両経路で TIMESTAMPTZ を含むスキーマの read_json
-    # をタイムゾーン依存の挙動差から守るための予防的ロードで、 Grafana 側 datasource の
-    # initSql (INSTALL icu; LOAD icu) と挙動を揃える目的も持つ。 INSTALL は idempotent
-    # なので複数経路から呼んでも副作用は無い。 delete は S3 に触らない別経路 (in-memory
-    # DuckDB + ATTACH) のため本関数を通らず、 ICU も要求しないので LOAD しない。
+    # をタイムゾーン依存の挙動差から守るための予防的ロードで、Grafana 側 datasource の
+    # initSql (INSTALL icu; LOAD icu) と挙動を揃える目的も持つ。INSTALL は idempotent
+    # なので複数経路から呼んでも副作用は無い。delete は S3 に触らない別経路 (in-memory
+    # DuckDB + ATTACH) のため本関数を通らず、ICU も要求しないので LOAD しない。
     con.execute("INSTALL icu")
     con.execute("LOAD icu")
     con.execute("INSTALL httpfs")
@@ -572,12 +572,12 @@ def delete(args):
     copy_file = f"{args.db}.copy"
 
     # 前回 delete が SIGKILL や OOM 等で異常終了して残った .copy と .copy.wal を掃除してから
-    # 始める。 残っていると後段の ATTACH '{copy_file}' AS copy が既存ファイルを開いてしまい、
+    # 始める。残っていると後段の ATTACH '{copy_file}' AS copy が既存ファイルを開いてしまい、
     # COPY FROM DATABASE で古いスキーマと新本体データが混ざる可能性があるため。
     # ここでの掃除失敗は delete 全体の失敗として扱う (残骸を消せない状態で ATTACH に進むと
-    # 古いスキーマ混入の危険があるため)。 関数側は FileNotFoundError のみ吸収し、
-    # PermissionError 等は握らずに呼び出し元へ伝播することで、 掃除失敗を隠さず delete 全体
-    # を失敗させる。 同一 delete 内で失敗した場合の掃除は except 内で別途行う (そちらは
+    # 古いスキーマ混入の危険があるため)。関数側は FileNotFoundError のみ吸収し、
+    # PermissionError 等は握らずに呼び出し元へ伝播することで、掃除失敗を隠さず delete 全体
+    # を失敗させる。同一delete 内で失敗した場合の掃除は except 内で別途行う (そちらは
     # 元の例外を守るため掃除の例外を握りつぶす経路)。
     remove_delete_incomplete_copy_files(copy_file)
 
@@ -608,9 +608,9 @@ def delete(args):
         )
         shutil.move(copy_file, args.db)
     except Exception:
-        # 削除する前にデバッグ情報 (存在有無 + サイズ) を stderr に残す。 ディスクフルや
-        # パーミッションエラー等の原因究明の手がかりを消さないため。 stat 失敗で元例外を
-        # 上書きしないよう、 診断出力の失敗は無視する。 存在確認とサイズ取得を分けると、
+        # 削除する前にデバッグ情報 (存在有無 + サイズ) を stderr に残す。ディスクフルや
+        # パーミッションエラー等の原因究明の手がかりを消さないため。stat 失敗で元例外を
+        # 上書きしないよう、診断出力の失敗は無視する。存在確認とサイズ取得を分けると、
         # その間にファイル状態が変わって FileNotFoundError が発生する可能性がある。
         for path in (copy_file, f"{copy_file}.wal"):
             try:
@@ -621,9 +621,9 @@ def delete(args):
                 f"Cleaning up incomplete {path} (size={size} bytes)",
                 file=sys.stderr,
             )
-        # ATTACH / COPY / chmod / move のいずれかが失敗した後、 残った copy_file と
-        # copy_file.wal を削除する。 削除中に PermissionError 等が出ても、 元例外
-        # (ATTACH 失敗、 COPY 失敗、 ディスクフル 等) を上書きしないよう、 掃除の失敗は
+        # ATTACH / COPY / chmod / move のいずれかが失敗した後、残った copy_file と
+        # copy_file.wal を削除する。削除中に PermissionError 等が出ても、元例外
+        # (ATTACH 失敗、COPY 失敗、ディスクフル 等) を上書きしないよう、掃除の失敗は
         # stderr に記録するだけに留める。
         try:
             remove_delete_incomplete_copy_files(copy_file)
@@ -676,8 +676,8 @@ def insert_log_from_s3(
         update_s3_objects_table(con, table_name, target_log_objects[0])
         con.commit()
     except Exception:
-        # rollback が disk full 等で失敗すると元例外が __context__ に沈み、 stderr には
-        # rollback 起源の例外だけが出て根本原因の追跡が難しくなる。 rollback 例外は吸収し、
+        # rollback が disk full 等で失敗すると元例外が __context__ に沈み、stderr には
+        # rollback 起源の例外だけが出て根本原因の追跡が難しくなる。rollback 例外は吸収し、
         # 事実だけを stderr に残して元例外を維持する。
         try:
             con.rollback()
@@ -778,8 +778,8 @@ def create_readonly_copy(db_path):
     """
     tmp_file = f"{db_path}.tmp"
     # 前回の create_readonly_copy が copyfile と move の間で異常終了して .tmp が残っても、
-    # 直後の copyfile が上書きするため事前削除は不要。 delete の .copy は ATTACH で開かれ
-    # 古いスキーマが混ざる危険があるため掃除するが、 .tmp にはその経路がなく非対称でよい。
+    # 直後の copyfile が上書きするため事前削除は不要。delete の .copy は ATTACH で開かれ
+    # 古いスキーマが混ざる危険があるため掃除するが、.tmp にはその経路がなく非対称でよい。
     shutil.copyfile(db_path, tmp_file)
     # other の読み込み権限、書き込み権限は不要なので 0o660 に揃える
     os.chmod(tmp_file, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
@@ -804,13 +804,13 @@ def handle_cli_error(error, bucket):
         exit_with_stderr(str(error))
     else:
         # ハンドル対象外の例外 (ValueError 等の内部バグ) は意図的にトレースバック付きで
-        # 上位に伝播させる。 tb には handle_cli_error のフレームが 1 段乗るが、 原因究明時は
+        # 上位に伝播させる。tb には handle_cli_error のフレームが 1 段乗るが、原因究明時は
         # 元例外の chain を辿る前提で受け入れる。
         raise error
 
 
 def main():
-    # --help にデフォルト値を自動表示するため、 ArgumentDefaultsHelpFormatter を使う。
+    # --help にデフォルト値を自動表示するため、ArgumentDefaultsHelpFormatter を使う。
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
@@ -865,18 +865,18 @@ def main():
     except Exception as error:
         handle_cli_error(error, args.s3_bucket)
 
-    # args.func が例外を投げると handle_cli_error 経由で sys.exit するか、 未処理例外として
-    # 上位へ再送出されるため、 以下は成功時のみ実行される。 結果として .readonly は前回
+    # args.func が例外を投げると handle_cli_error 経由で sys.exit するか、未処理例外として
+    # 上位へ再送出されるため、以下は成功時のみ実行される。結果として .readonly は前回
     # 成功時点のまま保持される。
-    # readonly コピーは Grafana が参照する派生物で、 args.func 本体の DB 更新が終わってから
-    # 生成する。 shutil.copyfile / os.chmod / shutil.move で PermissionError (SELinux / 親
-    # ディレクトリ権限不足 等) や OSError (disk full 等) が上がっても、 args.func は既に成功
-    # して DB 本体への変更は反映済み、 かつ .readonly は前回成功時点のファイルがそのまま残る
-    # ため Grafana の参照経路は壊れない。 したがって readonly 生成失敗は 1 回分の反映遅延に
-    # 留まる副作用と捉え、 process としては exit code 0 を維持して stderr に 1 行残すだけに
-    # する (次回の update / delete で改めて更新される)。 args.func 失敗と同じ経路で
+    # readonly コピーは Grafana が参照する派生物で、args.func 本体の DB 更新が終わってから
+    # 生成する。shutil.copyfile / os.chmod / shutil.move で PermissionError (SELinux / 親
+    # ディレクトリ権限不足 等) や OSError (disk full 等) が上がっても、args.func は既に成功
+    # して DB 本体への変更は反映済み、かつ .readonly は前回成功時点のファイルがそのまま残る
+    # ためGrafana の参照経路は壊れない。したがって readonly 生成失敗は 1 回分の反映遅延に
+    # 留まる副作用と捉え、process としては exit code 0 を維持して stderr に 1 行残すだけに
+    # する (次回の update / delete で改めて更新される)。args.func 失敗と同じ経路で
     # handle_cli_error に乗せて exit 1 にすると「DB 更新は成功したのに exit 1」 という
-    # 誤解を招くため、 意図的に別経路にしている。
+    # 誤解を招くため、意図的に別経路にしている。
     try:
         if should_create_readonly(args.db, initial_stat):
             create_readonly_copy(args.db)

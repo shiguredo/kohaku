@@ -92,7 +92,7 @@ services:
     restart: unless-stopped
     # PID 1 に init プロセスを置き、SIGTERM の転送と終了した子プロセスの後始末を行う
     init: true
-    # docker stop の SIGTERM から SIGKILL までの猶予を延ばし、 update/delete 中の
+    # docker stop の SIGTERM から SIGKILL までの猶予を延ばし、update/delete 中の
     # DuckDB 書き込みや後処理に十分な時間を確保する
     stop_grace_period: 60s
     environment:

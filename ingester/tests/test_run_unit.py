@@ -48,7 +48,7 @@ def test_delete_returns_without_copy_when_no_rows_deleted(tmp_path):
     args = SimpleNamespace(**full_args(db=str(db_path), retention_period=1))
     run.delete(args)
 
-    # DB ファイルが shutil.move で置き換わっていないこと (inode 不変)、 COPY 用一時ファイルが
+    # DB ファイルが shutil.move で置き換わっていないこと (inode 不変)、COPY 用一時ファイルが
     # 作られていないことを確認する。
     assert db_path.exists()
     assert db_path.stat().st_ino == before_stat.st_ino
@@ -122,7 +122,7 @@ def test_delete_removes_stale_copy_files_before_start(tmp_path):
     """
     db_path = tmp_path / "delete_with_stale.db"
 
-    # retention_period=1 で削除対象となるよう、 2 日前の timestamp を持つ行を挿入する。
+    # retention_period=1 で削除対象となるよう、2 日前の timestamp を持つ行を挿入する。
     old_timestamp = datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=2)
     with duckdb.connect(str(db_path)) as con:
         con.execute("CREATE TABLE rtc_stats (timestamp TIMESTAMPTZ)")
@@ -139,7 +139,7 @@ def test_delete_removes_stale_copy_files_before_start(tmp_path):
     args = SimpleNamespace(**full_args(db=str(db_path), retention_period=1))
     run.delete(args)
 
-    # 残骸が掃除され、 delete が完走している (2 日前の行が削除されている) ことを確認する。
+    # 残骸が掃除され、delete が完走している (2 日前の行が削除されている) ことを確認する。
     with duckdb.connect(str(db_path)) as con:
         result = con.execute("SELECT COUNT(*) FROM rtc_stats").fetchone()
         assert result is not None
@@ -184,7 +184,7 @@ def test_should_create_readonly_returns_true_when_size_changed(tmp_path):
     db_path.write_bytes(b"payload")
     initial = db_path.stat()
     initial_stat = (initial.st_mtime_ns, initial.st_size)
-    # ファイル内容を書き換えてサイズを変えつつ、 mtime_ns は initial と同じ値に戻す。
+    # ファイル内容を書き換えてサイズを変えつつ、mtime_ns は initial と同じ値に戻す。
     db_path.write_bytes(b"payload-longer")
     os.utime(db_path, ns=(initial.st_mtime_ns, initial.st_mtime_ns))
     assert run.should_create_readonly(str(db_path), initial_stat) is True
@@ -195,7 +195,7 @@ def test_should_create_readonly_returns_false_when_db_missing_after_run(tmp_path
     missing = tmp_path / "missing.db"
     # initial_stat があっても現在ファイルが無ければ False。
     assert run.should_create_readonly(str(missing), (0, 0)) is False
-    # initial_stat が None (起動時から不在) でも False。
+    # initial_stat が None (起動時から不在) でもFalse。
     assert run.should_create_readonly(str(missing), None) is False
 
 
@@ -494,12 +494,12 @@ def test_init_skips_when_s3_objects_table_exists(tmp_path, capsys):
             "CREATE TABLE s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)"
         )
 
-    # init が触りうる args 属性をすべて埋めておく (full_args で集約)。 早期 return より
+    # init が触りうる args 属性をすべて埋めておく (full_args で集約)。早期 return より
     # 先に他属性が参照されるリグレッションが起きた場合に AttributeError で偽通過させず、
     # require_s3_credentials の CliUsageError か別の想定例外として現れるようにする。
     args = SimpleNamespace(**full_args(db=str(db_path)))
 
-    # 早期 return で DB ファイルが触られないことを担保するため、 前後で inode と内容を取る。
+    # 早期 return で DB ファイルが触られないことを担保するため、前後で inode と内容を取る。
     before_ino = db_path.stat().st_ino
     before_hash = hashlib.sha256(db_path.read_bytes()).hexdigest()
 
@@ -572,14 +572,14 @@ def test_update_rejects_missing_s3_credentials(tmp_path):
     順序が逆転して require_s3_credentials が先に走るリグレッションを直接検出する。
     """
     db_path = tmp_path / "initialized.db"
-    # init を経由せずに s3_objects テーブルだけ手で作る。 has_s3_objects_table が True になる。
+    # init を経由せずに s3_objects テーブルだけ手で作る。has_s3_objects_table が True になる。
     with duckdb.connect(str(db_path)) as con:
         con.execute(
             "CREATE TABLE s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)"
         )
 
-    # 認証情報を None で明示し (full_args のデフォルトが None)、 require_s3_credentials
-    # まで到達したら必ず CliUsageError で落ちる前提にする。 他属性も full_args で埋めて
+    # 認証情報を None で明示し (full_args のデフォルトが None)、require_s3_credentials
+    # まで到達したら必ず CliUsageError で落ちる前提にする。他属性もfull_args で埋めて
     # 「require_s3_credentials より先に他属性が参照されるリグレッション」 を AttributeError
     # で偽通過させない。
     args = SimpleNamespace(**full_args(db=str(db_path)))

@@ -270,8 +270,8 @@ def test_re_init(s3_client, rustfs_endpoint, tmp_path):
     init(args)
     assert os.path.exists(duckdb_filepath)
 
-    # 1 回目の init 後の状態を検証する。 検証用 connection を保持したまま 2 回目の
-    # init を呼ぶと、 init 内部の DB 接続挙動 (prepare_db_for_init や
+    # 1 回目の init 後の状態を検証する。検証用 connection を保持したまま 2 回目の
+    # init を呼ぶと、init 内部の DB 接続挙動 (prepare_db_for_init や
     # has_s3_objects_table) との競合をテスト側で抱え込むことになるため、
     # 検証 → 一旦クローズ → 2 回目 init → 再検証 の順で組む。
     objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
@@ -377,8 +377,8 @@ def test_update(s3_client, rustfs_endpoint, tmp_path):
     init(args)
     assert os.path.exists(duckdb_filepath)
 
-    # init / update の呼び出しと検証用 connection を交差させないため、 検証ごとに
-    # with duckdb.connect(...) を独立させる。 こうしておくと init / update 内部の DB
+    # init / update の呼び出しと検証用 connection を交差させないため、検証ごとに
+    # with duckdb.connect(...) を独立させる。こうしておくと init / update 内部の DB
     # 接続挙動が変わってもテスト側が暗黙の前提に依存しない。
     objects = list_objects(s3_client, BUCKET, prefix=f"{PREFIX}/rtc_stats/")
     with duckdb.connect(duckdb_filepath) as duckdb_connection:
@@ -486,7 +486,7 @@ def test_update_skips_broken_object_and_continues_other_targets(
         result = con.fetchone()
         assert result is not None
         initial_webhook_count = result[0]
-        # rollback 検証用に、 update 前の session_webhook カーソルを保持しておく。
+        # rollback 検証用に、update 前の session_webhook カーソルを保持しておく。
         con.execute(
             "SELECT last_modified, object_name FROM s3_objects WHERE type='session_webhook'"
         )
@@ -518,7 +518,7 @@ def test_update_skips_broken_object_and_continues_other_targets(
     # update は壊れた session_webhook で例外を投げず完走することを確認する。
     update(args)
 
-    # rtc_stats は新規オブジェクトが取り込まれ件数が増え、 session_webhook は変わらない。
+    # rtc_stats は新規オブジェクトが取り込まれ件数が増え、session_webhook は変わらない。
     with duckdb.connect(duckdb_filepath) as con:
         con.execute("SELECT COUNT(*) FROM rtc_stats")
         result = con.fetchone()
@@ -528,9 +528,9 @@ def test_update_skips_broken_object_and_continues_other_targets(
         result = con.fetchone()
         assert result is not None
         assert result[0] == initial_webhook_count
-        # insert_log_from_s3 の rollback が効いていれば、 壊れたオブジェクトのカーソル更新は
-        # 残らず、 session_webhook カーソルは init 時点のままになる。 カーソル更新だけが
-        # 残ってしまう実装に戻ると、 ここで更新済みカーソルが検出される。
+        # insert_log_from_s3 の rollback が効いていれば、壊れたオブジェクトのカーソル更新は
+        # 残らず、session_webhook カーソルは init 時点のままになる。カーソル更新だけが
+        # 残ってしまう実装に戻ると、ここで更新済みカーソルが検出される。
         con.execute(
             "SELECT last_modified, object_name FROM s3_objects WHERE type='session_webhook'"
         )
@@ -600,8 +600,8 @@ def test_init_skips_broken_object_and_continues_other_targets(
         assert result is not None
         assert result[0] > 0
 
-        # session_webhook は create_log_table で例外が発生し、 sync_log_for_init が捕捉して
-        # rollback するため、 テーブル自体が作成されない。
+        # session_webhook は create_log_table で例外が発生し、sync_log_for_init が捕捉して
+        # rollback するため、テーブル自体が作成されない。
         con.execute(
             "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='session_webhook'"
         )
@@ -609,9 +609,9 @@ def test_init_skips_broken_object_and_continues_other_targets(
         assert result is not None
         assert result[0] == 0
 
-        # initialize_log_table の rollback が effective なら、 テーブルと同時にカーソル
-        # 登録も巻き戻り、 s3_objects の session_webhook 行は入らない。 「create_log_table
-        # 失敗 → update_s3_objects_table スキップ」 だけの実装に戻ると、 テーブル未作成
+        # initialize_log_table の rollback が effective なら、テーブルと同時にカーソル
+        # 登録も巻き戻り、s3_objects の session_webhook 行は入らない。「create_log_table
+        # 失敗 → update_s3_objects_table スキップ」 だけの実装に戻ると、テーブル未作成
         # なのに s3_objects にカーソル行だけ残る非対称状態が検出される
         # (test_update_skips_broken_object_and_continues_other_targets の
         # initial_webhook_cursor 検証と対称)。
@@ -771,8 +771,8 @@ def test_no_bucket(rustfs_endpoint, tmp_path):
     """RustFS のバケットが存在しない場合に init が S3Error(NoSuchBucket) を送出することを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
-    # S3 バケット名規約に従いつつ、 RustFS に存在しないバケット名を指定する。
-    # 他テストが偶発的に同名バケットを作って偽通過するのを防ぐため uuid で一意化する。
+    # S3 バケット名規約に従いつつ、RustFS に存在しないバケット名を指定する。
+    # 他テストが偶発的に同名バケットを作って偽通過するのを防ぐためuuid で一意化する。
     non_existent_bucket = f"non-existent-{uuid.uuid4().hex[:8]}"
     args = make_args_for_s3(
         duckdb_filepath, rustfs_endpoint, s3_bucket=non_existent_bucket
@@ -793,7 +793,7 @@ def test_init_skips_missing_session_webhook(
 
     args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
-    # session_webhook が欠損していても init が例外を送出しないことを確認する
+    # session_webhook が欠損していてもinit が例外を送出しないことを確認する
     init(args)
 
     assert os.path.exists(duckdb_filepath)
@@ -813,7 +813,7 @@ def test_init_skips_missing_session_webhook(
         assert table_count is not None
         assert table_count[0] == 0
 
-        # rtc_stats のみ取り込まれるため、カーソルテーブルも 1 行のみであること
+        # rtc_stats のみ取り込まれるため、カーソルテーブルも1 行のみであること
         duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects")
         cursor_count = duckdb_connection.fetchone()
         assert cursor_count is not None
@@ -828,7 +828,7 @@ def test_init_and_update_on_empty_bucket(s3_client_empty, rustfs_endpoint, tmp_p
 
     args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
-    # 空バケットでも init は完走し、DB ファイルが作成される
+    # 空バケットでもinit は完走し、DB ファイルが作成される
     init(args)
     assert os.path.exists(duckdb_filepath)
 
