@@ -13,9 +13,9 @@ S3 互換ストレージの動作確認用として、Docker Compose で RustFS 
 - Docker、Docker Compose がインストールされている
 - Fluent Bit サーバーおよび Ingester + Grafana サーバーからネットワーク経由でアクセスできる
 
-## kohaku リポジトリをクローン
+## Kohaku リポジトリをクローン
 
-任意のディレクトリで kohaku を取得します。
+任意のディレクトリで Kohaku を取得します。
 
 ```bash
 git clone https://github.com/shiguredo/kohaku.git kohaku

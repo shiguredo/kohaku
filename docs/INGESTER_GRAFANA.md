@@ -23,9 +23,9 @@ Grafana は 12.4.x 系をインストールしてください。
 sudo apt-get install grafana=12.4.3
 ```
 
-## kohaku リポジトリをクローン
+## Kohaku リポジトリをクローン
 
-任意のディレクトリで kohaku を取得します。
+任意のディレクトリで Kohaku を取得します。
 
 ```bash
 git clone https://github.com/shiguredo/kohaku.git kohaku

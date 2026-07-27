@@ -15,9 +15,9 @@ Ubuntu 24.04 上で動作を確認しています。
 
 https://docs.fluentbit.io/manual/installation/getting-started-with-fluent-bit の手順で、動作確認済みの Fluent Bit 5.0.x 系をインストールします。
 
-## kohaku リポジトリをクローン
+## Kohaku リポジトリをクローン
 
-任意のディレクトリで kohaku を取得します。
+任意のディレクトリで Kohaku を取得します。
 
 ```bash
 git clone https://github.com/shiguredo/kohaku.git kohaku

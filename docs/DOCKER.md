@@ -123,7 +123,7 @@ make down-external-s3
   - `.env` の `GF_SECURITY_ADMIN_USER`、`GF_SECURITY_ADMIN_PASSWORD` に設定したアカウントでログインします。
 
     - パスワードは適宜変更してください
-  - kohaku ダッシュボードにアクセスします。
+  - Kohaku ダッシュボードにアクセスします。
 
     - ログが読み込まれて、DB に反映されるまで少し時間がかかります。
 
