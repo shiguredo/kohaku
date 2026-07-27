@@ -123,6 +123,7 @@ def init(args):
         access_key=args.s3_access_key_id,
         secret_key=args.s3_secret_access_key,
         secure=args.s3_use_ssl,
+        region=args.s3_region,
     )
 
     with duckdb.connect(args.db) as con:
@@ -526,6 +527,7 @@ def update(args):
         access_key=args.s3_access_key_id,
         secret_key=args.s3_secret_access_key,
         secure=args.s3_use_ssl,
+        region=args.s3_region,
     )
 
     with duckdb.connect(args.db) as con:
