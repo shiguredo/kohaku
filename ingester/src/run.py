@@ -416,9 +416,9 @@ def get_target_urls(bucket, objects):
     return urls
 
 
-def escape_sql_string_literal(path_literal):
-    """DuckDB の ATTACH 等で使う SQL 文字列リテラルとして path_literal を安全に埋め込めるよう
-    シングルクォートをエスケープする。
+def ensure_safe_sql_string_literal(path_literal):
+    """DuckDB の ATTACH 等で使う SQL 文字列リテラルとして path_literal を安全に埋め込むため、
+    制御文字を含む値を CliUsageError で拒否し、 シングルクォートをエスケープする。
 
     DuckDB はファイルパスをプリペアドステートメントでバインドできないため、 ATTACH 直前に
     呼んでパス文字列を直接埋め込む用途。 低位制御文字 (0x00 から 0x1F および 0x7F) を含む値は
@@ -598,8 +598,8 @@ def delete(args):
     try:
         with duckdb.connect() as con:
             # DB サイズ削減のため、COPY FROM DATABASE で DB を詰め直す
-            con.execute(f"ATTACH '{escape_sql_string_literal(args.db)}' AS db")
-            con.execute(f"ATTACH '{escape_sql_string_literal(copy_file)}' AS copy")
+            con.execute(f"ATTACH '{ensure_safe_sql_string_literal(args.db)}' AS db")
+            con.execute(f"ATTACH '{ensure_safe_sql_string_literal(copy_file)}' AS copy")
             con.execute("COPY FROM DATABASE db TO copy")
 
         # コピーしたファイルを、元の DB ファイルに上書きする
