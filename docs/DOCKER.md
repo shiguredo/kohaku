@@ -117,7 +117,7 @@ make down-external-s3
 ### Grafana の設定
 
 - ログイン
-  - ブラウザから make up で構築された Grafana (`http://192.0.2.1:${GRAFANA_HTTP_PORT}/`) にアクセスします。
+  - ブラウザから `make up` で構築した Grafana に、Docker ホストの IP アドレスと `.env` の `GRAFANA_HTTP_PORT` を使って `http://<Docker ホストの IP アドレス>:<GRAFANA_HTTP_PORT>/` でアクセスします。
     - アクセスするブラウザと Docker ホストが同じ端末上の場合は `http://localhost:${GRAFANA_HTTP_PORT}/` でアクセスできます。
 
   - `.env` の `GF_SECURITY_ADMIN_USER`、`GF_SECURITY_ADMIN_PASSWORD` に設定したアカウントでログインします。
