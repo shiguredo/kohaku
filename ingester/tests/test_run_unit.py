@@ -58,7 +58,7 @@ def test_delete_returns_without_copy_when_no_rows_deleted(tmp_path):
 def test_delete_handles_single_quote_in_db_path(tmp_path):
     """シングルクォートを含む DB ファイルパスでも ATTACH 文が成立し、delete が完走することを確認する。
 
-    escape_sql_string_literal によるエスケープが実際の ATTACH 文で有効であることを、
+    ensure_safe_sql_string_literal によるエスケープが実際の ATTACH 文で有効であることを、
     実 DuckDB を相手にしたファイル操作経路で検証する。
     """
     # ファイル名にシングルクォートを含める。エスケープが効いていなければ ATTACH 文が
@@ -292,37 +292,37 @@ def test_require_s3_credentials_accepts_valid_credentials():
     assert run.require_s3_credentials(args) is None
 
 
-# escape_sql_string_literal
+# ensure_safe_sql_string_literal
 
 
-def test_escape_sql_string_literal_doubles_single_quote():
+def test_ensure_safe_sql_string_literal_doubles_single_quote():
     """シングルクォートが 1 個含まれる場合に 2 個に変換することを確認する。"""
-    assert run.escape_sql_string_literal("a'b") == "a''b"
+    assert run.ensure_safe_sql_string_literal("a'b") == "a''b"
 
 
-def test_escape_sql_string_literal_handles_multiple_quotes():
+def test_ensure_safe_sql_string_literal_handles_multiple_quotes():
     """複数のシングルクォートをすべて二重化することを確認する。"""
-    assert run.escape_sql_string_literal("'a'b'c'") == "''a''b''c''"
+    assert run.ensure_safe_sql_string_literal("'a'b'c'") == "''a''b''c''"
 
 
-def test_escape_sql_string_literal_passes_through_safe_string():
+def test_ensure_safe_sql_string_literal_passes_through_safe_string():
     """シングルクォートを含まない文字列はそのまま返すことを確認する。"""
     assert (
-        run.escape_sql_string_literal("/var/lib/kohaku/duck.db")
+        run.ensure_safe_sql_string_literal("/var/lib/kohaku/duck.db")
         == "/var/lib/kohaku/duck.db"
     )
 
 
-def test_escape_sql_string_literal_handles_empty_string():
+def test_ensure_safe_sql_string_literal_handles_empty_string():
     """空文字列を渡しても例外なく空文字列を返すことを確認する。"""
-    assert run.escape_sql_string_literal("") == ""
+    assert run.ensure_safe_sql_string_literal("") == ""
 
 
-def test_escape_sql_string_literal_neutralizes_injection_payload():
+def test_ensure_safe_sql_string_literal_neutralizes_injection_payload():
     """SQL インジェクション風の payload も単純なエスケープで無害化されることを確認する。"""
     payload = "'; DROP TABLE x; --"
     expected = "''; DROP TABLE x; --"
-    assert run.escape_sql_string_literal(payload) == expected
+    assert run.ensure_safe_sql_string_literal(payload) == expected
 
 
 @pytest.mark.parametrize(
@@ -336,19 +336,19 @@ def test_escape_sql_string_literal_neutralizes_injection_payload():
         "\x7f",  # DEL
     ],
 )
-def test_escape_sql_string_literal_rejects_control_characters(control_char):
+def test_ensure_safe_sql_string_literal_rejects_control_characters(control_char):
     """制御文字を含む値は CliUsageError で拒否されることを確認する。"""
     value = f"/var/lib/kohaku/duck{control_char}.db"
     with pytest.raises(run.CliUsageError, match="control characters"):
-        run.escape_sql_string_literal(value)
+        run.ensure_safe_sql_string_literal(value)
 
 
-def test_escape_sql_string_literal_error_message_shows_codepoint_and_index():
+def test_ensure_safe_sql_string_literal_error_message_shows_codepoint_and_index():
     """制御文字拒否時のメッセージに U+XXXX と at index N が含まれることを確認する。"""
     # `\x1f` を index 5 に配置。
     value = "abcde\x1f/duck.db"
     with pytest.raises(run.CliUsageError) as exc_info:
-        run.escape_sql_string_literal(value)
+        run.ensure_safe_sql_string_literal(value)
     message = str(exc_info.value)
     assert "U+001F" in message
     assert "at index 5" in message
