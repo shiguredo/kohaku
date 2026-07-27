@@ -26,7 +26,7 @@ WorkingDirectory=/opt/kohaku/ingester
 # 起動処理のタイムアウト
 TimeoutStartSec=10min
 # DuckDB ファイルがない場合は init 前としてスキップする。DUCKDB_DB_PATH 未定義
-# はユニット失敗として Restart=on-failure と journalctl に確実に残す。
+# はユニット失敗として journalctl に確実に残す。
 # ExecCondition の中で :? を使うと条件未成立によるスキップ扱いになり、
 # ユニット失敗にならない。ExecCondition は ExecStartPre より先に走るため、
 # ExecCondition 側で未定義を通過させて ExecStartPre で失敗判定する構成に分ける。
@@ -37,10 +37,9 @@ ExecStart=/bin/sh /opt/kohaku/scripts/run-ingester.sh update
 # 更新処理完了後に古いデータを削除する
 ExecStartPost=/bin/sh /opt/kohaku/scripts/run-ingester.sh delete
 
-# 失敗時のみ再起動する
-Restart=on-failure
-# 再起動までの待機時間
-RestartSec=5min
+# 失敗時の再試行は kohaku.timer の OnUnitInactiveSec (5 分間隔) に一任する。
+# systemd の Restart 経路と timer のリトライ経路が同一間隔で重複するのを避け、
+# 再試行の起点を timer 側に一本化するため Restart はデフォルト (no) のままにする。
 
 [Install]
 # multi-user.target で有効化する
