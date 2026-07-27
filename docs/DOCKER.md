@@ -129,7 +129,7 @@ make down-external-s3
 
 ### 停止
 
-`make down` は `compose.yml` のサービス（Fluent Bit、RustFS、mc、Grafana、ingester）の Docker コンテナと、make up 時に作成した Grafana 用の Docker イメージを削除します。
+`make down` は `compose.yml` のサービス（Fluent Bit、RustFS、mc、Grafana、ingester）の Docker コンテナを削除し、削除対象となるローカル Docker イメージも削除します。
 
 volume は削除しないため、ログを保存した DB は保持されます。
 
