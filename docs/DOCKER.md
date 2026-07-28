@@ -51,6 +51,7 @@ cat .env.common.template .env.docker.template > .env
 Docker Compose の設定に必要な項目は下記のとおりです。
 
 - `SORA_LOG_PATH` - Fluent Bit コンテナにマウントする Sora のログディレクトリのパス
+  - シンボリックリンクではなく実パスを指定してください（Docker Desktop for Mac などは bind mount 元のシンボリックリンクを解決しないため、コンテナ内で対象ファイルが見えません）
 - `AWS_ACCESS_KEY_ID` - RustFS または S3 互換ストレージのアクセスキー
 - `AWS_SECRET_ACCESS_KEY` - RustFS または S3 互換ストレージのシークレットキー
 - `DUCKDB_DB_PATH` - DuckDB の DB ファイルのパス
