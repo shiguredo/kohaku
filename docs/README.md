@@ -54,15 +54,10 @@ Kohaku 本体は、S3 互換ストレージに保存したログデータを削�
   - ライフサイクルルールは自動では登録されません
   - 運用ポリシーに合わせて、利用するストレージ側でライフサイクルルールを設定してください
 
-- 動作確認用の RustFS のみを Docker Compose で利用する場合
-  - `mc` コンテナが `.env` の `RETENTION_PERIOD` (日) を保持期間として、起動時にバケットへライフサイクルルールを登録します
-
-- Docker Compose 構成（`compose.yml`）
-  - `mc` コンテナが `.env` の `RETENTION_PERIOD` (日) を保持期間として、起動時にバケットへライフサイクルルールを登録します
-
-- Docker Compose 構成 + 外部 S3 互換ストレージ（`compose.external-s3.yml`）
+- Docker Compose 構成（`compose.yml` または `compose.external-s3.yml`）
   - `mc` コンテナが、既存のライフサイクルルールを全て削除してから、`.env` の `RETENTION_PERIOD` (日) を保持期間とするルールをバケットへ登録します
   - 既存のライフサイクルルールを保持する必要がある場合は、この構成をそのまま使用しないでください
+  - `compose.yml` で RustFS のみを起動する場合も、同じ動作になります
 
 なお、各ストレージのライフサイクル機能の詳細は下記を参照してください。
 
@@ -73,6 +68,6 @@ Kohaku 本体は、S3 互換ストレージに保存したログデータを削�
 
 `RETENTION_PERIOD` は本来、ingester が DuckDB 上で保持するログの期間を制御する設定です。
 
-`mc` コンテナを使用する構成（動作確認用の RustFS のみを Docker Compose で利用する場合、Docker Compose 構成（`compose.yml`）、Docker Compose 構成 + 外部 S3 互換ストレージ（`compose.external-s3.yml`））では、`mc` コンテナが `RETENTION_PERIOD` の値をバケットのライフサイクルルール（保持日数）にも設定します。
+`mc` コンテナを使用する Docker Compose 構成では、`mc` コンテナが `RETENTION_PERIOD` の値をバケットのライフサイクルルール（保持日数）にも設定します。
 
 Docker を使用しない構成で Amazon S3 や独自に構築した S3 互換ストレージなどを利用する場合は、`RETENTION_PERIOD` はオブジェクトの保持期間には影響しません。オブジェクトの保持期間を制御したい場合は、運用ポリシーに合わせて、利用するストレージ側でライフサイクルルールを設定してください。
