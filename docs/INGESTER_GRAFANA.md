@@ -144,7 +144,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sudo env UV_INSTALL_DIR="/opt/uv/bi
 
 Kohaku 管理用の systemd の unit ファイルを `/etc/systemd/system/` 以下にコピーします。
 
-本手順以外のユーザーやパスなどを使用する場合は、適宜 `kohaku.service` や `kohaku.timer` を変更して、systemctl で操作できるようにしてください。
+本手順以外のユーザーやパスなどを使用する場合は、適宜 `kohaku.service` や `kohaku.timer` を変更して、`systemctl` で操作できるようにしてください。
 
 ```bash
 sudo cp systemd/kohaku.service /etc/systemd/system/
@@ -184,7 +184,7 @@ DB へのテーブル作成および初期データの挿入は下記の手順�
 
 Fluent Bit から RustFS または Amazon S3 へログデータが送られてきてから、下記を実行します。
 
-ログデータの保存状況は mc コマンドなどで確認してください。
+ログデータの保存状況は `mc` コマンドなどで確認してください。
 
 ```bash
 set -a
@@ -198,7 +198,7 @@ popd
 
 ## Grafana、Kohaku の起動
 
-systemctl を使用して起動します。
+`systemctl` を使用して起動します。
 
 ```bash
 sudo systemctl start grafana-server
@@ -215,4 +215,4 @@ sudo systemctl enable kohaku.timer
 ## 注意点
 
 - 初回の起動時には、Fluent Bit によるログの読み込みおよび送信処理から、ingester による DB ファイルの作成が完了するまで、グラフは表示されません
-- RustFS または Amazon S3 から読み込んだデータは、duck.db ファイルに保存して、Grafana から読み込むための duck.db.readonly ファイルにコピーしているため、一時的に duck.db.readonly ファイルの読み込みに失敗することがあります
+- RustFS または Amazon S3 から読み込んだデータは、`duck.db` ファイルに保存して、Grafana から読み込むための `duck.db.readonly` ファイルにコピーしているため、一時的に `duck.db.readonly` ファイルの読み込みに失敗することがあります

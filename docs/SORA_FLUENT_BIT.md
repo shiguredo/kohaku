@@ -58,7 +58,7 @@ Fluent Bit の設定に必要な項目は下記のとおりです。
 
 ## Fluent Bit の設定
 
-下記のいずれかのコマンドで fluent-bit.yml を生成して、systemd の設定を行います。
+下記のいずれかのコマンドで `fluent-bit.yml` を生成して、systemd の設定を行います。
 
 これらのコマンドは、Fluent Bit の systemd 起動時に使用する認証情報を `/etc/fluent-bit/kohaku.env` に保存します。
 
@@ -76,7 +76,7 @@ sudo make setup-fluent-bit-for-rustfs
 
 ### 既に Fluent Bit を利用している場合
 
-他の用途で Fluent Bit を利用している場合は、下記のコマンドで生成される fluent-bit.yml を参考にして、適宜既存の設定に追加または変更してください。
+他の用途で Fluent Bit を利用している場合は、下記のコマンドで生成される `fluent-bit.yml` を参考にして、適宜既存の設定に追加または変更してください。
 
 - Amazon S3 の場合
 
@@ -97,7 +97,7 @@ Kohaku は、`.env` ファイルの `SORA_LOG_PATH` に指定したディレク�
 - rtc_stats.jsonl
 - session_webhook.jsonl
 
-ログ収集時の Fluent Bit の設定は、上記の make で生成された fluent-bit.yml で確認してください。
+ログ収集時の Fluent Bit の設定は、上記の `make` で生成された `fluent-bit.yml` で確認してください。
 
 ## Fluent Bit の起動
 

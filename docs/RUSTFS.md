@@ -57,7 +57,7 @@ mkdir -p "${RUSTFS_BASE_DIR}/data" "${RUSTFS_BASE_DIR}/logs"
 
 ## RustFS の起動
 
-Docker Compose で RustFS、mc（初期設定用）を起動します。
+Docker Compose で RustFS、`mc`（初期設定用）を起動します。
 
 RustFS のコンテナはホスト上の `./rustfs` ディレクトリに書き込みます。ホストとコンテナで権限を合わせるため、実行ユーザーの UID / GID を `USER_ID` と `GROUP_ID` で渡しています。
 
@@ -65,9 +65,9 @@ RustFS のコンテナはホスト上の `./rustfs` ディレクトリに書き�
 USER_ID=$(id -u) GROUP_ID=$(id -g) docker compose up -d rustfs mc
 ```
 
-RustFS の起動後、mc コンテナが自動でバケット作成や Lifecycle Management ルールの登録などの初期設定を行います。
+RustFS の起動後、`mc` コンテナが自動でバケット作成や Lifecycle Management ルールの登録などの初期設定を行います。
 
-mc コンテナは初期設定完了後に終了します。
+`mc` コンテナは初期設定完了後に終了します。
 
 保持期間を超えたオブジェクトは、RustFS の Lifecycle Management により `.env` の `RETENTION_PERIOD` (日) 後に削除されます。
 

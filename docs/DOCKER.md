@@ -23,7 +23,7 @@ RustFS の Docker コンテナに保存したログは ingester が DuckDB に�
 - RustFS（`compose.yml` の場合）
   - Fluent Bit で送信されたログの保存と Kohaku からの問い合わせ
 
-- mc
+- `mc`
   - バケット作成や Lifecycle Management 設定などの初期設定
 
 - Kohaku
@@ -76,7 +76,7 @@ Docker Compose の設定に必要な項目は下記のとおりです。
 make init
 ```
 
-fluent-bit.yml を作成します。
+`fluent-bit.yml` を作成します。
 
 ```bash
 DOCKER=true make fluent-bit-yml-for-rustfs
@@ -84,7 +84,7 @@ DOCKER=true make fluent-bit-yml-for-rustfs
 
 ### 構築
 
-make up で、Docker Compose が実行され、Fluent Bit、RustFS、mc、Grafana、ingester の Docker コンテナが立ち上がります。
+`make up` で、Docker Compose が実行され、Fluent Bit、RustFS、`mc`、Grafana、ingester の Docker コンテナが立ち上がります。
 
 ```bash
 make up
@@ -106,7 +106,7 @@ make up-external-s3
 make down-external-s3
 ```
 
-`make down-external-s3` は `compose.external-s3.yml` のサービス（Fluent Bit、mc、Grafana、ingester）の Docker コンテナを削除します。
+`make down-external-s3` は `compose.external-s3.yml` のサービス（Fluent Bit、`mc`、Grafana、ingester）の Docker コンテナを削除します。
 
 `mc` サービスが、バケットの既存の Lifecycle Management ルールを全て削除してから、`.env` の `RETENTION_PERIOD` (日) を保持期間とするルールを登録します。
 
@@ -129,7 +129,7 @@ make down-external-s3
 
 ### 停止
 
-`make down` は `compose.yml` のサービス（Fluent Bit、RustFS、mc、Grafana、ingester）の Docker コンテナを削除し、削除対象となるローカル Docker イメージも削除します。
+`make down` は `compose.yml` のサービス（Fluent Bit、RustFS、`mc`、Grafana、ingester）の Docker コンテナを削除し、削除対象となるローカル Docker イメージも削除します。
 
 volume は削除しないため、ログを保存した DB は保持されます。
 
@@ -137,7 +137,7 @@ volume は削除しないため、ログを保存した DB は保持されます
 make down
 ```
 
-`make clean` は make init 時に作成したディレクトリと、Docker Compose の volume を削除します。
+`make clean` は `make init` 時に作成したディレクトリと、Docker Compose の volume を削除します。
 
 volume を削除するため、ログを保存した DB も削除されます。
 
