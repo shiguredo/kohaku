@@ -43,7 +43,10 @@ RUN <<EOF
         "linux/arm64" ) BUILD_TARGET=LinuxARM64 ;;
         * ) echo "Unsupported platform: ${TARGETPLATFORM}" >&2; exit 1 ;;
     esac
-    go get github.com/grafana/sqlds/v4
+    # dispose.patch で go.mod に sqlds/v4 v4.2.7 を pin してあるので、 go get も
+    # 同じバージョンを明示する。 バージョン省略の go get は Go 1.24+ で `@latest`
+    # 相当になり、 patch でピンしたバージョンから上書きされる可能性があるため。
+    go get github.com/grafana/sqlds/v4@v4.2.7
     mage -v build:${BUILD_TARGET} build:GenerateManifestFile
 EOF
 
