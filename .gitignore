@@ -8,6 +8,9 @@ duckdb
 duck.db
 duck.db.readonly
 .env
+.env.*
+!.env.common.template
+!.env.docker.template
 
 fluent-bit.yml
 dist
