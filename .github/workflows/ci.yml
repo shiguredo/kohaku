@@ -44,9 +44,12 @@ jobs:
           enable-cache: false
       - run: uv sync
         working-directory: ingester
-      - run: uv run ruff check
+      # scripts/ 配下も prek.toml の files パターンで ruff 対象になっているため、
+      # ingester の pyproject.toml (ruff 設定) を適用しつつ両方を lint する。
+      # ty は prek.toml が scripts/ を対象外にしているため ingester のみ。
+      - run: uv run ruff check src tests ../scripts
         working-directory: ingester
-      - run: uv run ruff format --check
+      - run: uv run ruff format --check src tests ../scripts
         working-directory: ingester
       - run: uv run ty check
         working-directory: ingester
