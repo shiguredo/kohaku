@@ -772,7 +772,7 @@ def test_no_bucket(rustfs_endpoint, tmp_path):
     duckdb_filepath = str(tmp_path / "duck.db")
 
     # S3 バケット名規約に従いつつ、RustFS に存在しないバケット名を指定する。
-    # 他テストが偶発的に同名バケットを作って偽通過するのを防ぐためuuid で一意化する。
+    # 他テストが偶発的に同名バケットを作って偽通過するのを防ぐため uuid で一意化する。
     non_existent_bucket = f"non-existent-{uuid.uuid4().hex[:8]}"
     args = make_args_for_s3(
         duckdb_filepath, rustfs_endpoint, s3_bucket=non_existent_bucket
@@ -793,7 +793,7 @@ def test_init_skips_missing_session_webhook(
 
     args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
-    # session_webhook が欠損していてもinit が例外を送出しないことを確認する
+    # session_webhook が欠損していても init が例外を送出しないことを確認する
     init(args)
 
     assert os.path.exists(duckdb_filepath)
@@ -813,7 +813,7 @@ def test_init_skips_missing_session_webhook(
         assert table_count is not None
         assert table_count[0] == 0
 
-        # rtc_stats のみ取り込まれるため、カーソルテーブルも1 行のみであること
+        # rtc_stats のみ取り込まれるため、カーソルテーブルも 1 行のみであること
         duckdb_connection.execute("SELECT COUNT(*) FROM s3_objects")
         cursor_count = duckdb_connection.fetchone()
         assert cursor_count is not None
@@ -828,7 +828,7 @@ def test_init_and_update_on_empty_bucket(s3_client_empty, rustfs_endpoint, tmp_p
 
     args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
 
-    # 空バケットでもinit は完走し、DB ファイルが作成される
+    # 空バケットでも init は完走し、DB ファイルが作成される
     init(args)
     assert os.path.exists(duckdb_filepath)
 

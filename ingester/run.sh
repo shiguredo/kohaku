@@ -52,7 +52,7 @@ run_bg() {
 
 # S3_REGION のデフォルト ap-northeast-1 は compose.yml / compose.external-s3.yml にも
 # 同じ値が定義されている (意図的な二重管理)。compose 経由ではコンテナに必ず値が渡るため
-# 本ファイルの :-ap-northeast-1 は通常使われないが、念のためcompose 側とデフォルトを揃える。
+# 本ファイルの :-ap-northeast-1 は通常使われないが、念のため compose 側とデフォルトを揃える。
 
 s3_ssl_args=()
 if [ "${S3_USE_SSL:-}" = "true" ]; then
@@ -91,7 +91,7 @@ if ! run_bg uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
   exit 1
 fi
 
-# 定期的にデータを更新する。update / delete の失敗時もwhile ループを継続するため、
+# 定期的にデータを更新する。update / delete の失敗時も while ループを継続するため、
 # S3 の一時不通等は次回以降の実行で回復できる。一方、壊れた DB 等は自動復帰しないため、
 # 運用者が stderr の連続失敗を検知して手動対応する前提。init は初期化に失敗した時点で
 # 継続できないため終了するが、update/delete は一時障害からの復旧を待つためループを継続する。

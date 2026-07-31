@@ -45,7 +45,7 @@ case "${SUBCOMMAND}" in
         fi
         ;;
     delete)
-        # delete は S3 接続を行わないためS3 オプションは不要。
+        # delete は S3 接続を行わないため S3 オプションは不要。
         : "${RETENTION_PERIOD:?RETENTION_PERIOD is required}"
         set -- \
             --db "${DUCKDB_DB_PATH}" \

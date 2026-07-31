@@ -195,7 +195,7 @@ def test_should_create_readonly_returns_false_when_db_missing_after_run(tmp_path
     missing = tmp_path / "missing.db"
     # initial_stat があっても現在ファイルが無ければ False。
     assert run.should_create_readonly(str(missing), (0, 0)) is False
-    # initial_stat が None (起動時から不在) でもFalse。
+    # initial_stat が None (起動時から不在) でも False。
     assert run.should_create_readonly(str(missing), None) is False
 
 
@@ -579,7 +579,7 @@ def test_update_rejects_missing_s3_credentials(tmp_path):
         )
 
     # 認証情報を None で明示し (full_args のデフォルトが None)、require_s3_credentials
-    # まで到達したら必ず CliUsageError で落ちる前提にする。他属性もfull_args で埋めて
+    # まで到達したら必ず CliUsageError で落ちる前提にする。他属性も full_args で埋めて
     # 「require_s3_credentials より先に他属性が参照されるリグレッション」 を AttributeError
     # で偽通過させない。
     args = SimpleNamespace(**full_args(db=str(db_path)))

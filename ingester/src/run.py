@@ -874,7 +874,7 @@ def main():
     # 生成する。shutil.copyfile / os.chmod / shutil.move で PermissionError (SELinux / 親
     # ディレクトリ権限不足 等) や OSError (disk full 等) が上がっても、args.func は既に成功
     # して DB 本体への変更は反映済み、かつ .readonly は前回成功時点のファイルがそのまま残る
-    # ためGrafana の参照経路は壊れない。したがって readonly 生成失敗は 1 回分の反映遅延に
+    # ため Grafana の参照経路は壊れない。したがって readonly 生成失敗は 1 回分の反映遅延に
     # 留まる副作用と捉え、process としては exit code 0 を維持して stderr に 1 行残すだけに
     # する (次回の update / delete で改めて更新される)。args.func 失敗と同じ経路で
     # handle_cli_error に乗せて exit 1 にすると「DB 更新は成功したのに exit 1」 という
