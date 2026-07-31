@@ -934,5 +934,5 @@ def test_full_args_rejects_unknown_override_key():
     テスト側で属性名を typo したときに黙って通過することを防ぐガードが機能する
     ことを担保する。
     """
-    with pytest.raises(TypeError, match="未知の override キー"):
+    with pytest.raises(TypeError, match="Unknown override keys"):
         full_args(unknown_key="value")

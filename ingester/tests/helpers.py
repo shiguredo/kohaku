@@ -25,7 +25,7 @@ def full_args(**overrides) -> dict[str, object]:
     }
     unknown = sorted(set(overrides) - set(defaults))
     if unknown:
-        raise TypeError(f"未知の override キー: {unknown}")
+        raise TypeError(f"Unknown override keys: {unknown}")
     defaults.update(overrides)
     return defaults
 
