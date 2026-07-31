@@ -63,7 +63,7 @@ jobs:
       actions: read
     steps:
       - name: Slack Notification
-        uses: shiguredo/github-actions/.github/actions/slack-notify@main
+        uses: shiguredo/github-actions/.github/actions/slack-notify@091812b41cd7c5f2b5818d4fde613f93bf0c93b1 # main
         with:
           status: ${{ job.status }}
           slack_webhook: ${{ secrets.SLACK_WEBHOOK }}
