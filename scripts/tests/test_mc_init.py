@@ -8,7 +8,6 @@ from testcontainers.core.container import DockerContainer
 from testcontainers.core.exceptions import ContainerStartException
 from testcontainers.core.network import Network
 
-
 MC_IMAGE = "minio/mc:RELEASE.2025-07-21T05-28-08Z"
 RUSTFS_IMAGE = "rustfs/rustfs:1.0.0-beta.2"
 BASH_IMAGE = "bash:5"
