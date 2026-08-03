@@ -79,6 +79,62 @@ def rustfs_env() -> Iterator[dict[str, object]]:
         network_obj.remove()
 
 
+def test_mc_init_creates_bucket_with_slash_in_secret() -> None:
+    """SecretKey に URL 予約文字 `/` を含む場合でも mc-init.sh がバケット作成に成功することを確認する。
+
+    以前は認証情報を URL 埋め込み (MC_HOST_<alias>) していたため、 secret に含まれる
+    `/` が URL の path 区切りに誤解釈されて mc が誤ホストに接続していた。 JSON 設定
+    ファイル ${HOME}/.mc/config.json 経由に切り替えたことで URL 予約文字を含む secret
+    でも正しく動作することを担保する。 URL 埋め込みへ戻すリグレッションが入ると
+    本テストは RustFS への接続タイムアウトで失敗する。 rustfs_env fixture は認証情報を
+    ハードコードしているため、 本テストでは fixture を使わず RustFS を inline で起動する
+    (3 箇所目が現れたら fixture 化を検討する)。
+    """
+    slash_access = "kohaku-access-key"
+    slash_secret = "secret/with/slash+plus=equals"
+
+    run_id = os.getenv("GITHUB_RUN_ID", "local")
+    run_attempt = os.getenv("GITHUB_RUN_ATTEMPT", "0")
+    suffix = uuid4().hex[:8]
+    rustfs_container = f"kohaku-ci-rustfs-slash-{run_id}-{run_attempt}-{suffix}"
+
+    network_obj = Network().create()
+    rustfs_obj = (
+        DockerContainer(RUSTFS_IMAGE)
+        .with_name(rustfs_container)
+        .with_network(network_obj)
+        .with_network_aliases("rustfs")
+        .with_env("RUSTFS_ACCESS_KEY", slash_access)
+        .with_env("RUSTFS_SECRET_KEY", slash_secret)
+    )
+
+    try:
+        rustfs_obj.start()
+    except ContainerStartException as exc:
+        network_obj.remove()
+        pytest.fail(f"Docker Engine へ接続できないためテストを実行できません: {exc}")
+
+    try:
+        mc_init = (
+            DockerContainer(MC_IMAGE, command="/scripts/mc-init.sh")
+            .with_network(network_obj)
+            .with_kwargs(entrypoint="/bin/sh")
+            .with_volume_mapping(str(MC_INIT_SCRIPT_PATH), "/scripts/mc-init.sh", "ro")
+            .with_env("AWS_ACCESS_KEY_ID", slash_access)
+            .with_env("AWS_SECRET_ACCESS_KEY", slash_secret)
+            .with_env("S3_ENDPOINT", S3_ENDPOINT)
+            .with_env("S3_BUCKET", S3_BUCKET)
+            .with_env("S3_USE_SSL", "false")
+            .with_env("RETENTION_PERIOD", RETENTION_PERIOD)
+            .with_env("MC_INIT_MAX_RETRIES", "30")
+            .with_env("MC_INIT_RETRY_INTERVAL", "1")
+        )
+        run_and_assert_success(mc_init)
+    finally:
+        rustfs_obj.stop()
+        network_obj.remove()
+
+
 def test_mc_init_creates_bucket(rustfs_env: dict[str, object]) -> None:
     """mc-init.sh を実行し、S3 バケットの作成と保持期間設定ができることを検証する。"""
     script_path = SCRIPTS_DIR / "mc-init.sh"
@@ -255,4 +311,38 @@ def test_mc_init_accepts_zero_retry_interval() -> None:
     # mc コマンドが見つからないため接続に失敗し、最大リトライ回数に達して exit 1 になる
     assert status_code != 0, (
         f"mc コマンド未インストール環境で正常終了してはいけません: {stderr}"
+    )
+
+
+@pytest.mark.parametrize(
+    ("dirty_env_key", "dirty_value"),
+    [
+        ("AWS_ACCESS_KEY_ID", 'access"key'),
+        ("AWS_SECRET_ACCESS_KEY", 'secret"key'),
+        ("AWS_ACCESS_KEY_ID", "access\\key"),
+        ("AWS_SECRET_ACCESS_KEY", "secret\\key"),
+    ],
+)
+def test_mc_init_rejects_json_unsafe_credential(
+    dirty_env_key: str, dirty_value: str
+) -> None:
+    """認証情報に `"` または `\\` を含む場合に mc-init.sh がエラー終了することを確認する。
+
+    mc-init.sh は認証情報を JSON 設定ファイル (${HOME}/.mc/config.json) に埋め込む
+    ため、 JSON エスケープが必要な `"` や `\\` を含む値では生成される JSON が破綻する。
+    冒頭の case で早期に拒否する挙動を担保する。 AWS SecretAccessKey は base64 で
+    これらを含まないため実運用への影響は無いが、 独自 secret への防御として動く。
+    """
+    env = _full_mc_init_env()
+    env[dirty_env_key] = dirty_value
+
+    status_code, stderr = _run_mc_init(env)
+
+    assert status_code != 0, (
+        f"JSON 破綻を招く認証情報なのに exit 0 になりました"
+        f" (key={dirty_env_key}, value={dirty_value!r}): {stderr}"
+    )
+    assert 'must not contain " or \\' in stderr, (
+        f"stderr に 'must not contain \" or \\\\' が含まれていません"
+        f" (key={dirty_env_key}, value={dirty_value!r}): {stderr}"
     )
