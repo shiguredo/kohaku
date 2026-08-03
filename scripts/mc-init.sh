@@ -37,13 +37,37 @@ else
 fi
 
 # mc alias set の第 3・ 4 引数として access key / secret を渡すと `ps -ef` や
-# /proc/<pid>/cmdline から観測できるため、mc が読むMC_HOST_<alias> 環境変数
-# 経由で認証情報を渡してコマンドライン引数への露出を避ける。access key / secret に
-# `:` `@` `/` 等 URL の予約文字を含む場合はここで URL エンコードが必要になるが、
-# RustFS 既定のキー体系は対象外のためそのまま埋め込む。
-MC_HOST_KEY="MC_HOST_${S3_ALIAS}"
-MC_HOST_VAL="${endpoint_scheme}://${AWS_ACCESS_KEY_ID}:${AWS_SECRET_ACCESS_KEY}@${S3_ENDPOINT}"
-export "${MC_HOST_KEY}=${MC_HOST_VAL}"
+# /proc/<pid>/cmdline から観測できるため、mc の設定ファイル ${HOME}/.mc/config.json
+# に JSON 形式で直接書き込んでコマンドライン引数への露出を避ける。 URL 埋め込み
+# (MC_HOST_<alias>) と違って、 secret に `/` `@` `:` `?` `#` 等の URL 予約文字を
+# 含んでも path 区切り等として誤解釈されない (Amazon S3 の SecretAccessKey は
+# base64 で `/` を含みやすいため、 URL 埋め込みだと mc が誤ホストに接続する)。
+# JSON 文字列として値を埋め込むため、 `"` (U+0022) と `\` (U+005C) を含む値だけは
+# JSON 生成を破綻させないよう事前に拒否する。 AWS SecretAccessKey は base64 で
+# これらを含まないため実運用への影響はなく、 独自 secret への防御として動く。
+case "${AWS_ACCESS_KEY_ID}${AWS_SECRET_ACCESS_KEY}" in
+  *\"*|*\\*)
+    echo "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY must not contain \" or \\" >&2
+    exit 1
+    ;;
+esac
+
+mkdir -p "${HOME}/.mc"
+cat > "${HOME}/.mc/config.json" <<EOF
+{
+    "version": "10",
+    "aliases": {
+        "${S3_ALIAS}": {
+            "url": "${endpoint_scheme}://${S3_ENDPOINT}",
+            "accessKey": "${AWS_ACCESS_KEY_ID}",
+            "secretKey": "${AWS_SECRET_ACCESS_KEY}",
+            "api": "S3v4",
+            "path": "auto"
+        }
+    }
+}
+EOF
+chmod 600 "${HOME}/.mc/config.json"
 
 i=0
 while ! mc ls "${S3_ALIAS}" >/dev/null 2>&1; do
