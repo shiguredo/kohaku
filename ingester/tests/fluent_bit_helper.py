@@ -22,6 +22,7 @@ def create_fluent_bit_config(
     s3_bucket: str = "kohaku",
     s3_prefix: str = "log",
     sora_log_path: str = FLUENT_BIT_SORA_LOG_PATH,
+    hostname: str = "fluent-bit-test",
 ) -> None:
     """fluent-bit 設定テンプレートを描画して設定ファイルを書き出す。"""
     template_text = Path(template_path).read_text(encoding="utf-8")
@@ -30,6 +31,7 @@ def create_fluent_bit_config(
         s3_bucket=s3_bucket,
         s3_prefix=s3_prefix,
         sora_log_path=sora_log_path,
+        hostname=hostname,
     )
     config_path.write_text(
         config_text,

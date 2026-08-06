@@ -24,7 +24,7 @@ pipeline:
       bucket: ${S3_BUCKET}
       endpoint: ${S3_ENDPOINT}
       compression: gzip
-      s3_key_format: /${S3_PREFIX}/$TAG/%Y/%m/%d/$UUID.gz
+      s3_key_format: /${S3_PREFIX}/$TAG/%Y/%m/%d/${HOSTNAME}-$UUID.gz
       upload_timeout: 5m
       json_date_key: off
     - name: s3
@@ -32,7 +32,7 @@ pipeline:
       bucket: ${S3_BUCKET}
       endpoint: ${S3_ENDPOINT}
       compression: gzip
-      s3_key_format: /${S3_PREFIX}/$TAG/%Y/%m/%d/$UUID.gz
+      s3_key_format: /${S3_PREFIX}/$TAG/%Y/%m/%d/${HOSTNAME}-$UUID.gz
       upload_timeout: 5m
       json_date_key: off
 
