@@ -394,3 +394,45 @@ def test_runpy_init_fails_when_bucket_not_found(tmp_path, rustfs_network_stack):
     assert f"S3 bucket not found: {BUCKET}" in run.stderr, (
         f"stderr に 'S3 bucket not found: {BUCKET}' が含まれていません: {run.stderr}"
     )
+
+
+def test_fluent_bit_puts_object_key_with_hostname(tmp_path, rustfs_network_ready):
+    """fluent-bit が put したオブジェクトキーに HOSTNAME が含まれることを確認する。
+
+    複数 fluent-bit 環境でオブジェクトがどのノード由来か判別できるようにするため、
+    s3_key_format に ${HOSTNAME} が含まれる。本テストは fixture の env に HOSTNAME を
+    明示し、 put されたオブジェクトのキーにその値が含まれることを検証する。
+    """
+    network, endpoint, client = rustfs_network_ready
+    repo_root = Path(__file__).resolve().parents[2]
+    ingester_dir = repo_root / "ingester"
+    source_log_dir = ingester_dir / "tests" / "log"
+    log_dir = create_test_log_dir(tmp_path, source_log_dir)
+
+    state_dir = tmp_path / "state"
+    state_dir.mkdir()
+    config_path = tmp_path / "fluent-bit.yml"
+    # HOSTNAME を明示して fluent-bit 設定を生成する
+    hostname = "fluent-bit-test-node"
+    create_fluent_bit_config(config_path, s3_bucket=BUCKET, hostname=hostname)
+
+    run_fluent_bit_and_wait(
+        network,
+        log_dir,
+        config_path,
+        state_dir,
+        client,
+        {
+            f"{PREFIX}/rtc_stats/": 1,
+        },
+    )
+
+    # put されたオブジェクトのキーにホスト名が含まれることを確認する
+    objects = list(
+        client.list_objects(BUCKET, prefix=f"{PREFIX}/rtc_stats/", recursive=True)
+    )
+    assert len(objects) > 0
+    for obj in objects:
+        assert hostname in obj.object_name, (
+            f"オブジェクトキーにホスト名 ({hostname}) が含まれていません: {obj.object_name}"
+        )
