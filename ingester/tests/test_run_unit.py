@@ -358,10 +358,29 @@ def test_ensure_safe_sql_string_literal_error_message_shows_codepoint_and_index(
 
 
 def test_load_columns_returns_dict_for_valid_yaml(tmp_path):
-    """columns_dir に正常な dict 形式の YAML があるとき、 target をキーに columns 辞書を返すことを確認する。"""
-    (tmp_path / "rtc_stats.yml").write_text("timestamp: TIMESTAMPTZ\nid: VARCHAR\n")
+    """columns_dir に正常な dict 形式の YAML があるとき、 target をキーに columns と primary_key を返すことを確認する。"""
+    (tmp_path / "rtc_stats.yml").write_text(
+        "columns:\n  timestamp: TIMESTAMPTZ\n  id: VARCHAR\nprimary_key:\n  - id\n"
+    )
     result = run.load_columns(targets=("rtc_stats",), columns_dir=str(tmp_path))
-    assert result == {"rtc_stats": {"timestamp": "TIMESTAMPTZ", "id": "VARCHAR"}}
+    assert result == {
+        "rtc_stats": {
+            "columns": {"timestamp": "TIMESTAMPTZ", "id": "VARCHAR"},
+            "primary_key": ["id"],
+        }
+    }
+
+
+def test_load_columns_returns_empty_primary_key_when_omitted(tmp_path):
+    """primary_key が定義されていない YAML では空リストを返すことを確認する。"""
+    (tmp_path / "rtc_stats.yml").write_text("columns:\n  timestamp: TIMESTAMPTZ\n")
+    result = run.load_columns(targets=("rtc_stats",), columns_dir=str(tmp_path))
+    assert result == {
+        "rtc_stats": {
+            "columns": {"timestamp": "TIMESTAMPTZ"},
+            "primary_key": [],
+        }
+    }
 
 
 def test_load_columns_raises_runtime_error_when_file_missing(tmp_path):

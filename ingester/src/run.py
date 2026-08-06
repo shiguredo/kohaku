@@ -76,6 +76,9 @@ def positive_int(value):
 def load_columns(targets=LOG_TARGETS, columns_dir=COLUMNS_DIR):
     """targets 各テーブルのカラム定義 YAML を columns_dir から読み込んで辞書として返す。
 
+    戻り値は `{target: {"columns": {カラム名: 型}, "primary_key": [PK カラム名...]}}` の形式。
+    primary_key が定義されていないテーブルは空リストになる。
+
     YAML 欠損はデプロイ / イメージビルド側の不備なので RuntimeError で送出し、
     handle_cli_error では拾わずトレースバック付きで上位に伝播させる (「Run 'init'」
     のようなユーザー向け 1 行メッセージにはしない)。
@@ -89,12 +92,25 @@ def load_columns(targets=LOG_TARGETS, columns_dir=COLUMNS_DIR):
             raise RuntimeError(f"Column definition file not found: {file_path}")
 
         with open(file_path) as f:
-            columns = yaml.safe_load(f)
+            data = yaml.safe_load(f)
+            if not isinstance(data, dict) or "columns" not in data:
+                raise ValueError(
+                    f"Invalid format in {file_path}, expected a dictionary with 'columns'."
+                )
+            columns = data["columns"]
             if not isinstance(columns, dict):
                 raise ValueError(
-                    f"Invalid format in {file_path}, expected a dictionary."
+                    f"Invalid format in {file_path}, 'columns' must be a dictionary."
                 )
-            duckdb_columns[target] = columns
+            primary_key = data.get("primary_key", [])
+            if not isinstance(primary_key, list):
+                raise ValueError(
+                    f"Invalid format in {file_path}, 'primary_key' must be a list."
+                )
+            duckdb_columns[target] = {
+                "columns": columns,
+                "primary_key": primary_key,
+            }
 
     return duckdb_columns
 
@@ -488,7 +504,10 @@ def create_log_table(con, table_name, target_urls):
     """指定された S3 オブジェクト URL から DuckDB テーブルを新規作成する。
 
     target_urls の JSON 内容を読み込み、DUCKDB_COLUMNS で定義したスキーマでテーブル化する。
-    既にテーブルが存在する場合は何もしない。LOG_TARGETS 外のテーブル名は ValueError で弾く。
+    primary_key が定義されているテーブルは PK 付きで作成し、 insert は ON CONFLICT DO NOTHING
+    で重複行を吸収する (rel.create / rel.insert_into は PK と ON CONFLICT を扱えないため、
+    生 SQL で組み立てる)。 既にテーブルが存在する場合は何もしない。 LOG_TARGETS 外の
+    テーブル名は ValueError で弾く。
     """
     duckdb_columns = load_columns()
     require_known_table(table_name, duckdb_columns)
@@ -498,9 +517,13 @@ def create_log_table(con, table_name, target_urls):
         return
 
     # テーブルを作成する
-    columns = duckdb_columns[table_name]
-    rel = con.read_json(target_urls, union_by_name=True, columns=columns)
-    rel.create(table_name)
+    columns = duckdb_columns[table_name]["columns"]
+    primary_key = duckdb_columns[table_name]["primary_key"]
+    column_defs = ", ".join(f"{name} {col_type}" for name, col_type in columns.items())
+    if primary_key:
+        column_defs += f", PRIMARY KEY ({', '.join(primary_key)})"
+    con.execute(f"CREATE TABLE {table_name} ({column_defs})")
+    insert_log(con, table_name, target_urls)
     print(
         f"Created table {table_name} from {len(target_urls)} object(s).",
         file=sys.stderr,
@@ -650,32 +673,51 @@ def insert_log_from_s3(
     までしか進めないため、 update_maximum_load を超えた新しい側は次回以降の update で
     is_after_s3_cursor が True 判定して順次取得する。
 
+    カーソルと同値の last_modified を持つオブジェクト (カーソル行自身を除く) は、
+    バッチ分割の対象外として毎回の update で全件取り込む (カーソル通過後に同値の
+    last_modified で現れたオブジェクトを拾うため。 重複行は PK 制約 + ON CONFLICT
+    DO NOTHING で吸収する)。
+
     insert_log とカーソル更新は con.begin() / con.commit() で囲み、 途中失敗時は
     con.rollback() で「行 insert とカーソル更新」 を atomic に保つ (中途半端な状態で
     残さない)。
     """
     log_objects = list_objects(client, bucket, f"{prefix}/{table_name}/")
 
+    cursor_last_modified, cursor_object_name = cursor_key
     target_log_objects = [
         obj
         for obj in log_objects
         if is_after_s3_cursor((obj.last_modified, obj.object_name), cursor_key)
     ]
+    same_last_modified_objects = [
+        obj
+        for obj in log_objects
+        if obj.last_modified == cursor_last_modified
+        and obj.object_name != cursor_object_name
+    ]
 
     # 長時間停止後に大量ファイルが蓄積したケースに備え、古い方からバッチで取り込む。
     # 降順ソートされているため、末尾側 update_maximum_load 件が古い順のバッチになる。
+    # 同値グループはバッチ分割の対象外とする (カーソルと同値のオブジェクトは毎回全件
+    # 取り込み、 重複は PK で吸収する)。
     if len(target_log_objects) > update_maximum_load:
         target_log_objects = target_log_objects[-update_maximum_load:]
 
-    if len(target_log_objects) == 0:
+    if len(target_log_objects) == 0 and len(same_last_modified_objects) == 0:
         return
 
     target_urls = get_target_urls(bucket, target_log_objects)
+    same_urls = get_target_urls(bucket, same_last_modified_objects)
     con.begin()
     try:
-        insert_log(con, table_name, target_urls)
-        # 先頭がこのバッチの最新
-        update_s3_objects_table(con, table_name, target_log_objects[0])
+        if target_urls:
+            insert_log(con, table_name, target_urls)
+        if same_urls:
+            insert_log(con, table_name, same_urls)
+        if target_log_objects:
+            # 先頭がこのバッチの最新
+            update_s3_objects_table(con, table_name, target_log_objects[0])
         con.commit()
     except Exception:
         # rollback が disk full 等で失敗すると元例外が __context__ に沈み、stderr には
@@ -693,13 +735,24 @@ def insert_log(con, table_name, target_urls):
 
     create_log_table と同じ許可リスト検査 (require_known_table) を経由して、
     SQL への直接埋め込みを行わない経路でも防御チェックを共有する。
+    PK を持つテーブルでは ON CONFLICT DO NOTHING で重複行を吸収する
+    (rel.insert_into は ON CONFLICT を扱えないため、 生 SQL で組み立てる)。
     """
     duckdb_columns = load_columns()
     require_known_table(table_name, duckdb_columns)
 
-    columns = duckdb_columns[table_name]
-    rel = con.read_json(target_urls, union_by_name=True, columns=columns)
-    rel.insert_into(table_name)
+    columns = duckdb_columns[table_name]["columns"]
+    column_names = ", ".join(columns.keys())
+    if duckdb_columns[table_name]["primary_key"]:
+        conflict_clause = " ON CONFLICT DO NOTHING"
+    else:
+        conflict_clause = ""
+    con.execute(
+        f"INSERT INTO {table_name} ({column_names}) "
+        f"SELECT {column_names} FROM read_json(?, union_by_name=true, columns=?)"
+        f"{conflict_clause}",
+        [target_urls, columns],
+    )
 
 
 def get_s3_objects_cursor(con, log_type):

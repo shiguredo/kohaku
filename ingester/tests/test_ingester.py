@@ -400,10 +400,13 @@ def test_update(s3_client, rustfs_endpoint, tmp_path):
         assert result[0] == len(objects)
 
     # 新規の log データを RustFS に追加した後に update を呼び出して、データ数が増えることを確認する
+    # (既存行をそのまま再 put すると natural key の PK で重複吸収されるため、 connection_id を
+    # 変更して一意な行として put する)
     new_log_file = os.path.join(LOG_DIR, "rtc_stats.jsonl")
     with open(new_log_file, "rb") as data:
         for line in data:
             parsed_log = json.loads(line)
+            parsed_log["connection_id"] = f"{parsed_log['connection_id']}-update"
             now = datetime.datetime.now(datetime.UTC)
             log_data = json.dumps(parsed_log).encode("utf-8")
             compressed_log_data = gzip.compress(log_data)
@@ -504,10 +507,14 @@ def test_update_skips_broken_object_and_continues_other_targets(
     )
 
     # 正常な rtc_stats オブジェクトも同時に配置する。
+    # (既存行をそのまま再 put すると natural key の PK で重複吸収されるため、 connection_id を
+    # 変更して一意な行として put する)
     new_log_file = os.path.join(LOG_DIR, "rtc_stats.jsonl")
     with open(new_log_file, "rb") as data:
         first_line = data.readline()
-    compressed = gzip.compress(first_line)
+    parsed_log = json.loads(first_line)
+    parsed_log["connection_id"] = f"{parsed_log['connection_id']}-broken-test"
+    compressed = gzip.compress(json.dumps(parsed_log).encode("utf-8"))
     s3_client.put_object(
         BUCKET,
         data_path(PREFIX, "rtc_stats", directory),
@@ -893,10 +900,14 @@ def test_update_maximum_load_splits_batches(s3_client, rustfs_endpoint, tmp_path
     assert len(new_lines) == 5
 
     for line in new_lines:
+        # 既存行をそのまま再 put すると natural key の PK で重複吸収されるため、
+        # connection_id を変更して一意な行として put する
+        parsed_log = json.loads(line)
+        parsed_log["connection_id"] = f"{parsed_log['connection_id']}-batch"
         now = datetime.datetime.now(datetime.UTC)
         directory = now.strftime("%Y/%m/%d")
         s3_path = data_path(PREFIX, "rtc_stats", directory)
-        compressed_log_data = gzip.compress(line)
+        compressed_log_data = gzip.compress(json.dumps(parsed_log).encode("utf-8"))
         s3_client.put_object(
             BUCKET,
             s3_path,
@@ -961,10 +972,14 @@ def test_update_maximum_load_one_takes_single_object_per_call(
     assert len(new_lines) == 3
 
     for line in new_lines:
+        # 既存行をそのまま再 put すると natural key の PK で重複吸収されるため、
+        # connection_id を変更して一意な行として put する
+        parsed_log = json.loads(line)
+        parsed_log["connection_id"] = f"{parsed_log['connection_id']}-batch"
         now = datetime.datetime.now(datetime.UTC)
         directory = now.strftime("%Y/%m/%d")
         s3_path = data_path(PREFIX, "rtc_stats", directory)
-        compressed_log_data = gzip.compress(line)
+        compressed_log_data = gzip.compress(json.dumps(parsed_log).encode("utf-8"))
         s3_client.put_object(
             BUCKET,
             s3_path,
@@ -992,3 +1007,123 @@ def test_update_maximum_load_one_takes_single_object_per_call(
     # 4 回目: 取り込むものが無いため件数が変わらない
     update(batch_args)
     assert fetch_rtc_stats_count() == initial_count + 3
+
+
+def test_update_ingests_same_last_modified_object(s3_client, rustfs_endpoint, tmp_path):
+    """カーソルと同値の last_modified を持つオブジェクトが、カーソルより辞書順が小さくても取り込まれることを確認する。
+
+    カーソル通過後に同値の last_modified で現れたオブジェクトは、 旧実装では is_after_s3_cursor
+    (タプル辞書順比較) で False になり永久脱落する。 本テストは s3_objects のカーソル行の書き換えで
+    「カーソルが同値グループの辞書順最大に進んだ状態」をタイミングの偶然に依存せずに再現し、
+    同値グループの再走査でオブジェクトが取り込まれることを検証する。
+    """
+    duckdb_filepath = str(tmp_path / "duck.db")
+    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
+
+    # init で fixture の全行を取り込む
+    init(args)
+
+    with duckdb.connect(duckdb_filepath) as con:
+        con.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = con.fetchone()
+        assert result is not None
+        initial_count = result[0]
+    assert initial_count > 0
+
+    # カーソルと同値の last_modified になる新規オブジェクトを put する
+    # (既存行と重複しないよう connection_id を変更する)
+    new_log_file = os.path.join(LOG_DIR, "rtc_stats.jsonl")
+    with open(new_log_file, "rb") as data:
+        line = data.readline()
+    parsed_log = json.loads(line)
+    parsed_log["connection_id"] = f"{parsed_log['connection_id']}-same-lm"
+    compressed = gzip.compress(json.dumps(parsed_log).encode("utf-8"))
+    now = datetime.datetime.now(datetime.UTC)
+    directory = now.strftime("%Y/%m/%d")
+    s3_client.put_object(
+        BUCKET,
+        data_path(PREFIX, "rtc_stats", directory),
+        io.BytesIO(compressed),
+        length=len(compressed),
+    )
+
+    # put したオブジェクトの last_modified を取得する (S3 上の最新オブジェクト)
+    objects = list(
+        s3_client.list_objects(BUCKET, prefix=f"{PREFIX}/rtc_stats/", recursive=True)
+    )
+    new_obj = max(objects, key=lambda obj: (obj.last_modified, obj.object_name))
+
+    # カーソルを「新規オブジェクトと同値の last_modified の辞書順最大」に書き換える
+    with duckdb.connect(duckdb_filepath) as con:
+        con.execute(
+            "UPDATE s3_objects SET last_modified=?, object_name=? WHERE type=?",
+            (new_obj.last_modified, "zzzzzzzzzzzzzzzzzzzz.gz", "rtc_stats"),
+        )
+
+    # update で同値グループの再走査により新規オブジェクトが取り込まれる
+    update(args)
+
+    with duckdb.connect(duckdb_filepath) as con:
+        con.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = con.fetchone()
+        assert result is not None
+        result = result[0]
+    assert result == initial_count + 1
+
+
+def test_update_deduplicates_retransmitted_object(
+    s3_client_empty, rustfs_endpoint, tmp_path
+):
+    """fluent-bit の再送 (同一 event の別 UUID put) で重複行が 1 行のみになることを確認する。
+
+    PK 制約 + INSERT ... ON CONFLICT DO NOTHING により、 再送された同一 natural key の行が
+    吸収されることを、 クロスバッチ手順 (U1 取り込み → U2 put → update) で検証する。
+    """
+    duckdb_filepath = str(tmp_path / "duck.db")
+    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
+
+    # 空バケットで init する (オブジェクトが無いため LOG_TARGETS テーブルは作られない)
+    init(args)
+
+    # 同一 event を 2 つの UUID で put する (同一 last_modified になった場合のカーソル比較に
+    # 備えて辞書順 U1 < U2 を固定する)
+    new_log_file = os.path.join(LOG_DIR, "rtc_stats.jsonl")
+    with open(new_log_file, "rb") as data:
+        line = data.readline()
+    compressed = gzip.compress(line)
+    now = datetime.datetime.now(datetime.UTC)
+    directory = now.strftime("%Y/%m/%d")
+    s3_path_u1 = f"{PREFIX}/rtc_stats/{directory}/a.gz"
+    s3_path_u2 = f"{PREFIX}/rtc_stats/{directory}/b.gz"
+    s3_client_empty.put_object(
+        BUCKET,
+        s3_path_u1,
+        io.BytesIO(compressed),
+        length=len(compressed),
+    )
+
+    # U1 を取り込む (初登場 target のため initialize_log_table が走る)
+    update(args)
+    with duckdb.connect(duckdb_filepath) as con:
+        con.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = con.fetchone()
+        assert result is not None
+        count_after_u1 = result[0]
+    assert count_after_u1 == 1
+
+    # U2 (同一 event の別 UUID) を put して update する
+    s3_client_empty.put_object(
+        BUCKET,
+        s3_path_u2,
+        io.BytesIO(compressed),
+        length=len(compressed),
+    )
+    update(args)
+
+    with duckdb.connect(duckdb_filepath) as con:
+        con.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = con.fetchone()
+        assert result is not None
+        result = result[0]
+    # 重複行は PK 制約で吸収され 1 行のみ
+    assert result == 1
