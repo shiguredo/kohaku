@@ -36,7 +36,11 @@ DEFAULT_S3_REGION = "ap-northeast-1"
 DEFAULT_RETENTION_PERIOD = 7
 # init 時に読み込むファイル数の上限。古すぎるデータを取り込まないために
 # ユーザーが指定する上限であり、超過した古い側オブジェクトは意図的に取り込まれない。
-DEFAULT_INITIAL_MAXIMUM_LOAD = 100
+# デフォルト値 1000 は複数 fluent-bit (10 台) 構成で単一運用と同等の約 8 時間
+# (500 分) のカバーを実現する値 (カバーしたい分数 500 ÷ upload_timeout 5 分 ×
+# 10 台)。20 台構成では約 4 時間。単一運用では初回取り込み量が 10 倍になるが、
+# 対象オブジェクトは gzip 圧縮済みの小さな JSON オブジェクトで実害は限定的。
+DEFAULT_INITIAL_MAXIMUM_LOAD = 1000
 # update 時に 1 回で取り込むファイル数の上限。停止後の復帰時に大量蓄積したログを
 # バッチ分割するために用いる。
 DEFAULT_UPDATE_MAXIMUM_LOAD = 100
