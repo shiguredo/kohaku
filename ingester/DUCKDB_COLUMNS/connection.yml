@@ -1,28 +1,29 @@
----
-connection_id: VARCHAR
-timestamp: TIMESTAMPTZ
-sora_client: VARCHAR
-session_id: VARCHAR
-role: VARCHAR
-channel_id: VARCHAR
-rtc_stats: JSON
-spotlight: BOOLEAN
-bundle_id: VARCHAR
-client_id: VARCHAR
-audio: JSON
-video: JSON
-simulcast: BOOLEAN
-recording_block: BOOLEAN
-data_channel_signaling: JSON
-ignore_disconnect_websocket: BOOLEAN
-turn_transport_type: VARCHAR
-created_timestamp: TIMESTAMPTZ
-destroyed_timestamp: TIMESTAMPTZ
-destroyed_reason: VARCHAR
-e2ee: BOOLEAN
-local_stats: JSON
-signaling_terminate_reason: VARCHAR
-websocket_terminated_reason: VARCHAR
-type_disconnect_reason: VARCHAR
-data_channel_exit_reason: VARCHAR
-simulcast_encodings: JSON
+columns:
+  connection_id: VARCHAR
+  timestamp: TIMESTAMPTZ
+  sora_client: VARCHAR
+  session_id: VARCHAR
+  role: VARCHAR
+  channel_id: VARCHAR
+  rtc_stats: JSON
+  spotlight: BOOLEAN
+  bundle_id: VARCHAR
+  client_id: VARCHAR
+  audio: JSON
+  video: JSON
+  simulcast: BOOLEAN
+  recording_block: BOOLEAN
+  data_channel_signaling: JSON
+  ignore_disconnect_websocket: BOOLEAN
+  turn_transport_type: VARCHAR
+  created_timestamp: TIMESTAMPTZ
+  destroyed_timestamp: TIMESTAMPTZ
+  destroyed_reason: VARCHAR
+  e2ee: BOOLEAN
+  local_stats: JSON
+  signaling_terminate_reason: VARCHAR
+  websocket_terminated_reason: VARCHAR
+  type_disconnect_reason: VARCHAR
+  data_channel_exit_reason: VARCHAR
+  simulcast_encodings: JSON
+primary_key: []

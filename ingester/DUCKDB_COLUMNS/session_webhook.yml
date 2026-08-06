@@ -1,4 +1,6 @@
----
-id: VARCHAR
-timestamp: TIMESTAMPTZ
-req: JSON
+columns:
+  id: VARCHAR
+  timestamp: TIMESTAMPTZ
+  req: JSON
+primary_key:
+  - id
