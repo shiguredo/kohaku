@@ -14,7 +14,7 @@ import minio
 import pytest
 from minio.error import S3Error
 
-from run import delete, init, update
+from run import DEFAULT_INITIAL_MAXIMUM_LOAD, delete, init, update
 
 from .conftest import ACCESS_KEY, BUCKET, PREFIX, SECRET_KEY
 from .helpers import full_args, wait_until
@@ -218,6 +218,16 @@ def s3_client_empty(rustfs_endpoint: str) -> Iterator[minio.Minio]:
     client = _setup_fresh_bucket_client(rustfs_endpoint)
     yield client
     remove_bucket(client, BUCKET)
+
+
+def test_default_initial_maximum_load():
+    """DEFAULT_INITIAL_MAXIMUM_LOAD が複数 fluent-bit 運用のスケールに足る値であることを確認する。
+
+    デフォルト値 1000 は 10 台構成で単一運用と同等の約 8 時間のカバーを実現する値であり、
+    デフォルト 100 のままでは複数 fluent-bit 環境で初期取り込みのカバー範囲が
+    想定より短くなるため、この値が意図せず変更されないことを検証する。
+    """
+    assert DEFAULT_INITIAL_MAXIMUM_LOAD == 1000
 
 
 def test_init(s3_client, rustfs_endpoint, tmp_path):

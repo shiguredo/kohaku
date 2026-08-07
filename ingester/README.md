@@ -25,7 +25,7 @@ uv run python src/run.py --db ./duck.db \
                       --s3_secret_access_key "$AWS_SECRET_ACCESS_KEY" \
                       --s3_bucket kohaku \
                       --s3_prefix log  \
-                      --initial_maximum_load 100 \
+                      --initial_maximum_load 1000 \
                       init
 ```
 

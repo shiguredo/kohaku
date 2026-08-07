@@ -12,7 +12,7 @@ Type=oneshot
 # 実行ユーザー
 User=kohaku
 # 初回読み込み時の最大件数
-Environment=INITIAL_MAXIMUM_LOAD=100
+Environment=INITIAL_MAXIMUM_LOAD=1000
 # update 1 回あたりの最大読み込み件数
 Environment=UPDATE_MAXIMUM_LOAD=100
 # 環境変数を読み込むファイル
