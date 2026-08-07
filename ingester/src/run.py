@@ -1,13 +1,17 @@
 import argparse
+import bisect
 import datetime
+import heapq
 import os
 import shutil
 import stat
 import sys
+from collections.abc import Iterable, Iterator
 
 import duckdb
 import minio
 import yaml
+from minio.datatypes import Object
 from minio.error import S3Error
 
 
@@ -159,9 +163,9 @@ def init(args):
 def initialize_log_table(con, client, args, target):
     """対象テーブルを初回作成する。
 
-    list_objects は (last_modified, object_name) の降順で並ぶため、先頭側 initial_maximum_load
-    件 (新しい側) のみを取り込み、カーソルは全体最新オブジェクトに進める。対象オブジェクトが
-    無ければ何もしない。
+    keep_latest_objects は (last_modified, object_name) の降順上位 initial_maximum_load
+    件 (新しい側) のみを保持して返すため、 その件数分のみを取り込み、 カーソルは全体最新
+    オブジェクト (保持分の先頭) に進める。 対象オブジェクトが無ければ何もしない。
 
     initial_maximum_load を超える古い側は「古すぎるデータを取り込まない」ため意図的に
     取り込まない。 init は最新側だけを取り込み、 update は取りこぼしを避けるため古い側から
@@ -190,16 +194,18 @@ def initialize_log_table(con, client, args, target):
             "Delete DB file and its .wal, then run 'init' again."
         )
 
-    log_objects = list_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/")
+    log_objects = keep_latest_objects(
+        iter_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/"),
+        args.initial_maximum_load,
+    )
     if len(log_objects) == 0:
         print(f"No log found for {target} in {args.s3_bucket}.", file=sys.stderr)
         return
 
-    log_urls = get_target_urls(args.s3_bucket, log_objects[: args.initial_maximum_load])
+    log_urls = get_target_urls(args.s3_bucket, log_objects)
     con.begin()
     try:
         create_log_table(con, target, log_urls)
-        # log_objects は降順なので、先頭が全体の最新オブジェクト
         update_s3_objects_table(con, target, log_objects[0])
         con.commit()
     except Exception:
@@ -411,20 +417,76 @@ def update_s3_objects_table(con, log_type, obj):
     con.execute(UPSERT_S3_OBJECTS_SQL, (log_type, obj.object_name, obj.last_modified))
 
 
-def list_objects(client, bucket, prefix):
-    """指定 prefix 配下のオブジェクトを (last_modified, object_name) の降順で返す。
+def iter_objects(client: minio.Minio, bucket: str, prefix: str) -> Iterator[Object]:
+    """指定 prefix 配下のオブジェクトをページ単位で遅延取得するイテレータを返す。
 
-    戻り値の先頭が最新のオブジェクト、最後が最古のオブジェクトになる。
-    last_modified が同値の場合は object_name の辞書順降順で並ぶ
-    (is_after_s3_cursor のカーソル比較順序と一致させるため)。
+    MinIO SDK の list_objects は 1 リクエスト 1000 件のページを遅延取得する generator を
+    返す。 これをそのまま返し、 全件をメモリ展開しない。 呼び出し側は
+    keep_latest_objects / collect_update_targets で必要な分だけを保持する。
 
-    オブジェクトキーが時系列順とは限らない (UUID 等を含むケースがある) ため、
-    MinIO の start_after でカーソル以降を絞り込むのは取り逃しのリスクがあり使用しない。
+    全ページ走査 + 必要分のみ保持を採用する。 オブジェクトキーが時系列順とは限らない
+    (UUID 等を含むケースがある) ため、 MinIO の start_after でのカーソル絞り込みは
+    カーソル (last_modified, object_name) に変換できず取り漏れる。 日付 prefix
+    (Delimiter) での絞り込みも、 キーの日付がチャンク生成時刻由来で last_modified
+    (PUT 完了時刻) と独立するため、 日付境界跨ぎや retry による遅延 PUT で取り漏れる。
     """
-    objects = list(client.list_objects(bucket, prefix=prefix, recursive=True))
-    return sorted(
-        objects, key=lambda obj: (obj.last_modified, obj.object_name), reverse=True
+    return client.list_objects(bucket, prefix=prefix, recursive=True)
+
+
+def keep_latest_objects(objects: Iterable[Object], max_objects: int) -> list[Object]:
+    """オブジェクトのイテレータを走査し、 (last_modified, object_name) の降順で上位
+    max_objects 件のみを保持して返す。
+
+    メモリは O(max_objects) で、 戻り値の先頭が最新のオブジェクトになる。 max_objects
+    は 1 以上を前提とする (CLI の positive_int が保証する)。
+    """
+    return heapq.nlargest(
+        max_objects,
+        objects,
+        key=lambda obj: (obj.last_modified, obj.object_name),
     )
+
+
+def collect_update_targets(
+    objects: Iterable[Object],
+    cursor_key: tuple[datetime.datetime, str],
+    update_maximum_load: int,
+) -> tuple[list[Object], list[Object]]:
+    """1 回のページ走査で update 対象のオブジェクトを集める。
+
+    戻り値は (target_log_objects, same_last_modified_objects)。
+    - target_log_objects: カーソルより新しいオブジェクトのうち、 古い側
+      update_maximum_load 件を (last_modified, object_name) の昇順 (古い順) で並べた
+      リスト。 カーソルはバッチ内最新までしか進めないため、 新しい側は次回以降の
+      update で取り込む
+    - same_last_modified_objects: カーソルと同値の last_modified を持つオブジェクト
+      (カーソル行自身を除く) の全件。 カーソル通過後に同値の last_modified で現れた
+      オブジェクトを拾うための再走査対象で、 重複行は PK 制約 + ON CONFLICT DO NOTHING
+      で吸収される。 カーソルと同値かつ object_name が大きいオブジェクトは
+      target_log_objects にも属しうるが、 保持の重複はメモリ上界に影響しない
+
+    同値グループのサイズは S3 の last_modified の粒度に依存し、 上限を保証できない
+    (通常は小さいが、 同時刻 PUT が集中すると増大し得る)。
+
+    generator を 1 回の走査で消費し、 メモリに保持するのは上記の 2 集合のみ
+    (O(update_maximum_load + 同値グループサイズ))。
+    """
+    cursor_last_modified, cursor_object_name = cursor_key
+    # bisect.insort の key は挿入位置の探索にのみ使われ、 同値キーでもオブジェクト同士は
+    # 比較されない。
+    kept: list[Object] = []
+    same_last_modified_objects: list[Object] = []
+    for obj in objects:
+        if (
+            obj.last_modified == cursor_last_modified
+            and obj.object_name != cursor_object_name
+        ):
+            same_last_modified_objects.append(obj)
+        if is_after_s3_cursor((obj.last_modified, obj.object_name), cursor_key):
+            bisect.insort(kept, obj, key=lambda o: (o.last_modified, o.object_name))
+            if len(kept) > update_maximum_load:
+                kept.pop()
+    return kept, same_last_modified_objects
 
 
 def get_target_urls(bucket, objects):
@@ -671,42 +733,20 @@ def insert_log_from_s3(
     """s3_objects カーソルより新しい S3 オブジェクトを古い順にバッチで取り込む。
 
     update 経路の中心関数。 呼び出し側 (sync_log_for_update) は cursor_key is not None
-    を保証する前提 (cursor_key は (last_modified, object_name) の 2 タプル)。 list_objects
-    (降順) と is_after_s3_cursor でカーソル以降の対象オブジェクトを絞り込み、 末尾側
-    update_maximum_load 件 (古い側) を 1 回の update で取り込む。 カーソルはバッチ内最新
-    までしか進めないため、 update_maximum_load を超えた新しい側は次回以降の update で
-    is_after_s3_cursor が True 判定して順次取得する。
-
-    カーソルと同値の last_modified を持つオブジェクト (カーソル行自身を除く) は、
-    バッチ分割の対象外として毎回の update で全件取り込む (カーソル通過後に同値の
-    last_modified で現れたオブジェクトを拾うため。 重複行は PK 制約 + ON CONFLICT
-    DO NOTHING で吸収する)。
+    を保証する前提 (cursor_key は (last_modified, object_name) の 2 タプル)。
+    collect_update_targets がカーソル以降の対象オブジェクトを絞り込み、 古い側
+    update_maximum_load 件を 1 回の update で取り込む (対象の定義とカーソル進行の
+    規則は同関数の docstring を参照)。
 
     insert_log とカーソル更新は con.begin() / con.commit() で囲み、 途中失敗時は
     con.rollback() で「行 insert とカーソル更新」 を atomic に保つ (中途半端な状態で
     残さない)。
     """
-    log_objects = list_objects(client, bucket, f"{prefix}/{table_name}/")
-
-    cursor_last_modified, cursor_object_name = cursor_key
-    target_log_objects = [
-        obj
-        for obj in log_objects
-        if is_after_s3_cursor((obj.last_modified, obj.object_name), cursor_key)
-    ]
-    same_last_modified_objects = [
-        obj
-        for obj in log_objects
-        if obj.last_modified == cursor_last_modified
-        and obj.object_name != cursor_object_name
-    ]
-
-    # 長時間停止後に大量ファイルが蓄積したケースに備え、古い方からバッチで取り込む。
-    # 降順ソートされているため、末尾側 update_maximum_load 件が古い順のバッチになる。
-    # 同値グループはバッチ分割の対象外とする (カーソルと同値のオブジェクトは毎回全件
-    # 取り込み、 重複は PK で吸収する)。
-    if len(target_log_objects) > update_maximum_load:
-        target_log_objects = target_log_objects[-update_maximum_load:]
+    target_log_objects, same_last_modified_objects = collect_update_targets(
+        iter_objects(client, bucket, f"{prefix}/{table_name}/"),
+        cursor_key,
+        update_maximum_load,
+    )
 
     if len(target_log_objects) == 0 and len(same_last_modified_objects) == 0:
         return
@@ -720,8 +760,8 @@ def insert_log_from_s3(
         if same_urls:
             insert_log(con, table_name, same_urls)
         if target_log_objects:
-            # 先頭がこのバッチの最新
-            update_s3_objects_table(con, table_name, target_log_objects[0])
+            # target_log_objects は昇順 (古い順) なので、末尾がこのバッチの最新
+            update_s3_objects_table(con, table_name, target_log_objects[-1])
         con.commit()
     except Exception:
         # rollback が disk full 等で失敗すると元例外が __context__ に沈み、stderr には
