@@ -4,6 +4,7 @@ import io
 import json
 import os
 import sys
+import tracemalloc
 import uuid
 from collections.abc import Iterator, Sequence
 from types import SimpleNamespace
@@ -12,9 +13,17 @@ from typing import Any
 import duckdb
 import minio
 import pytest
+from minio.datatypes import Object
 from minio.error import S3Error
 
-from run import DEFAULT_INITIAL_MAXIMUM_LOAD, delete, init, update
+from run import (
+    DEFAULT_INITIAL_MAXIMUM_LOAD,
+    collect_update_targets,
+    delete,
+    init,
+    keep_latest_objects,
+    update,
+)
 
 from .conftest import ACCESS_KEY, BUCKET, PREFIX, SECRET_KEY
 from .helpers import full_args, wait_until
@@ -27,6 +36,10 @@ def data_path(s3_prefix: str, tag: str, directory: str) -> str:
     """S3 のデータパスを生成する。"""
     filename = f"{uuid.uuid4()}.gz"
     return f"{s3_prefix}/{tag}/{directory}/{filename}"
+
+
+def make_object(object_name: str, last_modified: datetime.datetime) -> Object:
+    return Object("test-bucket", object_name, last_modified, "etag", 10)
 
 
 def list_objects(
@@ -228,6 +241,169 @@ def test_default_initial_maximum_load():
     想定より短くなるため、この値が意図せず変更されないことを検証する。
     """
     assert DEFAULT_INITIAL_MAXIMUM_LOAD == 1000
+
+
+def test_keep_latest_objects_limits_memory():
+    """keep_latest_objects が上限件数しか保持せず、降順で返すことを確認する。
+
+    上限を超える数のオブジェクトを渡しても保持は上限件数に留まる (全件をメモリ展開
+    しない) ことを、先頭が最新になる降順とあわせて検証する。
+    """
+    now = datetime.datetime.now(datetime.UTC)
+    objects = [
+        make_object(f"{i}.gz", now - datetime.timedelta(minutes=i)) for i in range(1000)
+    ]
+
+    kept = keep_latest_objects(iter(objects), 10)
+
+    assert len(kept) == 10
+    assert [obj.object_name for obj in kept] == [f"{i}.gz" for i in range(10)]
+
+
+def test_keep_latest_objects_same_last_modified():
+    """last_modified が同値のオブジェクトが object_name の辞書順降順で並ぶことを確認する。
+
+    カーソル比較 (is_after_s3_cursor) のタプル辞書順と一致させるため、同値キーでは
+    object_name の辞書順で並ぶ必要がある。
+    """
+    now = datetime.datetime.now(datetime.UTC)
+    objects = [make_object(f"{i}.gz", now) for i in range(10)]
+
+    kept = keep_latest_objects(iter(objects), 5)
+
+    assert len(kept) == 5
+    assert [obj.object_name for obj in kept] == ["9.gz", "8.gz", "7.gz", "6.gz", "5.gz"]
+
+
+def test_keep_latest_objects_does_not_expand_all_objects():
+    """keep_latest_objects が全件をメモリ展開しないことを確認する。
+
+    全件を list 化してから切り詰める実装に退化するとピークメモリが全件分に膨らむ。
+    2 万件の入力でピークメモリが上限件数相当に留まることを tracemalloc で検証する
+    (全件展開では実験値で約 6 MB、 上限保持では数十 KB)。
+    """
+    now = datetime.datetime.now(datetime.UTC)
+    object_count = 20000
+
+    def generate_objects() -> Iterator[Object]:
+        for i in range(object_count):
+            yield make_object(f"{i}.gz", now - datetime.timedelta(minutes=i))
+
+    tracemalloc.start()
+    try:
+        kept = keep_latest_objects(generate_objects(), 10)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+
+    assert len(kept) == 10
+    # 全件を list 化する実装は 2 万件分で 1 MB を超えるため、 閾値 1 MB で退化を検出する
+    assert peak < 1024 * 1024
+
+
+def test_collect_update_targets_does_not_expand_all_objects():
+    """collect_update_targets が全件をメモリ展開しないことを確認する。
+
+    カーソルより新しいオブジェクトを大量に走査しても、 保持されるのは最古
+    update_maximum_load 件のみに留まることを tracemalloc で検証する (全件を list 化して
+    切り詰める実装に退化するとピークメモリが全件分に膨らむ)。
+    """
+    now = datetime.datetime.now(datetime.UTC)
+    cursor_key = (now, "cursor.gz")
+    object_count = 20000
+
+    def generate_objects() -> Iterator[Object]:
+        for i in range(object_count):
+            yield make_object(f"new-{i}.gz", now + datetime.timedelta(minutes=1 + i))
+
+    tracemalloc.start()
+    try:
+        target_log_objects, same_last_modified_objects = collect_update_targets(
+            generate_objects(), cursor_key, update_maximum_load=10
+        )
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+
+    assert len(target_log_objects) == 10
+    assert same_last_modified_objects == []
+    # 全件を list 化する実装は 2 万件分で 1 MB を超えるため、 閾値 1 MB で退化を検出する
+    assert peak < 1024 * 1024
+
+
+def test_collect_update_targets_limits_memory():
+    """collect_update_targets が全件を保持せず、 target 側のみ上限内のオブジェクトを保持することを確認する。
+
+    カーソルより古い多数のオブジェクトとカーソルより新しい多数のオブジェクト、 および
+    カーソルと同値の last_modified のオブジェクトを混在させ、 target 側の保持する
+    オブジェクト数が上限を超えないこと (同値グループは設計上全件保持) を検証する。
+    """
+    now = datetime.datetime.now(datetime.UTC)
+    cursor_key = (now, "cursor.gz")
+    # カーソルより古い多数のオブジェクト (update の取り込み対象外)
+    older = [
+        make_object(f"older-{i}.gz", now - datetime.timedelta(minutes=60 + i))
+        for i in range(5000)
+    ]
+    # カーソルより新しい多数のオブジェクト (うち古い側 update_maximum_load 件のみ保持)
+    newer = [
+        make_object(f"newer-{i}.gz", now + datetime.timedelta(minutes=1 + i))
+        for i in range(30)
+    ]
+    # カーソルと同値の last_modified のオブジェクト (全件保持)
+    same = [make_object(f"same-{i}.gz", now) for i in range(5)]
+    # カーソル行自身 (same にも target にも属さない)
+    cursor_object = make_object("cursor.gz", now)
+    # カーソルと同値かつ辞書順がカーソルより小さいオブジェクト (same のみに属する)
+    same_older_name = make_object("a-same.gz", now)
+
+    target_log_objects, same_last_modified_objects = collect_update_targets(
+        iter(older + newer + same + [cursor_object, same_older_name]),
+        cursor_key,
+        update_maximum_load=10,
+    )
+
+    # 古い側 10 件のみが昇順 (古い順) で保持される。 カーソルと同値の last_modified の
+    # オブジェクトはカーソルより新しいため target にも属する
+    assert [obj.object_name for obj in target_log_objects] == [
+        "same-0.gz",
+        "same-1.gz",
+        "same-2.gz",
+        "same-3.gz",
+        "same-4.gz",
+        "newer-0.gz",
+        "newer-1.gz",
+        "newer-2.gz",
+        "newer-3.gz",
+        "newer-4.gz",
+    ]
+    # カーソルと同値の last_modified のオブジェクトは全件保持される。 カーソル行自身
+    # (cursor.gz) は除外され、 辞書順がカーソルより小さい a-same.gz も含まれる
+    assert [obj.object_name for obj in same_last_modified_objects] == [
+        "same-0.gz",
+        "same-1.gz",
+        "same-2.gz",
+        "same-3.gz",
+        "same-4.gz",
+        "a-same.gz",
+    ]
+
+
+def test_collect_update_targets_no_candidate():
+    """カーソルより新しいオブジェクトも同値グループも無い場合に空の 2 集合を返すことを確認する。"""
+    now = datetime.datetime.now(datetime.UTC)
+    cursor_key = (now, "cursor.gz")
+    older = [
+        make_object(f"older-{i}.gz", now - datetime.timedelta(minutes=60 + i))
+        for i in range(100)
+    ]
+
+    target_log_objects, same_last_modified_objects = collect_update_targets(
+        iter(older), cursor_key, update_maximum_load=10
+    )
+
+    assert target_log_objects == []
+    assert same_last_modified_objects == []
 
 
 def test_init(s3_client, rustfs_endpoint, tmp_path):
@@ -909,6 +1085,7 @@ def test_update_maximum_load_splits_batches(s3_client, rustfs_endpoint, tmp_path
         new_lines = data.readlines()[:5]
     assert len(new_lines) == 5
 
+    new_s3_paths = []
     for line in new_lines:
         # 既存行をそのまま再 put すると natural key の PK で重複吸収されるため、
         # connection_id を変更して一意な行として put する
@@ -917,6 +1094,7 @@ def test_update_maximum_load_splits_batches(s3_client, rustfs_endpoint, tmp_path
         now = datetime.datetime.now(datetime.UTC)
         directory = now.strftime("%Y/%m/%d")
         s3_path = data_path(PREFIX, "rtc_stats", directory)
+        new_s3_paths.append(s3_path)
         compressed_log_data = gzip.compress(json.dumps(parsed_log).encode("utf-8"))
         s3_client.put_object(
             BUCKET,
@@ -933,6 +1111,28 @@ def test_update_maximum_load_splits_batches(s3_client, rustfs_endpoint, tmp_path
     # 1 回目: 2 件取り込まれること
     update(batch_args)
     assert fetch_rtc_stats_count() == initial_count + 2
+
+    # カーソルがバッチ内最新 (古い順 2 件のうち新しい側) に進むことを確認する。
+    # バッチ内最古に進む実装に退化すると、この検証で検出される。
+    # 期待カーソルは S3 上の実 last_modified から求める (put 順とは独立)
+    new_objects = [
+        obj
+        for obj in s3_client.list_objects(
+            BUCKET, prefix=f"{PREFIX}/rtc_stats/", recursive=True
+        )
+        if obj.object_name in new_s3_paths
+    ]
+    assert len(new_objects) == 5
+    expected_cursor = sorted(
+        new_objects, key=lambda obj: (obj.last_modified, obj.object_name)
+    )[1]
+    with duckdb.connect(duckdb_filepath) as con:
+        con.execute(
+            "SELECT object_name, last_modified FROM s3_objects WHERE type='rtc_stats'"
+        )
+        cursor = con.fetchone()
+    assert cursor is not None
+    assert cursor == (expected_cursor.object_name, expected_cursor.last_modified)
 
     # 2 回目: さらに 2 件取り込まれて合計 4 件追加
     update(batch_args)
@@ -952,7 +1152,7 @@ def test_update_maximum_load_one_takes_single_object_per_call(
 ):
     """update_maximum_load=1 (positive_int の最小値) で 1 回あたり 1 件ずつ取り込むことを確認する。
 
-    target_log_objects[-args.update_maximum_load :] のスライスが [-1:] になる境界値で、
+    collect_update_targets が保持する最古側 1 件のみを 1 回の update で取り込む境界値で、
     残件が複数あっても 1 件だけ取り込み、複数回呼び出しで取り込み切ることを確認する。
     """
     duckdb_filepath = str(tmp_path / "duck.db")

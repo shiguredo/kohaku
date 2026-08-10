@@ -549,7 +549,7 @@ def test_initialize_log_table_rejects_silent_gap_state(tmp_path):
     「テーブルはあるがカーソル行が無い状態」 をコード側で拒否することを担保する。
     この状態で処理を続けると、 create_log_table がスキップされる一方でカーソルだけが進み、
     過去オブジェクトが取り込まれない。 client には None を渡してもガードが早期に走るため
-    list_objects まで到達しない。
+    iter_objects まで到達しない。
     到達してしまうリグレッションは AttributeError で顕在化する。
     """
     db_path = tmp_path / "silent_gap.db"
