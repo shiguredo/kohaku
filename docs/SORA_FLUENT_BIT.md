@@ -99,6 +99,27 @@ Kohaku は、`.env` ファイルの `SORA_LOG_PATH` に指定したディレク�
 
 ログ収集時の Fluent Bit の設定は、上記の `make` で生成された `fluent-bit.yml` で確認してください。
 
+## S3 オブジェクトキーの形式
+
+Fluent Bit が S3 に put するオブジェクトのキーは、`s3_key_format` に従って次の形式になります。
+
+```text
+/${S3_PREFIX}/$TAG/%Y/%m/%d/${HOSTNAME}-$UUID.gz
+```
+
+先頭の `/` はオブジェクトキーには含まれません。
+
+各要素の意味は次のとおりです。
+
+- `$TAG` - ログの種類（`rtc_stats` または `session_webhook`）
+- `%Y/%m/%d` - チャンクの最初のログ行のタイムスタンプの日付
+- `${HOSTNAME}` - Fluent Bit が動作するノードのホスト名
+- `$UUID` - Fluent Bit が生成する一意な ID
+
+例: `S3_PREFIX` が `log`、ホスト名が `fluent-bit-01` の場合、`rtc_stats` のオブジェクトは `log/rtc_stats/2026/08/07/fluent-bit-01-<uuid>.gz` のようになります。
+
+複数ノードで運用する場合は、オブジェクトキーに含まれるホスト名で、どのノードが put したオブジェクトかを判別できます（[複数 Fluent Bit ノードの運用ガイド](MULTI_FLUENT_BIT.md) を参照）。
+
 ## Fluent Bit の起動
 
 Fluent Bit を起動します。
