@@ -222,14 +222,18 @@ def initialize_log_table(con, client, args, target):
 def sync_log_for_init(con, client, args, target):
     try:
         initialize_log_table(con, client, args, target)
-    except (duckdb.InvalidInputException, duckdb.IOException) as e:
+    except (
+        duckdb.InvalidInputException,
+        duckdb.IOException,
+        duckdb.ConstraintException,
+    ) as e:
         # 対象 target で読み込みエラー (壊れた gzip、read_json のスキーマ不一致等) が
         # 出ても残りの LOG_TARGETS を止めないため、stderr に記録して次の target へ進む。
         # 発生要因の例: 壊れた gzip (IOException)、read_json のスキーマ不一致
-        # (InvalidInputException)。なお IOException は DB 書き込み側 (disk full、
-        # 権限剥奪、WAL 書き込み失敗等) でも発生し得るが、メッセージでは区別せず
-        # 同じ例外処理で捕捉する。コマンド全体の exit code は失敗を示さないため、
-        # target ごとの stderr 出力を運用側で監視すること。
+        # (InvalidInputException)、PK カラムの欠落・null を含む行 (ConstraintException)。
+        # なお IOException は DB 書き込み側 (disk full、権限剥奪、WAL 書き込み失敗等)
+        # でも発生し得るが、メッセージでは区別せず同じ例外処理で捕捉する。コマンド全体の
+        # exit code は失敗を示さないため、target ごとの stderr 出力を運用側で監視すること。
         print(f"{type(e).__name__} ({target}): {e}", file=sys.stderr)
 
 
@@ -253,11 +257,16 @@ def sync_log_for_update(con, client, args, target):
                 args.update_maximum_load,
                 cursor_key,
             )
-    except (duckdb.InvalidInputException, duckdb.IOException) as e:
+    except (
+        duckdb.InvalidInputException,
+        duckdb.IOException,
+        duckdb.ConstraintException,
+    ) as e:
         # 読み込みエラーは stderr に記録して次の target へ進む。IOException は
         # 読み込み側だけでなく DB 書き込み側でも発生し得るが、メッセージでは区別せず
-        # 同じ例外処理で捕捉する。catch しないと単一の壊れたオブジェクトで update 全体が
-        # 中断し、次サイクルもカーソル未進行のまま同じオブジェクトで止まり続ける。
+        # 同じ例外処理で捕捉する。ConstraintException は PK カラムの欠落・null を含む
+        # 行で発生する。catch しないと単一の壊れたオブジェクトで update 全体が中断し、
+        # 次サイクルもカーソル未進行のまま同じオブジェクトで止まり続ける。
         # 該当 target のカーソルは進まないため、壊れたオブジェクトが除去されるまで同じ
         # target で再発するが、他 target の更新は継続できる。
         print(f"{type(e).__name__} ({target}): {e}", file=sys.stderr)

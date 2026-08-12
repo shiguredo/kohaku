@@ -647,6 +647,15 @@ def test_update(s3_client, rustfs_endpoint, tmp_path):
             "InvalidInputException",
             id="malformed-json",
         ),
+        pytest.param(
+            gzip.compress(
+                json.dumps(
+                    {"timestamp": "2025-01-01T00:00:00+09:00", "req": {}}
+                ).encode("utf-8")
+            ),
+            "ConstraintException",
+            id="missing-primary-key",
+        ),
     ],
 )
 def test_update_skips_broken_object_and_continues_other_targets(
@@ -659,6 +668,7 @@ def test_update_skips_broken_object_and_continues_other_targets(
     壊れたオブジェクトのカーソル更新が残らないことを session_webhook カーソルで検証する。
     - broken-gzip: gzip として復号できない生バイト列を投入すると DuckDB は IOException を送出する。
     - malformed-json: 有効な gzip 内に JSON parse できないバイト列を投入すると DuckDB は InvalidInputException を送出する。
+    - missing-primary-key: PK カラム (id) が欠落した JSON 行を投入すると DuckDB は ConstraintException を送出する。
     """
     duckdb_filepath = str(tmp_path / "duck.db")
     args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
@@ -747,6 +757,15 @@ def test_update_skips_broken_object_and_continues_other_targets(
             "InvalidInputException",
             id="malformed-json",
         ),
+        pytest.param(
+            gzip.compress(
+                json.dumps(
+                    {"timestamp": "2025-01-01T00:00:00+09:00", "req": {}}
+                ).encode("utf-8")
+            ),
+            "ConstraintException",
+            id="missing-primary-key",
+        ),
     ],
 )
 def test_init_skips_broken_object_and_continues_other_targets(
@@ -765,6 +784,7 @@ def test_init_skips_broken_object_and_continues_other_targets(
     sync_log_for_update 側だけカバーされていた挙動の非対称を解消する。
     - broken-gzip: gzip として復号できない生バイト列を投入すると DuckDB は IOException を送出する。
     - malformed-json: 有効な gzip 内に JSON parse できないバイト列を投入すると DuckDB は InvalidInputException を送出する。
+    - missing-primary-key: PK カラム (id) が欠落した JSON 行を投入すると DuckDB は ConstraintException を送出する。
     """
     duckdb_filepath = str(tmp_path / "duck.db")
 
