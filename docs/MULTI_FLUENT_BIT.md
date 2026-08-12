@@ -23,7 +23,7 @@ Sora + Fluent Bit ─┘
 
 `fluent-bit.yml` は `make fluent-bit-yml`（Amazon S3 向け）または `make fluent-bit-yml-for-rustfs`（RustFS 向け）で、`.env` の設定値と `fluent-bit/fluent-bit.yml.s3` または `fluent-bit/fluent-bit.yml.rustfs` から生成されます。
 
-複数ノードで運用する場合は、この生成元（`.env` の設定値と Fluent Bit のテンプレート）を全ノードで一致させてください。設定を同期する方法は Ansible や Chef などの構成管理ツール、または手動同期のいずれでもかまいません。
+複数ノードで運用する場合は、この生成元（`.env` の設定値と Fluent Bit のテンプレート）を全ノードで一致させてください。
 
 `fluent-bit.yml` に埋め込まれる項目のうち、ノード個別に値が異なってもよいのは `SORA_LOG_PATH`（各ノードのログディレクトリ）のみです。それ以外の項目（`S3_BUCKET`、`S3_PREFIX`、`S3_REGION`、`S3_ENDPOINT` など）は全ノードで同じ値を設定してください。
 
