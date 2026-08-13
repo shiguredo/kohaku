@@ -7,12 +7,14 @@ COMPOSE_EXTERNAL_S3 := compose.external-s3.yml
 init: build
 	mkdir -p rustfs/data  rustfs/logs
 
-# 標準構成でコンテナを起動する
+# 標準構成でコンテナを起動する (fluent-bit.yml が無い場合のみ生成する)
 up:
+	@if [ ! -f fluent-bit.yml ]; then $(MAKE) fluent-bit-yml-for-rustfs; fi
 	USER_ID=`id -u` GROUP_ID=`id -g` docker compose -f $(COMPOSE_RUSTFS) up -d --build
 
-# 外部 S3 構成でコンテナを起動する
+# 外部 S3 構成でコンテナを起動する (fluent-bit.yml が無い場合のみ生成する)
 up-external-s3:
+	@if [ ! -f fluent-bit.yml ]; then $(MAKE) fluent-bit-yml; fi
 	docker compose -f $(COMPOSE_EXTERNAL_S3) up -d --build
 
 # 標準構成のコンテナを停止する
