@@ -22,6 +22,7 @@ pipeline:
     - name: s3
       match: 'rtc_stats'
       bucket: ${S3_BUCKET}
+      endpoint: ${S3_ENDPOINT}
       region: ${S3_REGION}
       compression: gzip
       s3_key_format: /${S3_PREFIX}/$TAG/%Y/%m/%d/${HOSTNAME}-$UUID.gz
@@ -30,6 +31,7 @@ pipeline:
     - name: s3
       match: 'session_webhook'
       bucket: ${S3_BUCKET}
+      endpoint: ${S3_ENDPOINT}
       region: ${S3_REGION}
       compression: gzip
       s3_key_format: /${S3_PREFIX}/$TAG/%Y/%m/%d/${HOSTNAME}-$UUID.gz

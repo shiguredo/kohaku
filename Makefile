@@ -51,8 +51,12 @@ download:
 # Fluent Bit、Grafana、Kohaku 保存領域のホスト側設定をまとめて反映する
 setup: setup-fluent-bit setup-grafana setup-kohaku
 
+# S3_ENDPOINT は .env で未指定なら Amazon S3 のエンドポイントを使う
+S3_ENDPOINT ?= s3.amazonaws.com
+
 define ENV_FLUENT_BIT
 env:
+  S3_ENDPOINT: ${S3_ENDPOINT}
   S3_BUCKET: ${S3_BUCKET}
   S3_PREFIX: ${S3_PREFIX}
   S3_REGION: ${S3_REGION}
