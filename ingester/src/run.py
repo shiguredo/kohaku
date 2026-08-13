@@ -933,7 +933,8 @@ def handle_cli_error(error, bucket):
         raise error
 
 
-def main():
+def build_parser():
+    """CLI の argparse パーサーを構築する。"""
     # --help にデフォルト値を自動表示するため、ArgumentDefaultsHelpFormatter を使う。
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -945,7 +946,12 @@ def main():
     parser.add_argument(
         "--s3_secret_access_key", default=None, help="S3 secret access key"
     )
-    parser.add_argument("--s3_use_ssl", action="store_true", help="S3 use SSL")
+    parser.add_argument(
+        "--s3_use_ssl",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="S3 use SSL",
+    )
     parser.add_argument("--s3_region", default=DEFAULT_S3_REGION, help="S3 region")
     parser.add_argument(
         "--s3_bucket", default=DEFAULT_S3_BUCKET_NAME, help="S3 bucket name"
@@ -980,6 +986,11 @@ def main():
     subparsers_delete = subparsers.add_parser("delete")
     subparsers_delete.set_defaults(func=delete)
 
+    return parser
+
+
+def main():
+    parser = build_parser()
     args = parser.parse_args()
 
     initial_stat = capture_db_stat(args.db)
