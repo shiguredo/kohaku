@@ -118,6 +118,8 @@ def run_ingester_cli(
         BUCKET,
         "--s3_prefix",
         PREFIX,
+        # RustFS は http のため、デフォルト true の SSL 利用を明示的に無効化する
+        "--no-s3_use_ssl",
         "--initial_maximum_load",
         str(initial_maximum_load),
         command,

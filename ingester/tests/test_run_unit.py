@@ -31,6 +31,17 @@ def test_positive_int_accepts_positive(value, expected):
     assert run.positive_int(value) == expected
 
 
+def test_build_parser_s3_use_ssl_defaults_to_true():
+    """--s3_use_ssl のデフォルトが True であることを確認する。
+
+    認証情報の平文送信を防ぐため、 SSL 利用は明示的に無効化しない限り有効にする。
+    """
+    parser = run.build_parser()
+    assert parser.parse_args(["init"]).s3_use_ssl is True
+    assert parser.parse_args(["--no-s3_use_ssl", "init"]).s3_use_ssl is False
+    assert parser.parse_args(["--s3_use_ssl", "init"]).s3_use_ssl is True
+
+
 def test_delete_returns_without_copy_when_no_rows_deleted(tmp_path):
     """削除件数が 0 件の場合に DB コピー処理 (ATTACH + COPY + shutil.move) へ進まないことを確認する。
 

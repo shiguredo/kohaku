@@ -54,9 +54,10 @@ run_bg() {
 # 同じ値が定義されている (意図的な二重管理)。compose 経由ではコンテナに必ず値が渡るため
 # 本ファイルの :-ap-northeast-1 は通常使われないが、念のため compose 側とデフォルトを揃える。
 
+# --s3_use_ssl はデフォルト true のため、false の場合のみ --no-s3_use_ssl を付与する。
 s3_ssl_args=()
-if [ "${S3_USE_SSL:-}" = "true" ]; then
-  s3_ssl_args+=(--s3_use_ssl)
+if [ "${S3_USE_SSL:-}" = "false" ]; then
+  s3_ssl_args+=(--no-s3_use_ssl)
 fi
 
 # 未設定なら引数自体を渡さず run.py の argparse デフォルトに委ねる。

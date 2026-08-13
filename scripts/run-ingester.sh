@@ -39,9 +39,9 @@ case "${SUBCOMMAND}" in
             set -- "$@" --update_maximum_load "${UPDATE_MAXIMUM_LOAD}"
         fi
 
-        # --s3_use_ssl は action="store_true" のため、true の場合のみフラグを付与する。
-        if [ "${S3_USE_SSL:-}" = "true" ]; then
-            set -- "$@" --s3_use_ssl
+        # --s3_use_ssl はデフォルト true のため、false の場合のみ --no-s3_use_ssl を付与する。
+        if [ "${S3_USE_SSL:-}" = "false" ]; then
+            set -- "$@" --no-s3_use_ssl
         fi
         ;;
     delete)

@@ -55,7 +55,7 @@ Ingester + Grafana の設定に必要な項目は下記のとおりです。
 - `AWS_SECRET_ACCESS_KEY` - S3 互換ストレージのシークレットキー
 - `S3_BUCKET` - バケット名
 - `S3_PREFIX` - S3 プレフィックス
-- `S3_USE_SSL` - S3 互換ストレージへの接続に SSL を使用するかどうか（Amazon S3 の場合は `true`）
+- `S3_USE_SSL` - S3 互換ストレージへの接続に SSL を使用するかどうか（デフォルトは true。http で接続する S3 互換ストレージの場合は `false`）
 - `DUCKDB_DB_PATH` - DuckDB の DB ファイルのパス
 - `RETENTION_PERIOD` - ingester が DuckDB 上で保持するログの期間（日）
 - `INITIAL_MAXIMUM_LOAD` - init 時、および update 時にテーブル未作成だった場合の、初回テーブル作成における読み込み件数の上限
