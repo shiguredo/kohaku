@@ -3,6 +3,10 @@ apiVersion: 1
 datasources:
 - name: 'motherduck-duckdb-datasource'
   type: 'motherduck-duckdb-datasource'
+  # ダッシュボード (grafana/dashboards/kohaku/rtc-stats.json) が参照する uid を固定する。
+  # uid 未指定だと Grafana が datasource name から決定的に採番するが、 name 変更や
+  # Grafana の採番アルゴリズム変更でダッシュボードの参照が壊れるため明示する。
+  uid: P8C457A4473E76FA6
   isDefault: true
   orgId: 1
   version: 1
