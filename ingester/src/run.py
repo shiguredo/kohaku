@@ -322,6 +322,9 @@ def move_broken_db(db_path):
     wal → 本体 の順で退避する。 途中で失敗しても本体が元位置に残るため、 次回起動時に
     is_db_broken が破損を再検出して同関数を呼び直せる。 本体は退避先に移ったのに wal
     だけ元位置に取り残される状態を構造的に作らずに済む。
+
+    DB 本体が存在しないが .wal だけ残っている場合 (新規 DB 作成時に古い WAL が再生
+    される状態) も、 .wal を退避するために呼ばれる。
     """
     timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%d%H%M%S%f")
     broken_db_path = f"{db_path}.broken.{timestamp}"
@@ -330,13 +333,18 @@ def move_broken_db(db_path):
     if os.path.exists(wal_path):
         shutil.move(wal_path, f"{broken_db_path}.wal")
 
-    shutil.move(db_path, broken_db_path)
+    if os.path.exists(db_path):
+        shutil.move(db_path, broken_db_path)
 
     return broken_db_path
 
 
 def is_db_broken(db_path):
     """DB ファイルが破損していれば True、 正常または不在なら False を返す。
+
+    DB 本体が存在しないが .wal が残っている場合は、 新規 DB 作成時に古い WAL が再生
+    されて意図しない状態 (古いカーソルやテーブル) が復活するため、 破損扱いにする
+    (init の prepare_db_for_init が move_broken_db で .wal ごと退避する)。
 
     破損以外の接続エラー (ロック競合、 権限不足等) は呼び出し元へ伝播させる。
     read_only=True で開くことで、 WAL 再生による意図せぬ状態変化 (破損を「復旧」
@@ -346,7 +354,7 @@ def is_db_broken(db_path):
     WAL 再生を試みた段階で IOException 等として顕在化する。
     """
     if not os.path.exists(db_path):
-        return False
+        return os.path.exists(f"{db_path}.wal")
     try:
         with duckdb.connect(db_path, read_only=True) as con:
             con.execute("SELECT 1")

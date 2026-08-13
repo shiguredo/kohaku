@@ -944,6 +944,47 @@ def test_is_db_broken_does_not_replay_wal_for_healthy_db_with_broken_wal(tmp_pat
     assert run.is_db_broken(str(db_path)) is False
 
 
+def test_is_db_broken_returns_true_for_missing_db_with_leftover_wal(tmp_path):
+    """DB 本体が無く .wal だけ残っている状態を破損扱いにすることを確認する。
+
+    DB 本体を削除した運用者が .wal を消し忘れた場合、 新規 DB 作成時に古い WAL が
+    再生されて意図しない状態 (古いカーソルやテーブル) が復活する。 これを防ぐため、
+    DB 本体が存在しないが .wal が残っている場合は破損として扱う。
+    """
+    db_path = tmp_path / "missing_with_wal.db"
+    wal_path = tmp_path / "missing_with_wal.db.wal"
+    wal_path.write_bytes(b"wal payload")
+
+    assert run.is_db_broken(str(db_path)) is True
+
+
+def test_is_db_broken_returns_false_for_missing_db_without_wal(tmp_path):
+    """DB 本体も .wal も存在しない場合は False を返すことを確認する。"""
+    db_path = tmp_path / "missing_without_wal.db"
+
+    assert run.is_db_broken(str(db_path)) is False
+
+
+def test_prepare_db_for_init_evacuates_leftover_wal_without_db(tmp_path, capsys):
+    """DB 本体が無く .wal だけ残っている状態を prepare_db_for_init が退避することを確認する。
+
+    新規 DB 作成時に古い WAL が再生されて意図しない状態が復活するのを防ぐため、
+    .wal ごと退避し、 退避メッセージを stderr に出力する。
+    """
+    db_path = tmp_path / "leftover_wal.db"
+    wal_path = tmp_path / "leftover_wal.db.wal"
+    wal_path.write_bytes(b"wal payload")
+
+    run.prepare_db_for_init(str(db_path))
+
+    renamed_files = list(tmp_path.glob("leftover_wal.db.broken.*"))
+    assert len(renamed_files) == 1
+    assert wal_path.exists() is False
+    assert renamed_files[0].exists()
+    captured = capsys.readouterr()
+    assert "Detected broken DB file. moved to" in captured.err
+
+
 # full_args
 
 
