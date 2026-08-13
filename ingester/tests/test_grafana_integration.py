@@ -126,6 +126,164 @@ def assign_root_group(path: Path) -> None:
     )
 
 
+def collect_datasource_uids(dashboard: Mapping[str, Any]) -> set[str]:
+    """ダッシュボード JSON からパネルとテンプレート変数が参照する datasource uid を収集する。
+
+    パネルとテンプレート変数の datasource が uid を持つ辞書の場合にその uid を返す。
+    "-- Dashboard --" (ダッシュボードルートの datasource を継承する特殊値) は
+    参照先がダッシュボードルートの datasource 設定になるため、ここでは収集しない。
+    """
+    uids: set[str] = set()
+
+    for variable in dashboard.get("templating", {}).get("list", []):
+        datasource = variable.get("datasource")
+        if isinstance(datasource, dict) and datasource.get("uid"):
+            uids.add(datasource["uid"])
+
+    def visit(panels: list[Mapping[str, Any]]) -> None:
+        for panel in panels:
+            datasource = panel.get("datasource")
+            if (
+                isinstance(datasource, dict)
+                and datasource.get("uid")
+                and datasource["uid"] != "-- Dashboard --"
+            ):
+                uids.add(datasource["uid"])
+            visit(panel.get("panels", []))
+
+    visit(dashboard.get("panels", []))
+    return uids
+
+
+def collect_dashboard_inheriting_panels(dashboard: Mapping[str, Any]) -> list[str]:
+    """ダッシュボードルートの datasource を継承する ("-- Dashboard --") パネルのタイトル一覧を返す。"""
+    titles: list[str] = []
+
+    def visit(panels: list[Mapping[str, Any]]) -> None:
+        for panel in panels:
+            datasource = panel.get("datasource")
+            if (
+                isinstance(datasource, dict)
+                and datasource.get("uid") == "-- Dashboard --"
+            ):
+                titles.append(panel.get("title", ""))
+            visit(panel.get("panels", []))
+
+    visit(dashboard.get("panels", []))
+    return titles
+
+
+@pytest.mark.usefixtures("init_grafana_plugin")
+def test_dashboard_panels_reference_provisioned_datasource_uid(tmp_path):
+    """ダッシュボードのパネルが参照する datasource uid が provisioning の uid と一致することを確認する。
+
+    provisioning (grafana/datasources/duckdb.yml) で uid 未指定の datasource は
+    Grafana が自動採番する。 ダッシュボード JSON にハードコードされた uid が
+    自動採番の uid と一致しない場合、 パネルは datasource not found になる。
+
+    あわせて、 Kohaku.json の type のみ (uid なし) の datasource 参照が、
+    Grafana によって datasource name から uid へ解決されることを確認する。
+    """
+    duckdb_dir = create_duckdb_readonly_copy(tmp_path)
+
+    container = (
+        DockerContainer(GRAFANA_IMAGE)
+        .with_exposed_ports(3000)
+        .with_env("GF_LOG_MODE", "console")
+        .with_env("GF_PATHS_DATA", "/var/lib/grafana")
+        .with_env("GF_SECURITY_ADMIN_USER", ADMIN_USER)
+        .with_env("GF_SECURITY_ADMIN_PASSWORD", ADMIN_PASSWORD)
+        .with_env("GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS", DATA_SOURCE_NAME)
+        .with_env("GF_PATHS_HOME", "/usr/share/grafana")
+        .with_env("GF_PATHS_CONFIG", "/etc/grafana/grafana.ini")
+        .with_env("GF_PATHS_PLUGINS", "/var/lib/grafana/plugins")
+        .with_env("GF_PATHS_PROVISIONING", "/etc/grafana/provisioning")
+        .with_env("GF_PLUGINS_FORWARD_HOST_ENV_VARS", DATA_SOURCE_NAME)
+        .with_volume_mapping(
+            str(GRAFANA_DATASOURCES_DIR),
+            "/etc/grafana/provisioning/datasources",
+            mode="ro",
+        )
+        .with_volume_mapping(
+            str(GRAFANA_DASHBOARDS_DIR / "kohaku.yml"),
+            "/etc/grafana/provisioning/dashboards/kohaku.yml",
+            mode="ro",
+        )
+        .with_volume_mapping(
+            str(GRAFANA_DASHBOARDS_DIR / "kohaku"),
+            "/var/lib/grafana/dashboards/kohaku",
+            mode="ro",
+        )
+        .with_volume_mapping(
+            str(PLUGIN_DIR),
+            "/var/lib/grafana/plugins/motherduck-duckdb-datasource",
+            mode="ro",
+        )
+        .with_volume_mapping(str(duckdb_dir.parent), "/var/lib/kohaku", mode="rw")
+    )
+
+    try:
+        container.start()
+    except ContainerStartException as exc:
+        pytest.fail(f"Docker Engine へ接続できないためテストを実行できません: {exc}")
+
+    try:
+        host = container.get_container_host_ip()
+        port = container.get_exposed_port(3000)
+        base_url = f"http://{host}:{port}"
+        auth_header = build_auth_header(ADMIN_USER, ADMIN_PASSWORD)
+
+        wait_for_grafana(base_url, auth_header)
+
+        datasource = request_json(
+            f"{base_url}/api/datasources/name/{DATA_SOURCE_NAME}", headers=auth_header
+        )
+        assert datasource is not None
+        provisioned_uid = datasource["uid"]
+
+        dashboard_path = GRAFANA_DASHBOARDS_DIR / "kohaku" / "rtc-stats.json"
+        dashboard = json.loads(dashboard_path.read_text(encoding="utf-8"))
+        referenced_uids = collect_datasource_uids(dashboard)
+        inheriting_panels = collect_dashboard_inheriting_panels(dashboard)
+
+        # ハードコードされた uid が provisioning の uid と一致しない場合は、
+        # 新規環境でパネルが datasource not found になる
+        assert referenced_uids == {provisioned_uid}, (
+            f"ダッシュボードが参照する uid {referenced_uids} が "
+            f"provisioning の uid {provisioned_uid} と一致しません"
+        )
+        # "-- Dashboard --" を参照するパネルはダッシュボードルートの datasource を
+        # 継承するため、ルートの datasource が設定されている必要がある
+        if inheriting_panels:
+            assert dashboard.get("datasource") is not None, (
+                f"ダッシュボードルートの datasource が未設定ですが、 "
+                f"継承するパネルがあります: {inheriting_panels[:5]}"
+            )
+
+        # Kohaku.json のパネルは type のみ (uid なし) の datasource 参照で、
+        # Grafana が datasource name から uid へ解決する。 provisioning 後に
+        # Grafana が保存したダッシュボードのパネル参照が、 provisioned uid に
+        # 解決されていることを確認する。
+        kohaku_dashboard = request_json(
+            f"{base_url}/api/dashboards/uid/ceg4rfpqzngu8d", headers=auth_header
+        )
+        assert kohaku_dashboard is not None
+
+        def assert_datasource_resolved(datasource: Any) -> None:
+            if isinstance(datasource, dict) and datasource.get("uid"):
+                assert datasource["uid"] == provisioned_uid, (
+                    f"Kohaku.json のパネルが参照する uid {datasource['uid']} が "
+                    f"provisioning の uid {provisioned_uid} と一致しません"
+                )
+
+        for panel in kohaku_dashboard["dashboard"]["panels"]:
+            assert_datasource_resolved(panel.get("datasource"))
+            for target in panel.get("targets", []):
+                assert_datasource_resolved(target.get("datasource"))
+    finally:
+        container.stop()
+
+
 def extract_first_table_value(
     response: Mapping[str, Any], ref_id: str = "A", field_name: str = "count"
 ) -> Any:
