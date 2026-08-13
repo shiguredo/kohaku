@@ -222,14 +222,18 @@ def initialize_log_table(con, client, args, target):
 def sync_log_for_init(con, client, args, target):
     try:
         initialize_log_table(con, client, args, target)
-    except (duckdb.InvalidInputException, duckdb.IOException) as e:
+    except (
+        duckdb.InvalidInputException,
+        duckdb.IOException,
+        duckdb.ConstraintException,
+    ) as e:
         # 対象 target で読み込みエラー (壊れた gzip、read_json のスキーマ不一致等) が
         # 出ても残りの LOG_TARGETS を止めないため、stderr に記録して次の target へ進む。
         # 発生要因の例: 壊れた gzip (IOException)、read_json のスキーマ不一致
-        # (InvalidInputException)。なお IOException は DB 書き込み側 (disk full、
-        # 権限剥奪、WAL 書き込み失敗等) でも発生し得るが、メッセージでは区別せず
-        # 同じ例外処理で捕捉する。コマンド全体の exit code は失敗を示さないため、
-        # target ごとの stderr 出力を運用側で監視すること。
+        # (InvalidInputException)、PK カラムの欠落・null を含む行 (ConstraintException)。
+        # なお IOException は DB 書き込み側 (disk full、権限剥奪、WAL 書き込み失敗等)
+        # でも発生し得るが、メッセージでは区別せず同じ例外処理で捕捉する。コマンド全体の
+        # exit code は失敗を示さないため、target ごとの stderr 出力を運用側で監視すること。
         print(f"{type(e).__name__} ({target}): {e}", file=sys.stderr)
 
 
@@ -253,11 +257,16 @@ def sync_log_for_update(con, client, args, target):
                 args.update_maximum_load,
                 cursor_key,
             )
-    except (duckdb.InvalidInputException, duckdb.IOException) as e:
+    except (
+        duckdb.InvalidInputException,
+        duckdb.IOException,
+        duckdb.ConstraintException,
+    ) as e:
         # 読み込みエラーは stderr に記録して次の target へ進む。IOException は
         # 読み込み側だけでなく DB 書き込み側でも発生し得るが、メッセージでは区別せず
-        # 同じ例外処理で捕捉する。catch しないと単一の壊れたオブジェクトで update 全体が
-        # 中断し、次サイクルもカーソル未進行のまま同じオブジェクトで止まり続ける。
+        # 同じ例外処理で捕捉する。ConstraintException は PK カラムの欠落・null を含む
+        # 行で発生する。catch しないと単一の壊れたオブジェクトで update 全体が中断し、
+        # 次サイクルもカーソル未進行のまま同じオブジェクトで止まり続ける。
         # 該当 target のカーソルは進まないため、壊れたオブジェクトが除去されるまで同じ
         # target で再発するが、他 target の更新は継続できる。
         print(f"{type(e).__name__} ({target}): {e}", file=sys.stderr)
@@ -313,6 +322,9 @@ def move_broken_db(db_path):
     wal → 本体 の順で退避する。 途中で失敗しても本体が元位置に残るため、 次回起動時に
     is_db_broken が破損を再検出して同関数を呼び直せる。 本体は退避先に移ったのに wal
     だけ元位置に取り残される状態を構造的に作らずに済む。
+
+    DB 本体が存在しないが .wal だけ残っている場合 (新規 DB 作成時に古い WAL が再生
+    される状態) も、 .wal を退避するために呼ばれる。
     """
     timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%d%H%M%S%f")
     broken_db_path = f"{db_path}.broken.{timestamp}"
@@ -321,13 +333,18 @@ def move_broken_db(db_path):
     if os.path.exists(wal_path):
         shutil.move(wal_path, f"{broken_db_path}.wal")
 
-    shutil.move(db_path, broken_db_path)
+    if os.path.exists(db_path):
+        shutil.move(db_path, broken_db_path)
 
     return broken_db_path
 
 
 def is_db_broken(db_path):
     """DB ファイルが破損していれば True、 正常または不在なら False を返す。
+
+    DB 本体が存在しないが .wal が残っている場合は、 新規 DB 作成時に古い WAL が再生
+    されて意図しない状態 (古いカーソルやテーブル) が復活するため、 破損扱いにする
+    (init の prepare_db_for_init が move_broken_db で .wal ごと退避する)。
 
     破損以外の接続エラー (ロック競合、 権限不足等) は呼び出し元へ伝播させる。
     read_only=True で開くことで、 WAL 再生による意図せぬ状態変化 (破損を「復旧」
@@ -337,13 +354,21 @@ def is_db_broken(db_path):
     WAL 再生を試みた段階で IOException 等として顕在化する。
     """
     if not os.path.exists(db_path):
-        return False
+        return os.path.exists(f"{db_path}.wal")
     try:
         with duckdb.connect(db_path, read_only=True) as con:
             con.execute("SELECT 1")
     except BROKEN_DB_CONNECT_ERRORS as error:
         if is_broken_db_error(error):
             return True
+        # 破損パターンに一致しない接続エラー (ロック競合、 権限不足等) は破損では
+        # ない可能性が高いため伝播させるが、 DuckDB のバージョン更新で破損文言が
+        # 変わりパターンに一致しなくなる場合もあり得るため、 破損の可能性を案内する。
+        print(
+            f"DB connection error detected (may be a broken DB): {error}. "
+            "If the DB file is broken, remove it and run 'init' again",
+            file=sys.stderr,
+        )
         raise
     return False
 

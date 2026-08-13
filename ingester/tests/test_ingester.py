@@ -510,6 +510,47 @@ def test_re_init(s3_client, rustfs_endpoint, tmp_path):
         assert result[0] == 1
 
 
+def test_init_evacuates_leftover_wal_and_reinitializes(
+    s3_client, rustfs_endpoint, tmp_path
+):
+    """DB 本体が無く .wal だけ残っている状態で init が .wal を退避して新規作成することを確認する。
+
+    DB ファイルを削除した運用者が .wal を消し忘れた場合、 新規 DB 作成時に古い WAL が
+    再生されて init が「already present」でスキップされる事故を防ぐため、 .wal を
+    退避してから新規作成することを検証する。
+    """
+    duckdb_filepath = str(tmp_path / "duck.db")
+
+    assert s3_client.bucket_exists(BUCKET)
+
+    args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
+
+    # 1 回目の init で DB を作成する
+    init(args)
+    assert os.path.exists(duckdb_filepath)
+
+    # DB 本体を削除して .wal だけ残す (運用者の消し忘れを再現)
+    os.remove(duckdb_filepath)
+    wal_filepath = f"{duckdb_filepath}.wal"
+    with open(wal_filepath, "wb") as f:
+        f.write(b"wal payload")
+
+    # 2 回目の init は .wal を退避して新規作成する
+    init(args)
+    assert os.path.exists(duckdb_filepath)
+
+    with duckdb.connect(duckdb_filepath) as con:
+        con.execute("SELECT COUNT(*) FROM rtc_stats")
+        result = con.fetchone()
+        assert result is not None
+        assert result[0] > 0
+
+    # .wal が退避され、 元位置に残っていないこと
+    assert not os.path.exists(wal_filepath)
+    broken_files = list(tmp_path.glob("duck.db.broken.*"))
+    assert len(broken_files) == 1
+
+
 def test_file_count_limit_for_init(s3_client, rustfs_endpoint, tmp_path):
     """init の初期読み込み上限で取り込み件数が制限されることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
@@ -647,6 +688,15 @@ def test_update(s3_client, rustfs_endpoint, tmp_path):
             "InvalidInputException",
             id="malformed-json",
         ),
+        pytest.param(
+            gzip.compress(
+                json.dumps(
+                    {"timestamp": "2025-01-01T00:00:00+09:00", "req": {}}
+                ).encode("utf-8")
+            ),
+            "ConstraintException",
+            id="missing-primary-key",
+        ),
     ],
 )
 def test_update_skips_broken_object_and_continues_other_targets(
@@ -659,6 +709,7 @@ def test_update_skips_broken_object_and_continues_other_targets(
     壊れたオブジェクトのカーソル更新が残らないことを session_webhook カーソルで検証する。
     - broken-gzip: gzip として復号できない生バイト列を投入すると DuckDB は IOException を送出する。
     - malformed-json: 有効な gzip 内に JSON parse できないバイト列を投入すると DuckDB は InvalidInputException を送出する。
+    - missing-primary-key: PK カラム (id) が欠落した JSON 行を投入すると DuckDB は ConstraintException を送出する。
     """
     duckdb_filepath = str(tmp_path / "duck.db")
     args = make_args_for_s3(duckdb_filepath, rustfs_endpoint)
@@ -747,6 +798,15 @@ def test_update_skips_broken_object_and_continues_other_targets(
             "InvalidInputException",
             id="malformed-json",
         ),
+        pytest.param(
+            gzip.compress(
+                json.dumps(
+                    {"timestamp": "2025-01-01T00:00:00+09:00", "req": {}}
+                ).encode("utf-8")
+            ),
+            "ConstraintException",
+            id="missing-primary-key",
+        ),
     ],
 )
 def test_init_skips_broken_object_and_continues_other_targets(
@@ -765,6 +825,7 @@ def test_init_skips_broken_object_and_continues_other_targets(
     sync_log_for_update 側だけカバーされていた挙動の非対称を解消する。
     - broken-gzip: gzip として復号できない生バイト列を投入すると DuckDB は IOException を送出する。
     - malformed-json: 有効な gzip 内に JSON parse できないバイト列を投入すると DuckDB は InvalidInputException を送出する。
+    - missing-primary-key: PK カラム (id) が欠落した JSON 行を投入すると DuckDB は ConstraintException を送出する。
     """
     duckdb_filepath = str(tmp_path / "duck.db")
 

@@ -944,6 +944,74 @@ def test_is_db_broken_does_not_replay_wal_for_healthy_db_with_broken_wal(tmp_pat
     assert run.is_db_broken(str(db_path)) is False
 
 
+def test_is_db_broken_returns_true_for_missing_db_with_leftover_wal(tmp_path):
+    """DB 本体が無く .wal だけ残っている状態を破損扱いにすることを確認する。
+
+    DB 本体を削除した運用者が .wal を消し忘れた場合、 新規 DB 作成時に古い WAL が
+    再生されて意図しない状態 (古いカーソルやテーブル) が復活する。 これを防ぐため、
+    DB 本体が存在しないが .wal が残っている場合は破損として扱う。
+    """
+    db_path = tmp_path / "missing_with_wal.db"
+    wal_path = tmp_path / "missing_with_wal.db.wal"
+    wal_path.write_bytes(b"wal payload")
+
+    assert run.is_db_broken(str(db_path)) is True
+
+
+def test_is_db_broken_returns_false_for_missing_db_without_wal(tmp_path):
+    """DB 本体も .wal も存在しない場合は False を返すことを確認する。"""
+    db_path = tmp_path / "missing_without_wal.db"
+
+    assert run.is_db_broken(str(db_path)) is False
+
+
+def test_is_db_broken_raises_with_guidance_on_unrecognized_error(tmp_path, capsys):
+    """破損パターンに一致しない接続エラーは raise し、 破損の可能性を案内することを確認する。
+
+    DuckDB のバージョン更新で破損文言が変わり、 BROKEN_DB_ERROR_PATTERNS に一致
+    しなくなる場合でも、 ユーザーに破損の可能性を伝えられるようにする。 ロック競合や
+    権限不足のような破損ではない接続エラーは破損として退避しない (伝播させる) 設計を
+    維持する。
+    """
+    # root 実行時は chmod 0 が無視されて Permission denied を再現できないため、
+    # 偽通過を避けるためにテストを明示的に失敗させる。
+    if os.geteuid() == 0:
+        pytest.fail("root では chmod 0 を強制できないためテスト不能です")
+    db_path = tmp_path / "unrecognized_error.db"
+    with duckdb.connect(str(db_path)) as con:
+        con.execute("CREATE TABLE t(id INTEGER)")
+    os.chmod(db_path, 0)
+
+    try:
+        with pytest.raises(duckdb.IOException):
+            run.is_db_broken(str(db_path))
+        captured = capsys.readouterr()
+        assert "may be a broken DB" in captured.err
+    finally:
+        # tmp ディレクトリのクリーンアップが失敗しないようにパーミッションを戻す
+        os.chmod(db_path, 0o600)
+
+
+def test_prepare_db_for_init_evacuates_leftover_wal_without_db(tmp_path, capsys):
+    """DB 本体が無く .wal だけ残っている状態を prepare_db_for_init が退避することを確認する。
+
+    新規 DB 作成時に古い WAL が再生されて意図しない状態が復活するのを防ぐため、
+    .wal ごと退避し、 退避メッセージを stderr に出力する。
+    """
+    db_path = tmp_path / "leftover_wal.db"
+    wal_path = tmp_path / "leftover_wal.db.wal"
+    wal_path.write_bytes(b"wal payload")
+
+    run.prepare_db_for_init(str(db_path))
+
+    renamed_files = list(tmp_path.glob("leftover_wal.db.broken.*"))
+    assert len(renamed_files) == 1
+    assert wal_path.exists() is False
+    assert renamed_files[0].exists()
+    captured = capsys.readouterr()
+    assert "Detected broken DB file. moved to" in captured.err
+
+
 # full_args
 
 
