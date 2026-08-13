@@ -86,8 +86,8 @@ if ! run_bg uv run python src/run.py --db "${DUCKDB_DB_PATH}" \
                                      init; then
   # init 失敗のまま update ループに入ると s3_objects テーブルが無い状態で update が
   # CliUsageError で連続失敗するため、init 失敗時はここで終了する。systemd 経由
-  # (scripts/run-ingester.sh) は Restart= 設定で自動再起動、docker 経由 (本スクリプト)
-  # は compose 側で restart 未設定のため運用者の手動 up が前提。
+  # (scripts/run-ingester.sh) は kohaku.timer の 5 分間隔で再実行、docker 経由
+  # (本スクリプト) は compose の restart: no のため運用者の手動 up が前提。
   echo "run.py init failed. exiting; restart the container manually after fixing the cause." >&2
   exit 1
 fi
