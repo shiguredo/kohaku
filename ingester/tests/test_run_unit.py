@@ -965,6 +965,33 @@ def test_is_db_broken_returns_false_for_missing_db_without_wal(tmp_path):
     assert run.is_db_broken(str(db_path)) is False
 
 
+def test_is_db_broken_raises_with_guidance_on_unrecognized_error(tmp_path, capsys):
+    """破損パターンに一致しない接続エラーは raise し、 破損の可能性を案内することを確認する。
+
+    DuckDB のバージョン更新で破損文言が変わり、 BROKEN_DB_ERROR_PATTERNS に一致
+    しなくなる場合でも、 ユーザーに破損の可能性を伝えられるようにする。 ロック競合や
+    権限不足のような破損ではない接続エラーは破損として退避しない (伝播させる) 設計を
+    維持する。
+    """
+    # root 実行時は chmod 0 が無視されて Permission denied を再現できないため、
+    # 偽通過を避けるためにテストを明示的に失敗させる。
+    if os.geteuid() == 0:
+        pytest.fail("root では chmod 0 を強制できないためテスト不能です")
+    db_path = tmp_path / "unrecognized_error.db"
+    with duckdb.connect(str(db_path)) as con:
+        con.execute("CREATE TABLE t(id INTEGER)")
+    os.chmod(db_path, 0)
+
+    try:
+        with pytest.raises(duckdb.IOException):
+            run.is_db_broken(str(db_path))
+        captured = capsys.readouterr()
+        assert "may be a broken DB" in captured.err
+    finally:
+        # tmp ディレクトリのクリーンアップが失敗しないようにパーミッションを戻す
+        os.chmod(db_path, 0o600)
+
+
 def test_prepare_db_for_init_evacuates_leftover_wal_without_db(tmp_path, capsys):
     """DB 本体が無く .wal だけ残っている状態を prepare_db_for_init が退避することを確認する。
 

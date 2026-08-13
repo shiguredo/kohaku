@@ -361,6 +361,14 @@ def is_db_broken(db_path):
     except BROKEN_DB_CONNECT_ERRORS as error:
         if is_broken_db_error(error):
             return True
+        # 破損パターンに一致しない接続エラー (ロック競合、 権限不足等) は破損では
+        # ない可能性が高いため伝播させるが、 DuckDB のバージョン更新で破損文言が
+        # 変わりパターンに一致しなくなる場合もあり得るため、 破損の可能性を案内する。
+        print(
+            f"DB connection error detected (may be a broken DB): {error}. "
+            "If the DB file is broken, remove it and run 'init' again",
+            file=sys.stderr,
+        )
         raise
     return False
 
