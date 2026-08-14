@@ -1,6 +1,7 @@
 # fluent-bit の retry / 再送による重複データが ingester で除去されない
 
 - Created: 2026-08-03
+- Completed: 2026-08-14
 - Branch: feature/fix-fluent-bit-retry-duplicate-ingestion
 - Polished: 2026-08-03
 - Priority: High
@@ -51,3 +52,10 @@ Grafana の集計値 (COUNT / SUM) が実際より大きくなり、 ダッシ�
 - fluent-bit の再送を模した統合テストが追加され、 通過する。 テストは「空バケットで init → 同一 event を UUID "U1" で put → update で取り込み → 同一 event を別 UUID "U2" で put → update」のクロスバッチ手順 (2 回の update にまたがる手順) で行い、 DuckDB の該当行 (natural key で特定) が 1 行のみになることを検証する。 `rtc_stats` / `session_webhook` の両テーブルで検証し、 同一 last_modified になった場合のカーソル比較 (0001 未実装時) に備えて UUID の辞書順を U1 < U2 に固定する
 - 単一 fluent-bit 運用時の既存テストが引き続き通過する (案 1 の PK 導入で失敗する既存テスト 5 件 (test_update、 test_update_skips_broken_object_and_continues_other_targets の broken-gzip / malformed-json の 2 ケース、 test_update_maximum_load_splits_batches、 test_update_maximum_load_one_takes_single_object_per_call) は、 同一内容の再 put で件数増を期待するもののため、 一意な行を使うデータ変更または期待値変更を加えた上で通過させる)
 - 実装方針 (案 1) の選定理由と、 見送った案 (案 2・案 3) の却下理由が commit メッセージまたは docstring に残る
+
+## 解決方法
+
+rtc_stats / session_webhook テーブルに natural key の PK 制約を追加し、 INSERT ... ON CONFLICT DO NOTHING で重複行を吸収するようにした。
+
+- 変更ファイル: ingester/src/run.py (create_log_table / insert_log の PK 制約と ON CONFLICT 句)、 ingester/DUCKDB_COLUMNS/rtc_stats.yml・session_webhook.yml (primary_key 定義)、 ingester/tests/test_ingester.py (test_update_deduplicates_retransmitted_object 等)
+- 既存 DB は PK 制約の無いテーブルのため、 重複行の有無にかかわらず DB ファイル削除 + init 再実行が必要
