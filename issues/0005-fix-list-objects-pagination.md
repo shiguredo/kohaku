@@ -1,6 +1,7 @@
 # list_objects が pagination なしで全件をメモリ展開する
 
 - Created: 2026-08-03
+- Completed: 2026-08-14
 - Branch: feature/fix-list-objects-pagination
 - Polished: 2026-08-05
 - Priority: Medium
@@ -53,3 +54,10 @@ def list_objects(client, bucket, prefix):
 - `list_objects` とその呼び出し経路が全件をメモリ展開しないことを検証するテストが追加され、 通過する。 init 経路 (先頭 `initial_maximum_load` 件のみ保持) と update 経路 (カーソルより古い多数のオブジェクトとカーソルより新しい少数のオブジェクト、 およびカーソルと同値の last_modified のオブジェクトを混在させ、 保持するオブジェクト数が上限を超えないこと) の両方を検証する
 - 既存の統合テストが引き続き通過する (init / update の取り込み件数・カーソル進行の挙動が変わらないこと)
 - 実装方針 (案 2) の選定理由と、 見送った案 (案 1・案 3) の却下理由が commit メッセージまたは docstring に残る
+
+## 解決方法
+
+MinIO SDK の generator をそのまま返す iter_objects に変更し、 呼び出し側で必要な分だけを保持する方式にした。 init 経路は keep_latest_objects (降順上位 N 件のみ保持)、 update 経路は collect_update_targets (最古 N 件とカーソル同値グループを 1 回の走査で収集) を使う。
+
+- 変更ファイル: ingester/src/run.py (iter_objects / keep_latest_objects / collect_update_targets を新設)、 ingester/tests/test_ingester.py (保持件数の上限とメモリ (tracemalloc) を検証するテスト)、 ingester/tests/test_run_unit.py (docstring の参照修正)
+- 選定理由と却下理由 (案 1: start_after はカーソル (last_modified, object_name) に変換できない、 案 3: 日付 prefix はチャンク生成時刻由来で last_modified と乖離する) は iter_objects の docstring に記載
