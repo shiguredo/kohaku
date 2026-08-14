@@ -1,6 +1,7 @@
 # initial_maximum_load のデフォルトが複数 fluent-bit スケールに不足
 
 - Created: 2026-08-03
+- Completed: 2026-08-14
 - Branch: feature/change-initial-maximum-load-default-for-multi-fluent-bit
 - Polished: 2026-08-05
 - Priority: Medium
@@ -33,3 +34,9 @@
 - `systemd/kohaku.service` の `INITIAL_MAXIMUM_LOAD` 設定、 `ingester/README.md` の実行例、 `.env.common.template` のコメント値が新デフォルトと整合する (更新または削除)
 - 既存テストが引き続き通過する (既存テストは `initial_maximum_load` を明示指定しているため、 デフォルト変更の影響を受けない)
 - 実装方針 (案 1) の選定理由と、 見送った案 (案 2・案 3) の却下理由が commit メッセージまたは定数直上のコメントに残る
+
+## 解決方法
+
+`DEFAULT_INITIAL_MAXIMUM_LOAD` を 100 から 1000 に変更した。 1000 は 10 台構成で単一運用と同等の約 8 時間 (500 分) のカバーを実現する値で、 選定根拠を定数直上のコメントに記載した。
+
+- 変更ファイル: ingester/src/run.py (DEFAULT_INITIAL_MAXIMUM_LOAD と根拠コメント)、 systemd/kohaku.service (Environment=INITIAL_MAXIMUM_LOAD=1000)、 ingester/README.md (実行例)、 .env.common.template (コメント値)、 ingester/tests/test_ingester.py (test_default_initial_maximum_load)
