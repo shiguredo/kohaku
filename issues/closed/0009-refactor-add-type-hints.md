@@ -1,7 +1,7 @@
 # run.py の型ヒント欠如
 
 - Created: 2026-08-14
-- Completed: {YYYY-MM-DD}
+- Completed: 2026-08-14
 - Branch: feature/refactor-add-type-hints
 - Polished: 2026-08-14
 - Priority: Medium
@@ -38,4 +38,14 @@ ingester/src/run.py のほぼ全関数に型ヒントがなく、 shiguredo-pyth
 - テストコード (tests/helpers.py、 tests/test_run_unit.py、 tests/test_ingester.py) が Args に合わせて変更され、 型ヒントが付与される
 - `from __future__ import annotations` が追加される
 - Args と build_parser のデフォルト値の一致を検証するテストが追加され、 通過する (乖離の再発防止)
-- ty check / ruff / 全テストが引き続き通過する (ty check は型ヒント付与後に初めて関数本体を検証するため、 新規エラーを全て解消した状態を指す。 完了条件 1 の網羅性は、 ty の設定に disallow_untyped_defs を追加して機械検証する)
+- ty check / ruff / 全テストが引き続き通過する (ty check は型ヒント付与後に初めて関数本体を検証するため、 新規エラーを全て解消した状態を指す。 完了条件 1 の網羅性は、 Ruff の flake8-annotations (ANN) ルール群を extend-select に追加して機械検証する。 ty には disallow_untyped_defs に相当する設定が存在しないため、 ty の公式 FAQ が代替として明記する Ruff の ANN ルール群を採用する)
+
+## 解決方法
+
+- ingester/src/run.py に dataclass の Args を導入し、 main の parse_args を parse_args(namespace=Args()) に変更して CLI 引数を注入するようにした。 func 属性は Callable 型とし、 set_defaults による注入を維持するため frozen=True は使わない
+- Args のフィールドデフォルトは build_parser のデフォルト値と一致させ、 乖離の再発防止として test_args_defaults_match_build_parser_defaults (build_parser → Args の逆方向の突き合わせ含む) と test_parse_args_injects_args_via_namespace (namespace 注入経路の検証) を追加した
+- run.py の全関数・全モジュール定数に型ヒントを付与し、 from __future__ import annotations を追加した。 load_columns の戻り値は YAML 由来で任意の型になりうるため、 理由を docstring に明記した上で Any で表現した
+- is_after_s3_cursor は minio の Object.last_modified / object_name が型上 Optional のため、 None を ValueError で拒否する分岐を追加し、 テストを追加した。 table_exists / delete_log_by_timestamp は fetchone() の None を型上の防御として処理し、 delete_log_by_timestamp は None を「0 件削除」と誤解釈しないよう RuntimeError で伝播するようにした
+- テスト側は helpers.py の full_args を Args を返すように変更し (Unknown override keys の TypeError ガードは維持)、 test_run_unit.py / test_ingester.py の SimpleNamespace 構築を Args に置き換え、 全テスト関数に型ヒントを付与した。 full_args と Args のキー集合一致を検証する test_full_args_covers_all_args_fields を追加した
+- pyproject.toml の extend-select に ANN ルール群を追加して型ヒントの網羅性を機械検証するようにした。 0013 (テストで Any を使用) の対象ファイルは per-file-ignores で除外し、 test_ingester.py は ANN401 のみ除外した
+- CHANGES.md の ### misc セクションにエントリを追記した (コミット対象外のため、 コミットには含めていない)

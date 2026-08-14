@@ -1,13 +1,15 @@
+from __future__ import annotations
+
 import datetime
 import gzip
 import io
 import json
 import os
+import pathlib
 import sys
 import tracemalloc
 import uuid
 from collections.abc import Iterator, Sequence
-from types import SimpleNamespace
 from typing import Any
 
 import duckdb
@@ -18,6 +20,7 @@ from minio.error import S3Error
 
 from run import (
     DEFAULT_INITIAL_MAXIMUM_LOAD,
+    Args,
     collect_update_targets,
     delete,
     init,
@@ -109,22 +112,20 @@ def make_args_for_s3(
     s3_bucket: str = BUCKET,
     initial_maximum_load: int = 1000,
     update_maximum_load: int = 1000,
-) -> SimpleNamespace:
+) -> Args:
     """init / update テスト用 args を共通設定で組み立てる。
 
     各テストではこの関数を呼んで個別差分だけキーワード引数で上書きする。
     """
-    return SimpleNamespace(
-        **full_args(
-            db=duckdb_filepath,
-            s3_endpoint=rustfs_endpoint,
-            s3_access_key_id=ACCESS_KEY,
-            s3_secret_access_key=SECRET_KEY,
-            s3_bucket=s3_bucket,
-            s3_prefix=PREFIX,
-            initial_maximum_load=initial_maximum_load,
-            update_maximum_load=update_maximum_load,
-        )
+    return full_args(
+        db=duckdb_filepath,
+        s3_endpoint=rustfs_endpoint,
+        s3_access_key_id=ACCESS_KEY,
+        s3_secret_access_key=SECRET_KEY,
+        s3_bucket=s3_bucket,
+        s3_prefix=PREFIX,
+        initial_maximum_load=initial_maximum_load,
+        update_maximum_load=update_maximum_load,
     )
 
 
@@ -132,11 +133,9 @@ def make_args_for_delete(
     duckdb_filepath: str,
     *,
     retention_period: int,
-) -> SimpleNamespace:
+) -> Args:
     """delete テスト用 args を db と retention_period のみで組み立てる。"""
-    return SimpleNamespace(
-        **full_args(db=duckdb_filepath, retention_period=retention_period)
-    )
+    return full_args(db=duckdb_filepath, retention_period=retention_period)
 
 
 def get_latest_object(s3_client: minio.Minio, bucket: str, prefix: str) -> Any:
@@ -233,7 +232,7 @@ def s3_client_empty(rustfs_endpoint: str) -> Iterator[minio.Minio]:
     remove_bucket(client, BUCKET)
 
 
-def test_default_initial_maximum_load():
+def test_default_initial_maximum_load() -> None:
     """DEFAULT_INITIAL_MAXIMUM_LOAD が複数 fluent-bit 運用のスケールに足る値であることを確認する。
 
     デフォルト値 1000 は 10 台構成で単一運用と同等の約 8 時間のカバーを実現する値であり、
@@ -243,7 +242,7 @@ def test_default_initial_maximum_load():
     assert DEFAULT_INITIAL_MAXIMUM_LOAD == 1000
 
 
-def test_keep_latest_objects_limits_memory():
+def test_keep_latest_objects_limits_memory() -> None:
     """keep_latest_objects が上限件数しか保持せず、降順で返すことを確認する。
 
     上限を超える数のオブジェクトを渡しても保持は上限件数に留まる (全件をメモリ展開
@@ -260,7 +259,7 @@ def test_keep_latest_objects_limits_memory():
     assert [obj.object_name for obj in kept] == [f"{i}.gz" for i in range(10)]
 
 
-def test_keep_latest_objects_same_last_modified():
+def test_keep_latest_objects_same_last_modified() -> None:
     """last_modified が同値のオブジェクトが object_name の辞書順降順で並ぶことを確認する。
 
     カーソル比較 (is_after_s3_cursor) のタプル辞書順と一致させるため、同値キーでは
@@ -275,7 +274,7 @@ def test_keep_latest_objects_same_last_modified():
     assert [obj.object_name for obj in kept] == ["9.gz", "8.gz", "7.gz", "6.gz", "5.gz"]
 
 
-def test_keep_latest_objects_does_not_expand_all_objects():
+def test_keep_latest_objects_does_not_expand_all_objects() -> None:
     """keep_latest_objects が全件をメモリ展開しないことを確認する。
 
     全件を list 化してから切り詰める実装に退化するとピークメモリが全件分に膨らむ。
@@ -301,7 +300,7 @@ def test_keep_latest_objects_does_not_expand_all_objects():
     assert peak < 1024 * 1024
 
 
-def test_collect_update_targets_does_not_expand_all_objects():
+def test_collect_update_targets_does_not_expand_all_objects() -> None:
     """collect_update_targets が全件をメモリ展開しないことを確認する。
 
     カーソルより新しいオブジェクトを大量に走査しても、 保持されるのは最古
@@ -331,7 +330,7 @@ def test_collect_update_targets_does_not_expand_all_objects():
     assert peak < 1024 * 1024
 
 
-def test_collect_update_targets_limits_memory():
+def test_collect_update_targets_limits_memory() -> None:
     """collect_update_targets が全件を保持せず、 target 側のみ上限内のオブジェクトを保持することを確認する。
 
     カーソルより古い多数のオブジェクトとカーソルより新しい多数のオブジェクト、 および
@@ -389,7 +388,7 @@ def test_collect_update_targets_limits_memory():
     ]
 
 
-def test_collect_update_targets_no_candidate():
+def test_collect_update_targets_no_candidate() -> None:
     """カーソルより新しいオブジェクトも同値グループも無い場合に空の 2 集合を返すことを確認する。"""
     now = datetime.datetime.now(datetime.UTC)
     cursor_key = (now, "cursor.gz")
@@ -406,7 +405,9 @@ def test_collect_update_targets_no_candidate():
     assert same_last_modified_objects == []
 
 
-def test_init(s3_client, rustfs_endpoint, tmp_path):
+def test_init(
+    s3_client: minio.Minio, rustfs_endpoint: str, tmp_path: pathlib.Path
+) -> None:
     """init 実行でログを取り込み、DuckDB とオブジェクトカーソルが作成されることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
@@ -444,7 +445,9 @@ def test_init(s3_client, rustfs_endpoint, tmp_path):
         assert result[0] == 1
 
 
-def test_re_init(s3_client, rustfs_endpoint, tmp_path):
+def test_re_init(
+    s3_client: minio.Minio, rustfs_endpoint: str, tmp_path: pathlib.Path
+) -> None:
     """init を再実行してもデータ件数とカーソル情報が変化しないことを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
@@ -511,8 +514,8 @@ def test_re_init(s3_client, rustfs_endpoint, tmp_path):
 
 
 def test_init_evacuates_leftover_wal_and_reinitializes(
-    s3_client, rustfs_endpoint, tmp_path
-):
+    s3_client: minio.Minio, rustfs_endpoint: str, tmp_path: pathlib.Path
+) -> None:
     """DB 本体が無く .wal だけ残っている状態で init が .wal を退避して新規作成することを確認する。
 
     DB ファイルを削除した運用者が .wal を消し忘れた場合、 新規 DB 作成時に古い WAL が
@@ -551,7 +554,9 @@ def test_init_evacuates_leftover_wal_and_reinitializes(
     assert len(broken_files) == 1
 
 
-def test_file_count_limit_for_init(s3_client, rustfs_endpoint, tmp_path):
+def test_file_count_limit_for_init(
+    s3_client: minio.Minio, rustfs_endpoint: str, tmp_path: pathlib.Path
+) -> None:
     """init の初期読み込み上限で取り込み件数が制限されることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
@@ -592,7 +597,9 @@ def test_file_count_limit_for_init(s3_client, rustfs_endpoint, tmp_path):
         assert result[0] == 1
 
 
-def test_update(s3_client, rustfs_endpoint, tmp_path):
+def test_update(
+    s3_client: minio.Minio, rustfs_endpoint: str, tmp_path: pathlib.Path
+) -> None:
     """update 実行時に差分ログのみが追加され、件数とカーソルが更新されることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
@@ -700,8 +707,13 @@ def test_update(s3_client, rustfs_endpoint, tmp_path):
     ],
 )
 def test_update_skips_broken_object_and_continues_other_targets(
-    s3_client, rustfs_endpoint, tmp_path, capsys, broken_payload, expected_exc_name
-):
+    s3_client: minio.Minio,
+    rustfs_endpoint: str,
+    tmp_path: pathlib.Path,
+    capsys: pytest.CaptureFixture[str],
+    broken_payload: bytes,
+    expected_exc_name: str,
+) -> None:
     """壊れた session_webhook オブジェクトがあっても update が完走することを確認する。
 
     sync_log_for_update が捕捉する両例外型で、 壊れた target があっても他の target への
@@ -810,13 +822,13 @@ def test_update_skips_broken_object_and_continues_other_targets(
     ],
 )
 def test_init_skips_broken_object_and_continues_other_targets(
-    s3_client_without_session_webhook,
-    rustfs_endpoint,
-    tmp_path,
-    capsys,
-    broken_payload,
-    expected_exc_name,
-):
+    s3_client_without_session_webhook: minio.Minio,
+    rustfs_endpoint: str,
+    tmp_path: pathlib.Path,
+    capsys: pytest.CaptureFixture[str],
+    broken_payload: bytes,
+    expected_exc_name: str,
+) -> None:
     """壊れた session_webhook オブジェクトがあっても init が完走することを確認する。
 
     sync_log_for_init が捕捉する両例外型で、 壊れた target があっても他の target への
@@ -879,7 +891,9 @@ def test_init_skips_broken_object_and_continues_other_targets(
     assert f"{expected_exc_name} (session_webhook):" in captured.err
 
 
-def test_all_delete(s3_client, rustfs_endpoint, tmp_path):
+def test_all_delete(
+    s3_client: minio.Minio, rustfs_endpoint: str, tmp_path: pathlib.Path
+) -> None:
     """保持期間外のデータだけで構成された場合に delete で全件削除されることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
@@ -923,7 +937,9 @@ def test_all_delete(s3_client, rustfs_endpoint, tmp_path):
         assert result[0] == 0
 
 
-def test_delete(s3_client, rustfs_endpoint, tmp_path):
+def test_delete(
+    s3_client: minio.Minio, rustfs_endpoint: str, tmp_path: pathlib.Path
+) -> None:
     """保持期間外と期間内が混在する場合に delete で期間外のみ削除されることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
@@ -972,7 +988,9 @@ def test_delete(s3_client, rustfs_endpoint, tmp_path):
         assert result[0] == len(objects) // 2
 
 
-def test_delete_within_retention_period(s3_client, rustfs_endpoint, tmp_path):
+def test_delete_within_retention_period(
+    s3_client: minio.Minio, rustfs_endpoint: str, tmp_path: pathlib.Path
+) -> None:
     """保持期間外と期間内が混在する場合でも、 retention_period を長くとるとどの行も削除対象にならないことを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
@@ -1021,7 +1039,7 @@ def test_delete_within_retention_period(s3_client, rustfs_endpoint, tmp_path):
         assert result[0] == len(objects)
 
 
-def test_no_bucket(rustfs_endpoint, tmp_path):
+def test_no_bucket(rustfs_endpoint: str, tmp_path: pathlib.Path) -> None:
     """RustFS のバケットが存在しない場合に init が S3Error(NoSuchBucket) を送出することを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
@@ -1038,8 +1056,10 @@ def test_no_bucket(rustfs_endpoint, tmp_path):
 
 
 def test_init_skips_missing_session_webhook(
-    s3_client_without_session_webhook, rustfs_endpoint, tmp_path
-):
+    s3_client_without_session_webhook: minio.Minio,
+    rustfs_endpoint: str,
+    tmp_path: pathlib.Path,
+) -> None:
     """session_webhook が S3 に存在しない場合でも init が成功し、rtc_stats のみ取り込まれることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
@@ -1074,7 +1094,9 @@ def test_init_skips_missing_session_webhook(
         assert cursor_count[0] == 1
 
 
-def test_init_and_update_on_empty_bucket(s3_client_empty, rustfs_endpoint, tmp_path):
+def test_init_and_update_on_empty_bucket(
+    s3_client_empty: minio.Minio, rustfs_endpoint: str, tmp_path: pathlib.Path
+) -> None:
     """全ターゲットが空のバケットに対して init/update がエラーなく完走し、データテーブルが作成されないことを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
@@ -1118,7 +1140,9 @@ def test_init_and_update_on_empty_bucket(s3_client_empty, rustfs_endpoint, tmp_p
         assert_only_s3_objects_table(duckdb_connection)
 
 
-def test_update_maximum_load_splits_batches(s3_client, rustfs_endpoint, tmp_path):
+def test_update_maximum_load_splits_batches(
+    s3_client: minio.Minio, rustfs_endpoint: str, tmp_path: pathlib.Path
+) -> None:
     """update_maximum_load より多い新規ログを 1 回の update で取り込まず、複数回呼び出しで取り込み切ることを確認する。"""
     duckdb_filepath = str(tmp_path / "duck.db")
 
@@ -1209,8 +1233,8 @@ def test_update_maximum_load_splits_batches(s3_client, rustfs_endpoint, tmp_path
 
 
 def test_update_maximum_load_one_takes_single_object_per_call(
-    s3_client, rustfs_endpoint, tmp_path
-):
+    s3_client: minio.Minio, rustfs_endpoint: str, tmp_path: pathlib.Path
+) -> None:
     """update_maximum_load=1 (positive_int の最小値) で 1 回あたり 1 件ずつ取り込むことを確認する。
 
     collect_update_targets が保持する最古側 1 件のみを 1 回の update で取り込む境界値で、
@@ -1280,7 +1304,9 @@ def test_update_maximum_load_one_takes_single_object_per_call(
     assert fetch_rtc_stats_count() == initial_count + 3
 
 
-def test_update_ingests_same_last_modified_object(s3_client, rustfs_endpoint, tmp_path):
+def test_update_ingests_same_last_modified_object(
+    s3_client: minio.Minio, rustfs_endpoint: str, tmp_path: pathlib.Path
+) -> None:
     """カーソルと同値の last_modified を持つオブジェクトが、カーソルより辞書順が小さくても取り込まれることを確認する。
 
     カーソル通過後に同値の last_modified で現れたオブジェクトは、 旧実装では is_after_s3_cursor
@@ -1343,8 +1369,8 @@ def test_update_ingests_same_last_modified_object(s3_client, rustfs_endpoint, tm
 
 
 def test_update_deduplicates_retransmitted_object(
-    s3_client_empty, rustfs_endpoint, tmp_path
-):
+    s3_client_empty: minio.Minio, rustfs_endpoint: str, tmp_path: pathlib.Path
+) -> None:
     """fluent-bit の再送 (同一 event の別 UUID put) で重複行が 1 行のみになることを確認する。
 
     PK 制約 + INSERT ... ON CONFLICT DO NOTHING により、 再送された同一 natural key の行が
