@@ -1,6 +1,7 @@
 # fluent-bit 識別子を S3 オブジェクトキーに含める
 
 - Created: 2026-08-03
+- Completed: 2026-08-14
 - Branch: feature/add-fluent-bit-identifier-in-s3-key
 - Polished: 2026-08-05
 - Priority: High
@@ -50,3 +51,10 @@ s3_key_format: /${S3_PREFIX}/$TAG/%Y/%m/%d/${HOSTNAME}-$UUID.gz
 - S3 上のオブジェクトキーにホスト名が含まれることを検証する統合テストが追加され、 通過する。 テストは fixture の env に HOSTNAME を明示し、 fluent-bit が put したオブジェクトのキーにその値が含まれることを確認する。 fixture の env セクションは fixture を利用する全テストで共有されるため、 既存テスト用にデフォルト値を設けて描画する
 - 既存の統合テスト (`test_fluent_bit_rustfs_integration.py`) が引き続き通過する
 - `docs/SORA_FLUENT_BIT.md` への追記と、 ホスト名一意性の運用制約の記載は、 Issue 0006 (複数 fluent-bit 運用ガイド) に委譲する (0006 は未 polish のため、 本委譲内容は 0006 の polish 時にスコープへ含める)
+
+## 解決方法
+
+fluent-bit の `s3_key_format` に `${HOSTNAME}` を追加し、 put されたオブジェクトのキーに fluent-bit が動作するノードのホスト名が記録されるようにした。
+
+- 変更ファイル: fluent-bit/fluent-bit.yml.s3、 fluent-bit/fluent-bit.yml.rustfs (s3_key_format に ${HOSTNAME} を追加)、 ingester/tests/test_fluent_bit_rustfs_integration.py (オブジェクトキーにホスト名が含まれることを検証するテスト)
+- docs/SORA_FLUENT_BIT.md へのキー形式の追記とホスト名一意性の運用制約は 0006 で実施した
