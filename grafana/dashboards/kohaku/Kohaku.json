@@ -68,7 +68,7 @@
                 "value": [
                   {
                     "title": "",
-                    "url": "d/feg4t1lbp3b40b/rtc-stats?var-connection_id=${__value.raw}﻿﻿&from=﻿﻿${__data.fields.from_time}﻿﻿&to=﻿﻿${__data.fields.to_time}﻿﻿&var-channel_id=﻿${__data.fields.channel_id}﻿&var-session_id=${__data.fields.session_id}"
+                    "url": "d/feg4t1lbp3b40b/rtc-stats?var-connection_id=${__value.raw}&from=${__data.fields.from_time}&to=${__data.fields.to_time}&var-channel_id=${__data.fields.channel_id}&var-session_id=${__data.fields.session_id}"
                   }
                 ]
               }
