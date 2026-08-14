@@ -1,6 +1,7 @@
 # 複数 fluent-bit 運用ガイドを docs/ に追加する
 
 - Created: 2026-08-03
+- Completed: 2026-08-14
 - Branch: feature/add-multi-fluent-bit-operations-guide
 - Polished: 2026-08-05
 - Priority: Medium
@@ -45,3 +46,9 @@
 - `docs/SORA_FLUENT_BIT.md` に S3 オブジェクトキーの形式 (ホスト名を含む) の追記が行われる (Issue 0003 の委譲)
 - `docs/README.md` にリンクが追加される
 - Issue 0001〜0005 の対応状況を踏まえて記述する (対応済み = 実装完了・ issues/closed へ移動済み なら「Issue 000N で修正済み」、 未対応なら「Issue 000N で対応検討中」)
+
+## 解決方法
+
+docs/MULTI_FLUENT_BIT.md を新規作成し、 概要・設定管理 (fluent-bit.yml の生成元の一致、 設定不一致の影響、 retry_limit の扱い、 ホスト名の一意性)・tail DB の永続化・パラメータ調整 (upload_timeout と更新間隔、 initial_maximum_load の計算式、 update_maximum_load、 上書き方法)・障害切り分け・関連 issue と対応状況の各セクションを記載した。 docs/SORA_FLUENT_BIT.md に S3 オブジェクトキーの形式 (ホスト名を含む) を追記し、 docs/README.md にリンクを追加した。 構成管理ツールの言及を削除する整理も実施した。
+
+- 変更ファイル: docs/MULTI_FLUENT_BIT.md (新規)、 docs/SORA_FLUENT_BIT.md (S3 オブジェクトキーの形式)、 docs/README.md (リンク)
