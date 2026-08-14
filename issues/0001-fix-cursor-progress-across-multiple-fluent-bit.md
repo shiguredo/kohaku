@@ -1,6 +1,7 @@
 # 複数 fluent-bit 環境での同一 last_modified カーソル脱落
 
 - Created: 2026-08-03
+- Completed: 2026-08-14
 - Branch: feature/fix-cursor-progress-across-multiple-fluent-bit
 - Polished: 2026-08-03
 - Priority: High
@@ -57,3 +58,10 @@ S3 の `last_modified` は PUT 完了時刻を ISO 8601 形式で返す。 精�
 - 本 issue の変更のリリースは 0002 の PK 制約実装の完了後に行う
 - 単一 fluent-bit 運用時の既存テストが引き続き通過する (既存のバッチ分割テストは put が同一 last_modified 値で完了しない前提のため、 実装時に対象オブジェクトの last_modified のばらつきを確認する)
 - 実装方針 (案 2) の選定理由と、 見送った案 (案 1) の却下理由が commit メッセージまたは docstring に残る
+
+## 解決方法
+
+カーソルと同値の last_modified を持つオブジェクト (カーソル行自身を除く) を、 毎回の update で再走査して取り込むようにした (insert_log_from_s3 の同値グループ再走査)。 重複行は PK 制約 + INSERT ... ON CONFLICT DO NOTHING で吸収する。 カーソルはバッチ内最新まで進める。
+
+- 変更ファイル: ingester/src/run.py (insert_log_from_s3 の同値グループ取り込み)、 ingester/tests/test_ingester.py (test_update_ingests_same_last_modified_object 等)
+- 0002 の PK 制約実装と合わせてリリースした
