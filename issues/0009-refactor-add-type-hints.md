@@ -38,4 +38,4 @@ ingester/src/run.py のほぼ全関数に型ヒントがなく、 shiguredo-pyth
 - テストコード (tests/helpers.py、 tests/test_run_unit.py、 tests/test_ingester.py) が Args に合わせて変更され、 型ヒントが付与される
 - `from __future__ import annotations` が追加される
 - Args と build_parser のデフォルト値の一致を検証するテストが追加され、 通過する (乖離の再発防止)
-- ty check / ruff / 全テストが引き続き通過する (ty check は型ヒント付与後に初めて関数本体を検証するため、 新規エラーを全て解消した状態を指す。 完了条件 1 の網羅性は、 ty の設定に disallow_untyped_defs を追加して機械検証する)
+- ty check / ruff / 全テストが引き続き通過する (ty check は型ヒント付与後に初めて関数本体を検証するため、 新規エラーを全て解消した状態を指す。 完了条件 1 の網羅性は、 Ruff の flake8-annotations (ANN) ルール群を extend-select に追加して機械検証する。 ty には disallow_untyped_defs に相当する設定が存在しないため、 ty の公式 FAQ が代替として明記する Ruff の ANN ルール群を採用する)
