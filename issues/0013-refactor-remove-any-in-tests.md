@@ -3,31 +3,49 @@
 - Created: 2026-08-14
 - Completed: {YYYY-MM-DD}
 - Branch: feature/refactor-remove-any-in-tests
-- Polished: {YYYY-MM-DD}
+- Polished: 2026-08-14
+- Priority: Medium
+- Model: deepseek-v4-flash
 
 ## 目的
 
-テストコードで typing.Any を使用しており、 shiguredo-python 規約 (「Any を使わないこと。 どうしても必要な場合は理由をコメントで明記すること」) に違反している。 具象型または object に置き換える。
+テストコードで typing.Any を使用しており、 shiguredo-python 規約 (「Any を使わないこと。 どうしても必要な場合は理由をコメントで明記すること」) に違反している。 具象型または理由コメント付き Any に整理する。
 
 ## 現状
 
-Any を使用している箇所:
+ingester/tests/ 配下の Any の使用箇所 (全 17 箇所、 3 ファイル):
 
-- ingester/tests/test_ingester.py: import (11 行)、 update_timestamp_for_rtc_stats の obj 引数 (86 行)、 get_latest_object の戻り値 (142 行)
-- ingester/tests/test_fluent_bit_rustfs_integration.py: import (5 行)、 2 箇所 (21, 150 行)
-- ingester/tests/test_grafana_integration.py: import (10 行)、 4 箇所 (48, 53, 130, 140 行)
-
-置き換え可能な例:
-
-- get_latest_object は minio.datatypes.Object を返すため、 戻り値型を Object にできる
-- update_timestamp_for_rtc_stats の obj は fetchall の 4 要素行なので、 4 要素タプル型にできる
+- ingester/tests/test_ingester.py:
+  - import (typing.Any)
+  - update_timestamp_for_rtc_stats の obj 引数 (Sequence[Any])
+  - get_latest_object の戻り値 (Any)
+- ingester/tests/test_fluent_bit_rustfs_integration.py:
+  - import (typing.Any)
+  - fetch_scalar の戻り値 (Any)
+  - get_s3_cursor の戻り値 (tuple[Any, ...] | None)
+- ingester/tests/test_grafana_integration.py:
+  - import (typing.Any)
+  - request_json の body 引数 (Any = None) と戻り値 (Any)
+  - collect_datasource_uids の dashboard 引数 (Mapping[str, Any]) と内の visit 関数 (list[Mapping[str, Any]])
+  - collect_dashboard_inheriting_panels の dashboard 引数 (Mapping[str, Any]) と内の visit 関数 (list[Mapping[str, Any]])
+  - assert_datasource_resolved の datasource 引数 (Any)
+  - extract_first_table_value の response 引数 (Mapping[str, Any]) と戻り値 (Any)
+  - query_grafana_datasource の戻り値 (Any)
 
 ## 設計方針
 
-- 各箇所で Any を具象型に置き換える (戻り値が特定できるものはその型、 できないものは object)
-- どうしても Any が必要な箇所には理由コメントを付ける
+- 戻り値が特定できるものは具象型に置き換える:
+  - get_latest_object → minio.datatypes.Object
+  - update_timestamp_for_rtc_stats の obj → tuple[datetime.datetime, str, str, str] (fetchall の 4 要素行)
+  - fetch_scalar → int (全呼び出しが SELECT COUNT(*) の結果)
+  - get_s3_cursor → tuple[datetime.datetime, str] | None
+- JSON レスポンスを扱う request_json の戻り値や、 ダッシュボード JSON の深いネスト構造を扱う collect_datasource_uids / collect_dashboard_inheriting_panels の Mapping[str, Any] は、 具象型が存在しない (object は subscript 不可のため置き換え不能)。 構造を絞った型への置き換え (例: request_json は TypeVar で呼び出し側の期待型に推論させる) か、 理由コメント付きで Any を残す
+- 完了条件の「理由コメント付きのものを除く」に該当する箇所は、 コメントで「JSON 由来で具象型が存在しないため」等の理由を明記する
+- test_ingester.py は 0009 (run.py の型ヒント欠如) でも変更対象のため、 0009 の完了後に本 issue を実装する (同一ファイルの変更が衝突しないように)
 
 ## 完了条件
 
 - ingester/tests/ 配下の全テストから Any の使用がなくなる (理由コメント付きのものを除く)
+- Any が残っていないことを確認する (コードレビューで確認する)
 - 全テストが引き続き通過する (ruff / ty 含む)
+- CHANGES.md の `### misc` セクションに変更履歴が追記される (テストのみのリファクタリングのため)
