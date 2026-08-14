@@ -32,6 +32,12 @@ test = [
 # ruff のデフォルトの lint ルール (E4/E7/E9, F) に加えて以下を有効化する
 # https://docs.astral.sh/ruff/rules/
 extend-select = [
+  # 型ヒントの網羅性チェック (flake8-annotations)。
+  # mypy の disallow_untyped_defs 相当は ty に存在しないため、 ty の公式 FAQ
+  # (https://docs.astral.sh/ty/reference/typing-faq/#why-doesnt-ty-warn-about-missing-type-annotations)
+  # の案内に従い Ruff の ANN ルール群で機械検証する
+  # https://docs.astral.sh/ruff/rules/#flake8-annotations-ann
+  "ANN",
   # except 内の raise e を bare raise に置き換えるルール
   # https://docs.astral.sh/ruff/rules/verbose-raise/
   "TRY201",
@@ -45,6 +51,16 @@ extend-select = [
   # https://docs.astral.sh/ruff/rules/#pyupgrade-up
   "UP",
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# 型ヒントの網羅性チェック (ANN) は Any の整理を伴う別作業の対象ファイルでは
+# 型ヒント自体の変更が衝突するため、その作業の完了まで除外する
+# (Any 以外の型ヒント付与も含めて扱う)
+"tests/test_fluent_bit_rustfs_integration.py" = ["ANN"]
+"tests/test_grafana_integration.py" = ["ANN"]
+# Any の使用そのもの (ANN401) は Any の整理を伴う別作業の対象のため除外する
+# (型ヒントの網羅性チェック (ANN001/ANN201 等) は対象)
+"tests/test_ingester.py" = ["ANN401"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

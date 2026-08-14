@@ -1,14 +1,25 @@
+from __future__ import annotations
+
+import dataclasses
 import time
 from collections.abc import Callable
 
+import run
 
-def full_args(**overrides) -> dict[str, object]:
-    """init / update / delete が触る全 args 属性をデフォルト値で埋めた dict を返す。
 
-    overrides で必要な属性のみ上書きする。 「テスト対象が将来別属性を参照するリグレッション」
-    が入ったときに AttributeError で偽通過するのを防ぐため、 args 全属性を 1 箇所で定義する。
-    s3_endpoint は RFC 6761 で予約された .invalid TLD を使い、 万一リグレッションで早期 return
-    が抜けて S3 接続経路に進んでも DNS 解決段階で失敗させる。
+def full_args(**overrides: object) -> run.Args:
+    """init / update / delete が触る全 args 属性をデフォルト値で埋めた Args を返す。
+
+    overrides で必要な属性のみ上書きする。 属性の定義は run.Args に委譲し、
+    テスト用に本番デフォルトと異なる値が必要な属性 (db / s3_endpoint の
+    .invalid TLD、 s3_use_ssl の False、 initial_maximum_load 等) のみを
+    ここで上書きする。 s3_endpoint は RFC 6761 で予約された .invalid TLD を使い、
+    万一リグレッションで早期 return が抜けて S3 接続経路に進んでも DNS 解決段階で
+    失敗させる。
+
+    run.Args に新フィールドが追加された場合はここにも追加すること (追加し忘れると
+    Args の本番デフォルトが黙って適用されるため、 test_full_args_covers_all_args_fields
+    でキー集合の一致を検証する)。
     """
     defaults: dict[str, object] = {
         "db": "/tmp/dummy.db",
@@ -27,7 +38,7 @@ def full_args(**overrides) -> dict[str, object]:
     if unknown:
         raise TypeError(f"Unknown override keys: {unknown}")
     defaults.update(overrides)
-    return defaults
+    return dataclasses.replace(run.Args(), **defaults)
 
 
 class WaitTimeoutError(Exception):

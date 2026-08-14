@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import bisect
 import datetime
@@ -6,13 +8,38 @@ import os
 import shutil
 import stat
 import sys
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator, Mapping
+from dataclasses import dataclass
+from typing import Any, NoReturn
 
 import duckdb
 import minio
 import yaml
 from minio.datatypes import Object
 from minio.error import S3Error
+
+
+@dataclass
+class Args:
+    """CLI 引数。 main が parse_args(namespace=Args()) で注入する。
+
+    フィールドデフォルトは build_parser のデフォルト値と一致させる
+    (parse_args(namespace=...) では dataclass 側のデフォルトが優先されるため、
+    --help 表示と乖離すると実挙動と表示が食い違う)。
+    """
+
+    db: str = "duck.db"
+    s3_endpoint: str = "s3.amazonaws.com"
+    s3_access_key_id: str | None = None
+    s3_secret_access_key: str | None = None
+    s3_use_ssl: bool = True
+    s3_region: str = "ap-northeast-1"
+    s3_bucket: str = "kohaku"
+    s3_prefix: str = "log"
+    retention_period: int = 7
+    initial_maximum_load: int = 1000
+    update_maximum_load: int = 100
+    func: Callable[[Args], None] | None = None
 
 
 class CliUsageError(Exception):
@@ -31,27 +58,27 @@ class CliUsageError(Exception):
     """
 
 
-DEFAULT_DUCKDB_FILE = "duck.db"
+DEFAULT_DUCKDB_FILE: str = "duck.db"
 # /kohaku/log/rtc_stats/2025/06/01/a.gz のようなパスを想定
-DEFAULT_S3_BUCKET_NAME = "kohaku"
-DEFAULT_S3_PREFIX = "log"
+DEFAULT_S3_BUCKET_NAME: str = "kohaku"
+DEFAULT_S3_PREFIX: str = "log"
 
-DEFAULT_S3_REGION = "ap-northeast-1"
-DEFAULT_RETENTION_PERIOD = 7
+DEFAULT_S3_REGION: str = "ap-northeast-1"
+DEFAULT_RETENTION_PERIOD: int = 7
 # init 時に読み込むファイル数の上限。古すぎるデータを取り込まないために
 # ユーザーが指定する上限であり、超過した古い側オブジェクトは意図的に取り込まれない。
 # デフォルト値 1000 は複数 fluent-bit (10 台) 構成で単一運用と同等の約 8 時間
 # (500 分) のカバーを実現する値 (カバーしたい分数 500 ÷ upload_timeout 5 分 ×
 # 10 台)。20 台構成では約 4 時間。単一運用では初回取り込み量が 10 倍になるが、
 # 対象オブジェクトは gzip 圧縮済みの小さな JSON オブジェクトで実害は限定的。
-DEFAULT_INITIAL_MAXIMUM_LOAD = 1000
+DEFAULT_INITIAL_MAXIMUM_LOAD: int = 1000
 # update 時に 1 回で取り込むファイル数の上限。停止後の復帰時に大量蓄積したログを
 # バッチ分割するために用いる。
-DEFAULT_UPDATE_MAXIMUM_LOAD = 100
+DEFAULT_UPDATE_MAXIMUM_LOAD: int = 100
 
-COLUMNS_DIR = "./DUCKDB_COLUMNS"
+COLUMNS_DIR: str = "./DUCKDB_COLUMNS"
 # DB ファイルが破損していると判断するためのエラーメッセージのパターン
-BROKEN_DB_ERROR_PATTERNS = (
+BROKEN_DB_ERROR_PATTERNS: tuple[str, ...] = (
     "corrupt",
     "invalid database",
     "not a valid duckdb",
@@ -59,14 +86,14 @@ BROKEN_DB_ERROR_PATTERNS = (
 # 破損 DB を connect したときに DuckDB が送出しうる例外クラス。
 # is_db_broken の except タプル (prepare_db_for_init / raise_if_db_broken は is_db_broken
 # 経由でこの分類を共有する)。
-BROKEN_DB_CONNECT_ERRORS = (
+BROKEN_DB_CONNECT_ERRORS: tuple[type[Exception], ...] = (
     duckdb.IOException,
     duckdb.InternalException,
     duckdb.FatalException,
 )
 
 # Sora のログテーブル名兼 DuckDB のテーブル名
-LOG_TARGETS = (
+LOG_TARGETS: tuple[str, ...] = (
     # 現行のダッシュボードでは connection を使用していないため、使用する場合はコメントアウトを外す
     # "connection",
     "rtc_stats",
@@ -74,14 +101,16 @@ LOG_TARGETS = (
 )
 
 
-def positive_int(value):
+def positive_int(value: str) -> int:
     int_value = int(value)
     if int_value < 1:
         raise argparse.ArgumentTypeError("value must be >= 1")
     return int_value
 
 
-def load_columns(targets=LOG_TARGETS, columns_dir=COLUMNS_DIR):
+def load_columns(
+    targets: tuple[str, ...] = LOG_TARGETS, columns_dir: str = COLUMNS_DIR
+) -> dict[str, dict[str, Any]]:
     """targets 各テーブルのカラム定義 YAML を columns_dir から読み込んで辞書として返す。
 
     戻り値は `{target: {"columns": {カラム名: 型}, "primary_key": [PK カラム名...]}}` の形式。
@@ -92,8 +121,11 @@ def load_columns(targets=LOG_TARGETS, columns_dir=COLUMNS_DIR):
     のようなユーザー向け 1 行メッセージにはしない)。
 
     引数はデフォルトで LOG_TARGETS / COLUMNS_DIR を利用する。
+
+    戻り値の columns の値・primary_key の要素は YAML 由来で実行時検証されておらず
+    任意の型になりうるため Any で表現する。
     """
-    duckdb_columns = {}
+    duckdb_columns: dict[str, dict[str, Any]] = {}
     for target in targets:
         file_path = os.path.join(columns_dir, f"{target}.yml")
         if not os.path.exists(file_path):
@@ -123,14 +155,14 @@ def load_columns(targets=LOG_TARGETS, columns_dir=COLUMNS_DIR):
     return duckdb_columns
 
 
-def require_s3_credentials(args):
+def require_s3_credentials(args: Args) -> None:
     if not args.s3_access_key_id or not args.s3_secret_access_key:
         raise CliUsageError(
             "S3 credentials are required: provide --s3_access_key_id and --s3_secret_access_key"
         )
 
 
-def init(args):
+def init(args: Args) -> None:
     prepare_db_for_init(args.db)
     if has_s3_objects_table(args.db):
         print(
@@ -160,7 +192,12 @@ def init(args):
             sync_log_for_init(con, client, args, target)
 
 
-def initialize_log_table(con, client, args, target):
+def initialize_log_table(
+    con: duckdb.DuckDBPyConnection,
+    client: minio.Minio | None,
+    args: Args,
+    target: str,
+) -> None:
     """対象テーブルを初回作成する。
 
     keep_latest_objects は (last_modified, object_name) の降順上位 initial_maximum_load
@@ -194,6 +231,11 @@ def initialize_log_table(con, client, args, target):
             "Delete DB file and its .wal, then run 'init' again."
         )
 
+    # 型上 Optional なのはテスト (CliUsageError 経路) が None を渡すためで、
+    # ここは防御的に弾く (呼び出し側は常に実値を渡す前提)。
+    if client is None:
+        raise RuntimeError("S3 client is required for initialize_log_table")
+
     log_objects = keep_latest_objects(
         iter_objects(client, args.s3_bucket, f"{args.s3_prefix}/{target}/"),
         args.initial_maximum_load,
@@ -219,7 +261,9 @@ def initialize_log_table(con, client, args, target):
         raise
 
 
-def sync_log_for_init(con, client, args, target):
+def sync_log_for_init(
+    con: duckdb.DuckDBPyConnection, client: minio.Minio, args: Args, target: str
+) -> None:
     try:
         initialize_log_table(con, client, args, target)
     except (
@@ -237,7 +281,9 @@ def sync_log_for_init(con, client, args, target):
         print(f"{type(e).__name__} ({target}): {e}", file=sys.stderr)
 
 
-def sync_log_for_update(con, client, args, target):
+def sync_log_for_update(
+    con: duckdb.DuckDBPyConnection, client: minio.Minio, args: Args, target: str
+) -> None:
     cursor_key = get_s3_objects_cursor(con, target)
     try:
         if cursor_key is None:
@@ -272,7 +318,10 @@ def sync_log_for_update(con, client, args, target):
         print(f"{type(e).__name__} ({target}): {e}", file=sys.stderr)
 
 
-def is_after_s3_cursor(obj_key, cursor_key):
+def is_after_s3_cursor(
+    obj_key: tuple[datetime.datetime | None, str | None],
+    cursor_key: tuple[datetime.datetime | None, str | None],
+) -> bool:
     """
     s3_objects テーブルに保存したカーソルより新しいオブジェクトかを判定する。
 
@@ -283,31 +332,47 @@ def is_after_s3_cursor(obj_key, cursor_key):
     として明示的に拒否する。 判定はタプルの辞書順比較で行い、 last_modified が同値の
     場合は object_name の辞書順で決まる。
     """
-    obj_last_modified, _ = obj_key
-    cursor_last_modified, _ = cursor_key
+    obj_last_modified, obj_object_name = obj_key
+    cursor_last_modified, cursor_object_name = cursor_key
+    # MinIO SDK の型上は None の可能性があるため、 明示的に拒否して
+    # タプル比較での TypeError を防ぐ。
+    if obj_last_modified is None:
+        raise ValueError("S3 object has a missing last_modified timestamp")
+    if cursor_last_modified is None:
+        raise ValueError("S3 cursor has a missing last_modified timestamp")
+    if obj_object_name is None:
+        raise ValueError("S3 object has a missing object_name")
+    if cursor_object_name is None:
+        raise ValueError("S3 cursor has a missing object_name")
     if obj_last_modified.tzinfo is None:
         raise ValueError("S3 object has a timezone-naive last_modified timestamp")
     if cursor_last_modified.tzinfo is None:
         raise ValueError("S3 cursor has a timezone-naive last_modified timestamp")
-    return obj_key > cursor_key
+    return (obj_last_modified, obj_object_name) > (
+        cursor_last_modified,
+        cursor_object_name,
+    )
 
 
-def create_s3_objects_table(con):
+def create_s3_objects_table(con: duckdb.DuckDBPyConnection) -> None:
     con.execute(
         "CREATE TABLE IF NOT EXISTS s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)"
     )
 
 
-def table_exists(con, table_name):
+def table_exists(con: duckdb.DuckDBPyConnection, table_name: str) -> bool:
     rel = con.execute(
         "SELECT count(*) FROM information_schema.tables WHERE table_name=?",
         (table_name,),
     )
     count = rel.fetchone()
+    # SELECT count(*) は必ず 1 行返すため None は来ない (型上の防御)。
+    if count is None:
+        return False
     return count[0] > 0
 
 
-def is_broken_db_error(error):
+def is_broken_db_error(error: Exception) -> bool:
     """
     DB ファイルが破損しているかどうかを判定する
     """
@@ -315,7 +380,7 @@ def is_broken_db_error(error):
     return any(pattern in message for pattern in BROKEN_DB_ERROR_PATTERNS)
 
 
-def move_broken_db(db_path):
+def move_broken_db(db_path: str) -> str:
     """DB ファイルが破損していると判断した場合に .broken.<timestamp> へリネームする。
 
     タイムスタンプはマイクロ秒まで含めて crash loop による連続退避時の衝突を抑える。
@@ -339,7 +404,7 @@ def move_broken_db(db_path):
     return broken_db_path
 
 
-def is_db_broken(db_path):
+def is_db_broken(db_path: str) -> bool:
     """DB ファイルが破損していれば True、 正常または不在なら False を返す。
 
     DB 本体が存在しないが .wal が残っている場合は、 新規 DB 作成時に古い WAL が再生
@@ -373,7 +438,7 @@ def is_db_broken(db_path):
     return False
 
 
-def prepare_db_for_init(db_path):
+def prepare_db_for_init(db_path: str) -> None:
     """DB ファイルが破損していれば .broken.<timestamp> に退避する。
 
     破損以外の接続エラー (ロック競合、 権限不足等) は呼び出し元へ伝播させる
@@ -389,7 +454,7 @@ def prepare_db_for_init(db_path):
     )
 
 
-def has_s3_objects_table(db_path):
+def has_s3_objects_table(db_path: str) -> bool:
     """DB ファイルに s3_objects テーブルが存在するかを判定する。 DB ファイルが存在しない
     場合は False を返す。
 
@@ -412,7 +477,7 @@ def has_s3_objects_table(db_path):
     return True
 
 
-def raise_if_db_broken(db_path):
+def raise_if_db_broken(db_path: str) -> None:
     """update / delete の前処理として DB 破損を検出し、 CliUsageError で init の再実行を促す。
 
     init は prepare_db_for_init で自動退避するが、 update / delete では運用者の判断を
@@ -427,7 +492,7 @@ def raise_if_db_broken(db_path):
     )
 
 
-UPSERT_S3_OBJECTS_SQL = """
+UPSERT_S3_OBJECTS_SQL: str = """
 MERGE INTO s3_objects AS target
 USING (SELECT ? AS type, ? AS object_name, ? AS last_modified) AS source
 ON target.type = source.type
@@ -438,7 +503,9 @@ WHEN NOT MATCHED THEN
 """
 
 
-def update_s3_objects_table(con, log_type, obj):
+def update_s3_objects_table(
+    con: duckdb.DuckDBPyConnection, log_type: str, obj: Object
+) -> None:
     con.execute(UPSERT_S3_OBJECTS_SQL, (log_type, obj.object_name, obj.last_modified))
 
 
@@ -514,16 +581,16 @@ def collect_update_targets(
     return kept, same_last_modified_objects
 
 
-def get_target_urls(bucket, objects):
+def get_target_urls(bucket: str, objects: list[Object]) -> list[str]:
     """テーブル作成や insert で DuckDB の read_json に渡すための s3://bucket/key URL リストを生成する。"""
-    urls = []
+    urls: list[str] = []
     for obj in objects:
         urls.append(f"s3://{bucket}/{obj.object_name}")
 
     return urls
 
 
-def ensure_safe_sql_string_literal(path_literal):
+def ensure_safe_sql_string_literal(path_literal: str) -> str:
     """DuckDB の ATTACH 等で使う SQL 文字列リテラルとして path_literal を安全に埋め込むため、
     制御文字を含む値を CliUsageError で拒否し、 シングルクォートをエスケープする。
 
@@ -547,7 +614,7 @@ def ensure_safe_sql_string_literal(path_literal):
     return path_literal.replace("'", "''")
 
 
-def remove_delete_incomplete_copy_files(copy_file):
+def remove_delete_incomplete_copy_files(copy_file: str) -> None:
     """
     削除処理が失敗した時に残る可能性があるコピー先の .copy ファイルと .copy.wal ファイルを削除する
     """
@@ -558,7 +625,7 @@ def remove_delete_incomplete_copy_files(copy_file):
             pass
 
 
-def s3_setup(con, args):
+def s3_setup(con: duckdb.DuckDBPyConnection, args: Args) -> None:
     # INSTALL / LOAD icu は init / update の両経路で TIMESTAMPTZ を含むスキーマの read_json
     # をタイムゾーン依存の挙動差から守るための予防的ロードで、Grafana 側 datasource の
     # initSql (INSTALL icu; LOAD icu) と挙動を揃える目的も持つ。INSTALL は idempotent
@@ -576,7 +643,9 @@ def s3_setup(con, args):
     con.execute("SET s3_region=?", (args.s3_region,))
 
 
-def require_known_table(table_name, allowed):
+def require_known_table(
+    table_name: str, allowed: Mapping[str, object] | tuple[str, ...]
+) -> None:
     """許可リストに含まれないテーブル名を ValueError で拒否する。
 
     create_log_table / insert_log は load_columns() が返す dict を、
@@ -591,7 +660,9 @@ def require_known_table(table_name, allowed):
         )
 
 
-def create_log_table(con, table_name, target_urls):
+def create_log_table(
+    con: duckdb.DuckDBPyConnection, table_name: str, target_urls: list[str]
+) -> None:
     """指定された S3 オブジェクト URL から DuckDB テーブルを新規作成する。
 
     target_urls の JSON 内容を読み込み、DUCKDB_COLUMNS で定義したスキーマでテーブル化する。
@@ -621,7 +692,7 @@ def create_log_table(con, table_name, target_urls):
     )
 
 
-def update(args):
+def update(args: Args) -> None:
     if not os.path.exists(args.db):
         raise FileNotFoundError(f"DB file not found: {args.db}. Run 'init' first.")
 
@@ -650,7 +721,7 @@ def update(args):
             sync_log_for_update(con, client, args, target)
 
 
-def delete(args):
+def delete(args: Args) -> None:
     """retention_period 日より古いログを削除し、 削除後の DB を新しい DB へ COPY して詰め直す。
 
     DELETE 発行後、 in-memory DuckDB から ATTACH + COPY FROM DATABASE で空き領域を詰めた
@@ -753,8 +824,14 @@ def delete(args):
 
 
 def insert_log_from_s3(
-    con, client, table_name, bucket, prefix, update_maximum_load, cursor_key
-):
+    con: duckdb.DuckDBPyConnection,
+    client: minio.Minio,
+    table_name: str,
+    bucket: str,
+    prefix: str,
+    update_maximum_load: int,
+    cursor_key: tuple[datetime.datetime, str],
+) -> None:
     """s3_objects カーソルより新しい S3 オブジェクトを古い順にバッチで取り込む。
 
     update 経路の中心関数。 呼び出し側 (sync_log_for_update) は cursor_key is not None
@@ -799,7 +876,9 @@ def insert_log_from_s3(
         raise
 
 
-def insert_log(con, table_name, target_urls):
+def insert_log(
+    con: duckdb.DuckDBPyConnection, table_name: str, target_urls: list[str]
+) -> None:
     """指定 target_urls の JSON を LOG_TARGETS テーブルに追加する。
 
     create_log_table と同じ許可リスト検査 (require_known_table) を経由して、
@@ -824,14 +903,18 @@ def insert_log(con, table_name, target_urls):
     )
 
 
-def get_s3_objects_cursor(con, log_type):
+def get_s3_objects_cursor(
+    con: duckdb.DuckDBPyConnection, log_type: str
+) -> tuple[datetime.datetime, str] | None:
     return con.execute(
         "SELECT last_modified, object_name FROM s3_objects WHERE type=?",
         (log_type,),
     ).fetchone()
 
 
-def delete_log_by_timestamp(con, table_name, timestamp):
+def delete_log_by_timestamp(
+    con: duckdb.DuckDBPyConnection, table_name: str, timestamp: datetime.datetime
+) -> int:
     # table_name は SQL に直接埋め込むため、許可リストで縛る
     require_known_table(table_name, LOG_TARGETS)
 
@@ -842,18 +925,22 @@ def delete_log_by_timestamp(con, table_name, timestamp):
         return 0
 
     con.execute(f"DELETE FROM {table_name} WHERE timestamp < ?", (timestamp,))
-    deleted_rows = con.fetchone()[0]
-    print(f"Deleted {deleted_rows} rows from {table_name}.", file=sys.stderr)
-    return deleted_rows
+    deleted_rows = con.fetchone()
+    # DELETE の結果行は必ず 1 行返すため None は来ないが、 来た場合は
+    # 「0 件削除」と誤解釈して COPY をスキップさせないよう異常として伝播する。
+    if deleted_rows is None:
+        raise RuntimeError(f"Failed to fetch deleted row count for {table_name}")
+    print(f"Deleted {deleted_rows[0]} rows from {table_name}.", file=sys.stderr)
+    return deleted_rows[0]
 
 
-def exit_with_stderr(message):
+def exit_with_stderr(message: str) -> NoReturn:
     """エラーメッセージを stderr に書き出して exit code 1 で終了する。"""
     print(message, file=sys.stderr)
     sys.exit(1)
 
 
-def capture_db_stat(db_path):
+def capture_db_stat(db_path: str) -> tuple[int, int] | None:
     """DB ファイルが存在すれば (mtime_ns, size) タプルを、 無ければ None を返す。
 
     main が args.func 実行前後で readonly コピー生成要否を判定するための初期値取得と、
@@ -873,7 +960,7 @@ def capture_db_stat(db_path):
     return (stat_result.st_mtime_ns, stat_result.st_size)
 
 
-def should_create_readonly(db_path, initial_stat):
+def should_create_readonly(db_path: str, initial_stat: tuple[int, int] | None) -> bool:
     """initial_stat (mtime_ns, size) と現在の値を比較して、 readonly コピーを生成すべきかを返す。
 
     capture_db_stat が返すタプルを initial_stat と比較し、 どちらか異なれば .readonly を
@@ -892,7 +979,7 @@ def should_create_readonly(db_path, initial_stat):
     return initial_stat != current_stat
 
 
-def create_readonly_copy(db_path):
+def create_readonly_copy(db_path: str) -> None:
     """書き込み済みの DB ファイルから読み込み専用コピーを生成する。
 
     DuckDB は書き込み中に他プロセスからアクセスできないため、書き込み終了後に同 FS 内で
@@ -911,7 +998,7 @@ def create_readonly_copy(db_path):
     shutil.move(tmp_file, readonly_file)
 
 
-def handle_cli_error(error, bucket):
+def handle_cli_error(error: Exception, bucket: str) -> NoReturn:
     """main から呼び出された関数の例外を分類して整形する CLI トップレベル例外ハンドラ。
 
     S3Error / FileNotFoundError (DB 不在) / CliUsageError をユーザー向け 1 行メッセージで
@@ -933,7 +1020,7 @@ def handle_cli_error(error, bucket):
         raise error
 
 
-def build_parser():
+def build_parser() -> argparse.ArgumentParser:
     """CLI の argparse パーサーを構築する。"""
     # --help にデフォルト値を自動表示するため、ArgumentDefaultsHelpFormatter を使う。
     parser = argparse.ArgumentParser(
@@ -989,12 +1076,16 @@ def build_parser():
     return parser
 
 
-def main():
+def main() -> None:
     parser = build_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(namespace=Args())
 
     initial_stat = capture_db_stat(args.db)
 
+    # set_defaults で func は必ず注入される (subparsers required=True のため)。
+    # 型上は None の可能性があるため、到達しない分岐を明示的に弾く。
+    if args.func is None:
+        raise RuntimeError("CLI subcommand is not set")
     try:
         args.func(args)
     except Exception as error:
