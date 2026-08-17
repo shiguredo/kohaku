@@ -221,9 +221,9 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "duckdb", specifier = "==1.4.2" },
-    { name = "minio", specifier = ">=7.2" },
-    { name = "pytz", specifier = ">=2026.1" },
-    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "minio", specifier = ">=7.2,<7.3" },
+    { name = "pytz", specifier = ">=2026.1,<2027" },
+    { name = "pyyaml", specifier = ">=6.0,<6.1" },
 ]
 
 [package.metadata.requires-dev]
@@ -235,7 +235,7 @@ test = [
     { name = "jinja2" },
     { name = "pytest" },
     { name = "testcontainers", extras = ["minio"] },
-    { name = "urllib3", specifier = ">=2,<3" },
+    { name = "urllib3", specifier = ">=2.0,<3" },
 ]
 
 [[package]]

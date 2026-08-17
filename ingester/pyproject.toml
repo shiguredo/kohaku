@@ -7,10 +7,13 @@ requires-python = ">=3.14"
 dependencies = [
   # Grafana DuckDB Data Source Plugin の DuckDB のバージョンにあわせる
   "duckdb==1.4.2",
-  "minio>=7.2",
+  # S3 (MinIO / RustFS 等) へのオブジェクト一覧・取得に使うクライアント
+  "minio>=7.2,<7.3",
   # duckdb が TIMESTAMPTZ カラムを Python に変換するときに内部で import するため必須。
-  "pytz>=2026.1",
-  "pyyaml>=6.0",
+  # pytz は年.リリース番号の版体系のため、年単位 (メジャー相当) で境界を切る。
+  "pytz>=2026.1,<2027",
+  # DUCKDB_COLUMNS のカラム定義 YAML を読み込むために使う
+  "pyyaml>=6.0,<6.1",
 ]
 
 [dependency-groups]
