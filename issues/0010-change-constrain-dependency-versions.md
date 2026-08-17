@@ -1,7 +1,7 @@
 # pyproject.toml の依存が上限なし `>=` 単独指定
 
 - Created: 2026-08-14
-- Completed: {YYYY-MM-DD}
+- Completed: 2026-08-17
 - Branch: feature/change-constrain-dependency-versions
 - Polished: 2026-08-14
 - Priority: Medium
@@ -44,3 +44,10 @@ ingester/pyproject.toml の dependencies は次の構成になっている (現�
 - minio / pyyaml に用途コメントが付与される
 - uv sync と全テストが引き続き通過する (uv.lock も更新され、 uv sync --frozen でのビルドが通る。 CI の uv sync は --frozen 未指定のため、 この検証はローカルの uv sync --frozen 実行に依存する)
 - CHANGES.md の `## develop` セクションに変更履歴が追記される (種別は [CHANGE])
+
+## 解決方法
+
+- `ingester/pyproject.toml` の本番依存を `minio>=7.2,<7.3`、 `pytz>=2026.1,<2027`、 `pyyaml>=6.0,<6.1` に変更した
+- minio に S3 クライアントとしての用途コメント、 pyyaml に DUCKDB_COLUMNS の YAML 読み込み用途コメントを追加した。 pytz は年単位で境界を切る理由コメントを追記した
+- `uv lock` で `ingester/uv.lock` を更新し、 `uv sync --frozen` と lint / 単体テストが通過することを確認した
+- CHANGES.md はリポジトリ管理外のため、 本ブランチのコミットには含めていない
