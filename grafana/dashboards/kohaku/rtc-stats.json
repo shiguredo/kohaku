@@ -847,9 +847,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A jitter"
-                  ],
-                  "pattern": "^(jitter .+|Time)"
+                    "jitter"
+                  ]
                 }
               }
             }
@@ -957,9 +956,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A packets_lost"
-                  ],
-                  "pattern": "^(packets_lost .+|Time)"
+                    "packets_lost"
+                  ]
                 }
               }
             }
@@ -1067,9 +1065,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A packets_received"
-                  ],
-                  "pattern": "^(packets_received .+|Time)"
+                    "packets_received"
+                  ]
                 }
               }
             }
@@ -1177,9 +1174,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A fec_packets_received"
-                  ],
-                  "pattern": "^(fec_packets_received .+|Time)"
+                    "fec_packets_received"
+                  ]
                 }
               }
             }
@@ -1287,9 +1283,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A packets_discarded"
-                  ],
-                  "pattern": "^(packets_discarded .+|Time)"
+                    "packets_discarded"
+                  ]
                 }
               }
             }
@@ -1397,9 +1392,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A fec_packets_discarded"
-                  ],
-                  "pattern": "^(fec_packets_discarded .+|Time)"
+                    "fec_packets_discarded"
+                  ]
                 }
               }
             }
@@ -1507,9 +1501,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A bytes_received"
-                  ],
-                  "pattern": "^(bytes_received .+|Time)"
+                    "bytes_received"
+                  ]
                 }
               }
             }
@@ -1617,9 +1610,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A jitter_buffer_delay"
-                  ],
-                  "pattern": "^(jitter_buffer_delay .+|Time)"
+                    "jitter_buffer_delay"
+                  ]
                 }
               }
             }
@@ -1727,9 +1719,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A last_packet_received_timestamp"
-                  ],
-                  "pattern": "^(last_packet_received_timestamp .+|Time)"
+                    "last_packet_received_timestamp"
+                  ]
                 }
               }
             }
@@ -1837,9 +1828,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A concealed_samples"
-                  ],
-                  "pattern": "^(concealed_samples .+|Time)"
+                    "concealed_samples"
+                  ]
                 }
               }
             }
@@ -1947,9 +1937,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A jitter_buffer_emitted_count"
-                  ],
-                  "pattern": "^(jitter_buffer_emitted_count .+|Time)"
+                    "jitter_buffer_emitted_count"
+                  ]
                 }
               }
             }
@@ -2057,9 +2046,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A silent_concealed_samples"
-                  ],
-                  "pattern": "^(silent_concealed_samples .+|Time)"
+                    "silent_concealed_samples"
+                  ]
                 }
               }
             }
@@ -2167,9 +2155,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A total_samples_received"
-                  ],
-                  "pattern": "^(total_samples_received .+|Time)"
+                    "total_samples_received"
+                  ]
                 }
               }
             }
@@ -2277,9 +2264,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A inserted_samples_for_deceleration"
-                  ],
-                  "pattern": "^(inserted_samples_for_deceleration .+|Time)"
+                    "inserted_samples_for_deceleration"
+                  ]
                 }
               }
             }
@@ -2387,9 +2373,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A total_samples_duration"
-                  ],
-                  "pattern": "^(total_samples_duration .+|Time)"
+                    "total_samples_duration"
+                  ]
                 }
               }
             }
@@ -2497,9 +2482,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A audio_level"
-                  ],
-                  "pattern": "^(audio_level .+|Time)"
+                    "audio_level"
+                  ]
                 }
               }
             }
@@ -2607,9 +2591,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A concealment_events"
-                  ],
-                  "pattern": "^(concealment_events .+|Time)"
+                    "concealment_events"
+                  ]
                 }
               }
             }
@@ -2717,9 +2700,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A total_audio_energy"
-                  ],
-                  "pattern": "^(total_audio_energy .+|Time)"
+                    "total_audio_energy"
+                  ]
                 }
               }
             }
@@ -2827,9 +2809,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A removed_samples_for_acceleration"
-                  ],
-                  "pattern": "^(removed_samples_for_acceleration .+|Time)"
+                    "removed_samples_for_acceleration"
+                  ]
                 }
               }
             }
@@ -2937,9 +2918,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A estimated_playout_timestamp"
-                  ],
-                  "pattern": "^(estimated_playout_timestamp .+|Time)"
+                    "estimated_playout_timestamp"
+                  ]
                 }
               }
             }
@@ -3047,9 +3027,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A jitter_buffer_target_delay"
-                  ],
-                  "pattern": "^(jitter_buffer_target_delay .+|Time)"
+                    "jitter_buffer_target_delay"
+                  ]
                 }
               }
             }
@@ -3157,9 +3136,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "B bytesReceived_in_bits/s"
-                  ],
-                  "pattern": "^(bytes_received_in_bits/s .+|Time)"
+                    "bytesReceived_in_bits/s"
+                  ]
                 }
               }
             }
@@ -3267,9 +3245,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "B packetsReceived/s"
-                  ],
-                  "pattern": "^(packets_received/s .+|Time)"
+                    "packetsReceived/s"
+                  ]
                 }
               }
             }
@@ -3377,9 +3354,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "B headerBytesReceived_in_bits/s"
-                  ],
-                  "pattern": "^(header_bytes_received_in_bits/s .+|Time)"
+                    "headerBytesReceived_in_bits/s"
+                  ]
                 }
               }
             }
@@ -3487,9 +3463,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A jitter_buffer_minimum_delay"
-                  ],
-                  "pattern": "^(jitter_buffer_minimum_delay .+|Time)"
+                    "jitter_buffer_minimum_delay"
+                  ]
                 }
               }
             }
@@ -3749,9 +3724,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A bytes_sent"
-                  ],
-                  "pattern": "^(bytes_sent .+|Time)_"
+                    "bytes_sent"
+                  ]
                 }
               }
             }
@@ -3859,9 +3833,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A header_bytes_sent"
-                  ],
-                  "pattern": "^(header_bytes_sent .+|Time)_"
+                    "header_bytes_sent"
+                  ]
                 }
               }
             }
@@ -3969,9 +3942,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A nack_count"
-                  ],
-                  "pattern": "^(nack_count .+|Time)_"
+                    "nack_count"
+                  ]
                 }
               }
             }
@@ -4079,9 +4051,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A packets_sent"
-                  ],
-                  "pattern": "^(packets_sent .+|Time)_"
+                    "packets_sent"
+                  ]
                 }
               }
             }
@@ -4189,9 +4160,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A retransmitted_bytes_sent"
-                  ],
-                  "pattern": "^(retransmitted_bytes_sent .+|Time)_"
+                    "retransmitted_bytes_sent"
+                  ]
                 }
               }
             }
@@ -4299,9 +4269,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A retransmitted_packets_sent"
-                  ],
-                  "pattern": "^(retransmitted_packets_sent .+|Time)_"
+                    "retransmitted_packets_sent"
+                  ]
                 }
               }
             }
@@ -4409,9 +4378,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A packets_sent_with_ect1"
-                  ],
-                  "pattern": "^(packets_sent_with_ect1 .+|Time)"
+                    "packets_sent_with_ect1"
+                  ]
                 }
               }
             }
@@ -4672,8 +4640,7 @@
                   "names": [
                     "time",
                     "jitter"
-                  ],
-                  "pattern": "^(jitter .+|Time)"
+                  ]
                 }
               }
             }
@@ -4782,8 +4749,7 @@
                   "names": [
                     "time",
                     "packets_lost"
-                  ],
-                  "pattern": "^(packets_lost .+|Time)"
+                  ]
                 }
               }
             }
@@ -4891,8 +4857,7 @@
                   "names": [
                     "time",
                     "packets_received"
-                  ],
-                  "pattern": "^(packets_received .+|Time)"
+                  ]
                 }
               }
             }
@@ -5000,8 +4965,7 @@
                   "names": [
                     "time",
                     "header_bytes_received"
-                  ],
-                  "pattern": "^(header_bytes_received .+|Time)"
+                  ]
                 }
               }
             }
@@ -5109,8 +5073,7 @@
                   "names": [
                     "time",
                     "bytes_received"
-                  ],
-                  "pattern": "^(bytes_received .+|Time)"
+                  ]
                 }
               }
             }
@@ -5218,8 +5181,7 @@
                   "names": [
                     "time",
                     "jitter_buffer_delay"
-                  ],
-                  "pattern": "^(jitter_buffer_delay .+|Time)"
+                  ]
                 }
               }
             }
@@ -5328,8 +5290,7 @@
                   "names": [
                     "time",
                     "frames_received"
-                  ],
-                  "pattern": "^(frames_received .+|Time)"
+                  ]
                 }
               }
             }
@@ -5437,8 +5398,7 @@
                   "names": [
                     "time",
                     "last_packet_received_timestamp"
-                  ],
-                  "pattern": "^(last_packet_received_timestamp .+|Time)"
+                  ]
                 }
               }
             }
@@ -5547,8 +5507,7 @@
                   "names": [
                     "time",
                     "jitter_buffer_emitted_count"
-                  ],
-                  "pattern": "^(jitter_buffer_emitted_count .+|Time)"
+                  ]
                 }
               }
             }
@@ -5656,8 +5615,7 @@
                   "names": [
                     "time",
                     "frame_height"
-                  ],
-                  "pattern": "^(frame_height .+|Time)"
+                  ]
                 }
               }
             }
@@ -5766,8 +5724,7 @@
                   "names": [
                     "time",
                     "frame_width"
-                  ],
-                  "pattern": "^(frame_width .+|Time)"
+                  ]
                 }
               }
             }
@@ -5875,8 +5832,7 @@
                   "names": [
                     "time",
                     "frames_decoded"
-                  ],
-                  "pattern": "^(frames_decoded .+|Time)"
+                  ]
                 }
               }
             }
@@ -5985,8 +5941,7 @@
                   "names": [
                     "time",
                     "frames_per_second"
-                  ],
-                  "pattern": "^(frames_per_second .+|Time)"
+                  ]
                 }
               }
             }
@@ -6094,8 +6049,7 @@
                   "names": [
                     "time",
                     "key_frames_decoded"
-                  ],
-                  "pattern": "^(key_frames_decoded .+|Time)"
+                  ]
                 }
               }
             }
@@ -6204,8 +6158,7 @@
                   "names": [
                     "time",
                     "frames_dropped"
-                  ],
-                  "pattern": "^(frames_dropped .+|Time)"
+                  ]
                 }
               }
             }
@@ -6313,8 +6266,7 @@
                   "names": [
                     "time",
                     "total_decode_time"
-                  ],
-                  "pattern": "^(total_decode_time .+|Time)"
+                  ]
                 }
               }
             }
@@ -6423,8 +6375,7 @@
                   "names": [
                     "time",
                     "total_inter_frame_delay"
-                  ],
-                  "pattern": "^(total_inter_frame_delay .+|Time)"
+                  ]
                 }
               }
             }
@@ -6532,8 +6483,7 @@
                   "names": [
                     "time",
                     "total_squared_inter_frame_delay"
-                  ],
-                  "pattern": "^(total_decode_time .+|Time)"
+                  ]
                 }
               }
             }
@@ -6642,8 +6592,7 @@
                   "names": [
                     "time",
                     "fir_count"
-                  ],
-                  "pattern": "^(fir_count .+|Time)"
+                  ]
                 }
               }
             }
@@ -6751,8 +6700,7 @@
                   "names": [
                     "time",
                     "pli_count"
-                  ],
-                  "pattern": "^(pli_count .+|Time)"
+                  ]
                 }
               }
             }
@@ -6861,8 +6809,7 @@
                   "names": [
                     "time",
                     "nack_count"
-                  ],
-                  "pattern": "^(nack_count .+|Time)"
+                  ]
                 }
               }
             }
@@ -6970,9 +6917,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "B bytesReceived_in_bits/s"
-                  ],
-                  "pattern": "^(bytesReceived_in_bits\\/s .+|Time)"
+                    "bytesReceived_in_bits/s"
+                  ]
                 }
               }
             }
@@ -7079,9 +7025,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "B packetsReceived/s"
-                  ],
-                  "pattern": "^(packetsReceived\\/s .+|Time)"
+                    "packetsReceived/s"
+                  ]
                 }
               }
             }
@@ -7189,9 +7134,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "B framesReceived/s"
-                  ],
-                  "pattern": "^(framesReceived\\/s .+|Time)"
+                    "framesReceived/s"
+                  ]
                 }
               }
             }
@@ -7299,9 +7243,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "B headerBytesReceived_in_bits/s"
-                  ],
-                  "pattern": "^(headerBytesReceived_in_bits\\/s .+|Time)"
+                    "headerBytesReceived_in_bits/s"
+                  ]
                 }
               }
             }
@@ -7408,9 +7351,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "B keyFramesDecoded/s"
-                  ],
-                  "pattern": "^(keyFramesDecoded\\/s .+|Time)"
+                    "keyFramesDecoded/s"
+                  ]
                 }
               }
             }
@@ -7518,9 +7460,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "B framesDecoded/s"
-                  ],
-                  "pattern": "^(framesDecoded\\/s .+|Time)"
+                    "framesDecoded/s"
+                  ]
                 }
               }
             }
@@ -7628,9 +7569,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A jitter_buffer_target_delay"
-                  ],
-                  "pattern": "^(jitter_buffer_target_delay .+|Time)"
+                    "jitter_buffer_target_delay"
+                  ]
                 }
               }
             }
@@ -7737,9 +7677,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A jitter_buffer_minimum_delay"
-                  ],
-                  "pattern": "^(jitter_buffer_minimum_delay .+|Time)"
+                    "jitter_buffer_minimum_delay"
+                  ]
                 }
               }
             }
@@ -7847,9 +7786,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A total_assembly_time"
-                  ],
-                  "pattern": "^(total_assembly_time .+|Time)"
+                    "total_assembly_time"
+                  ]
                 }
               }
             }
@@ -7957,9 +7895,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A total_processing_delay"
-                  ],
-                  "pattern": "^(total_processing_delay .+|Time)"
+                    "total_processing_delay"
+                  ]
                 }
               }
             }
@@ -8066,9 +8003,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A total_pauses_duration"
-                  ],
-                  "pattern": "^(total_pauses_duration .+|Time)"
+                    "total_pauses_duration"
+                  ]
                 }
               }
             }
@@ -8176,9 +8112,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A pause_count"
-                  ],
-                  "pattern": "^(pause_count .+|Time)"
+                    "pause_count"
+                  ]
                 }
               }
             }
@@ -8286,9 +8221,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A total_freezes_duration"
-                  ],
-                  "pattern": "^(total_freezes_duration .+|Time)"
+                    "total_freezes_duration"
+                  ]
                 }
               }
             }
@@ -8395,9 +8329,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A freeze_count"
-                  ],
-                  "pattern": "^(freeze_count .+|Time)"
+                    "freeze_count"
+                  ]
                 }
               }
             }
@@ -8505,9 +8438,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A estimated_playout_timestamp"
-                  ],
-                  "pattern": "^(estimated_playout_timestamp .+|Time)"
+                    "estimated_playout_timestamp"
+                  ]
                 }
               }
             }
@@ -8768,9 +8700,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A packets_sent"
-                  ],
-                  "pattern": "^(packets_sent .+|Time)"
+                    "packets_sent"
+                  ]
                 }
               }
             }
@@ -8877,9 +8808,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A bytes_sent"
-                  ],
-                  "pattern": "^(bytes_sent .+|Time)_"
+                    "bytes_sent"
+                  ]
                 }
               }
             }
@@ -8986,9 +8916,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A fir_count"
-                  ],
-                  "pattern": "^(fir_count .+|Time)"
+                    "fir_count"
+                  ]
                 }
               }
             }
@@ -9095,9 +9024,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A frame_width"
-                  ],
-                  "pattern": "^(frame_width .+|Time)"
+                    "frame_width"
+                  ]
                 }
               }
             }
@@ -9204,9 +9132,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A frame_height"
-                  ],
-                  "pattern": "^(frame_height .+|Time)_"
+                    "frame_height"
+                  ]
                 }
               }
             }
@@ -9313,9 +9240,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A frames_encoded"
-                  ],
-                  "pattern": "^(frames_encoded .+|Time)"
+                    "frames_encoded"
+                  ]
                 }
               }
             }
@@ -9422,9 +9348,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A frames_per_second"
-                  ],
-                  "pattern": "^(frames_per_second .+|Time)"
+                    "frames_per_second"
+                  ]
                 }
               }
             }
@@ -9531,9 +9456,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A frames_sent"
-                  ],
-                  "pattern": "^(frames_sent .+|Time)_"
+                    "frames_sent"
+                  ]
                 }
               }
             }
@@ -9640,9 +9564,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A header_bytes_sent"
-                  ],
-                  "pattern": "^(header_bytes_sent .+|Time)"
+                    "header_bytes_sent"
+                  ]
                 }
               }
             }
@@ -9749,9 +9672,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A huge_frames_sent"
-                  ],
-                  "pattern": "^(huge_frames_sent .+|Time)"
+                    "huge_frames_sent"
+                  ]
                 }
               }
             }
@@ -9858,9 +9780,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A key_frames_encoded"
-                  ],
-                  "pattern": "^(key_frames_encoded .+|Time)_"
+                    "key_frames_encoded"
+                  ]
                 }
               }
             }
@@ -9967,9 +9888,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A nack_count"
-                  ],
-                  "pattern": "^(nack_count .+|Time)"
+                    "nack_count"
+                  ]
                 }
               }
             }
@@ -10076,9 +9996,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A packets_sent"
-                  ],
-                  "pattern": "^(packets_sent .+|Time)"
+                    "packets_sent"
+                  ]
                 }
               }
             }
@@ -10185,9 +10104,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A pli_count"
-                  ],
-                  "pattern": "^(pli_count .+|Time)_"
+                    "pli_count"
+                  ]
                 }
               }
             }
@@ -10294,9 +10212,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A qp_sum"
-                  ],
-                  "pattern": "^(qp_sum .+|Time)"
+                    "qp_sum"
+                  ]
                 }
               }
             }
@@ -10403,9 +10320,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A retransmitted_packets_sent"
-                  ],
-                  "pattern": "^(retransmitted_bytes_sent .+|Time)"
+                    "retransmitted_bytes_sent"
+                  ]
                 }
               }
             }
@@ -10512,9 +10428,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A retransmitted_packets_sent"
-                  ],
-                  "pattern": "^(retransmitted_packets_sent .+|Time)_"
+                    "retransmitted_packets_sent"
+                  ]
                 }
               }
             }
@@ -10621,9 +10536,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A target_bitrate"
-                  ],
-                  "pattern": "^(target_bitrate .+|Time)"
+                    "target_bitrate"
+                  ]
                 }
               }
             }
@@ -10730,9 +10644,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A total_encode_time"
-                  ],
-                  "pattern": "^(total_encode_time .+|Time)"
+                    "total_encode_time"
+                  ]
                 }
               }
             }
@@ -10839,9 +10752,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A total_packet_send_delay"
-                  ],
-                  "pattern": "^(total_packet_send_delay .+|Time)_"
+                    "total_packet_send_delay"
+                  ]
                 }
               }
             }
@@ -10948,9 +10860,8 @@
                 "include": {
                   "names": [
                     "time",
-                    "A packets_sent_with_ect1"
-                  ],
-                  "pattern": "^(packets_sent_with_ect1 .+|Time)"
+                    "packets_sent_with_ect1"
+                  ]
                 }
               }
             }

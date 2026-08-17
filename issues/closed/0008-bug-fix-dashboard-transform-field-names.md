@@ -1,7 +1,7 @@
 # rtc-stats.json の transform のフィールド参照をフィールド名に統一する
 
 - Created: 2026-08-14
-- Completed: {YYYY-MM-DD}
+- Completed: 2026-08-17
 - Branch: feature/fix-dashboard-transform-field-names
 - Polished: 2026-08-14
 - Priority: Medium
@@ -36,3 +36,10 @@ pattern は表示名に対して評価されるが、 多くのパネルの patt
 - rtc-stats.json の全サブパネルの names がフィールド名 (カラム名) に統一され、 pattern が削除される
 - パネル 83 が retransmitted_bytes_sent (バイト数) を表示し、 全パネルがタイトルに対応する正しいメトリックを表示することを実機 (Grafana 12.4.3) で確認する
 - 既存の Grafana 統合テスト (ingester/tests/test_grafana_integration.py) が引き続き通過する (names の回帰検出は 0015 の統合テスト拡張で検討する)
+
+## 解決方法
+
+- `grafana/dashboards/kohaku/rtc-stats.json` の全サブパネルの `filterFieldsByName` について、 `names` から `A ` / `B ` プレフィックスを除去してフィールド名 (SQL の AS 別名) に統一し、 表示名向けの `pattern` を削除した
+- パネル 83 (`retransmittedBytesSent`) の `names` を `retransmitted_packets_sent` から `retransmitted_bytes_sent` に修正し、 タイトルどおりバイト数を参照するようにした
+- 変更後の `names` がソースパネルの rawSql AS 別名に存在することを機械検証し、 transform 以外のパネル構造に差分が無いことを確認した
+- Grafana 12.4.3 の既存統合テスト (`ingester/tests/test_grafana_integration.py`) が通過することを確認した
