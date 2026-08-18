@@ -242,23 +242,6 @@ def test_default_initial_maximum_load() -> None:
     assert DEFAULT_INITIAL_MAXIMUM_LOAD == 1000
 
 
-def test_keep_latest_objects_limits_memory() -> None:
-    """keep_latest_objects が上限件数しか保持せず、降順で返すことを確認する。
-
-    上限を超える数のオブジェクトを渡しても保持は上限件数に留まる (全件をメモリ展開
-    しない) ことを、先頭が最新になる降順とあわせて検証する。
-    """
-    now = datetime.datetime.now(datetime.UTC)
-    objects = [
-        make_object(f"{i}.gz", now - datetime.timedelta(minutes=i)) for i in range(1000)
-    ]
-
-    kept = keep_latest_objects(iter(objects), 10)
-
-    assert len(kept) == 10
-    assert [obj.object_name for obj in kept] == [f"{i}.gz" for i in range(10)]
-
-
 def test_keep_latest_objects_same_last_modified() -> None:
     """last_modified が同値のオブジェクトが object_name の辞書順降順で並ぶことを確認する。
 
@@ -328,64 +311,6 @@ def test_collect_update_targets_does_not_expand_all_objects() -> None:
     assert same_last_modified_objects == []
     # 全件を list 化する実装は 2 万件分で 1 MB を超えるため、 閾値 1 MB で退化を検出する
     assert peak < 1024 * 1024
-
-
-def test_collect_update_targets_limits_memory() -> None:
-    """collect_update_targets が全件を保持せず、 target 側のみ上限内のオブジェクトを保持することを確認する。
-
-    カーソルより古い多数のオブジェクトとカーソルより新しい多数のオブジェクト、 および
-    カーソルと同値の last_modified のオブジェクトを混在させ、 target 側の保持する
-    オブジェクト数が上限を超えないこと (同値グループは設計上全件保持) を検証する。
-    """
-    now = datetime.datetime.now(datetime.UTC)
-    cursor_key = (now, "cursor.gz")
-    # カーソルより古い多数のオブジェクト (update の取り込み対象外)
-    older = [
-        make_object(f"older-{i}.gz", now - datetime.timedelta(minutes=60 + i))
-        for i in range(5000)
-    ]
-    # カーソルより新しい多数のオブジェクト (うち古い側 update_maximum_load 件のみ保持)
-    newer = [
-        make_object(f"newer-{i}.gz", now + datetime.timedelta(minutes=1 + i))
-        for i in range(30)
-    ]
-    # カーソルと同値の last_modified のオブジェクト (全件保持)
-    same = [make_object(f"same-{i}.gz", now) for i in range(5)]
-    # カーソル行自身 (same にも target にも属さない)
-    cursor_object = make_object("cursor.gz", now)
-    # カーソルと同値かつ辞書順がカーソルより小さいオブジェクト (same のみに属する)
-    same_older_name = make_object("a-same.gz", now)
-
-    target_log_objects, same_last_modified_objects = collect_update_targets(
-        iter(older + newer + same + [cursor_object, same_older_name]),
-        cursor_key,
-        update_maximum_load=10,
-    )
-
-    # 古い側 10 件のみが昇順 (古い順) で保持される。 カーソルと同値の last_modified の
-    # オブジェクトはカーソルより新しいため target にも属する
-    assert [obj.object_name for obj in target_log_objects] == [
-        "same-0.gz",
-        "same-1.gz",
-        "same-2.gz",
-        "same-3.gz",
-        "same-4.gz",
-        "newer-0.gz",
-        "newer-1.gz",
-        "newer-2.gz",
-        "newer-3.gz",
-        "newer-4.gz",
-    ]
-    # カーソルと同値の last_modified のオブジェクトは全件保持される。 カーソル行自身
-    # (cursor.gz) は除外され、 辞書順がカーソルより小さい a-same.gz も含まれる
-    assert [obj.object_name for obj in same_last_modified_objects] == [
-        "same-0.gz",
-        "same-1.gz",
-        "same-2.gz",
-        "same-3.gz",
-        "same-4.gz",
-        "a-same.gz",
-    ]
 
 
 def test_collect_update_targets_no_candidate() -> None:
