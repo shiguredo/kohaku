@@ -22,6 +22,8 @@ lint = [
   "ty",
 ]
 test = [
+  # 純関数のプロパティをランダム入力で検証する PBT ライブラリ
+  "hypothesis>=6.165,<6.166",
   "jinja2",
   "pytest",
   "testcontainers[minio]",
@@ -68,6 +70,8 @@ extend-select = [
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+# デフォルト (test_*.py / *_test.py) に加え、 PBT の prop_*.py も収集する
+python_files = ["test_*.py", "*_test.py", "prop_*.py"]
 
 [tool.ty.environment]
 extra-paths = ["src"]

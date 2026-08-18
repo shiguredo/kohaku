@@ -11,6 +11,7 @@ from collections.abc import Callable
 import duckdb
 import pytest
 import urllib3
+from minio.datatypes import Object
 from minio.error import S3Error
 
 import run
@@ -527,6 +528,24 @@ def test_delete_log_by_timestamp_rejects_unknown_table() -> None:
             run.delete_log_by_timestamp(
                 con=con, table_name="evil_table", timestamp=timestamp
             )
+
+
+def test_get_target_urls_builds_s3_urls() -> None:
+    """read_json に渡す s3://bucket/key 形式の URL リストを生成することを確認する。"""
+    now = datetime.datetime.now(datetime.UTC)
+    objects = [
+        Object("ignored-bucket", "a.gz", now, "etag", 10),
+        Object("ignored-bucket", "dir/b.gz", now, "etag", 10),
+    ]
+    assert run.get_target_urls("my-bucket", objects) == [
+        "s3://my-bucket/a.gz",
+        "s3://my-bucket/dir/b.gz",
+    ]
+
+
+def test_get_target_urls_empty() -> None:
+    """オブジェクトが空のとき空リストを返すことを確認する。"""
+    assert run.get_target_urls("my-bucket", []) == []
 
 
 # is_after_s3_cursor の比較ロジック

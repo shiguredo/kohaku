@@ -1,7 +1,7 @@
 # PBT (hypothesis) が存在しない
 
 - Created: 2026-08-14
-- Completed: {YYYY-MM-DD}
+- Completed: 2026-08-18
 - Branch: feature/add-property-based-tests
 - Polished: 2026-08-14
 - Priority: Medium
@@ -41,3 +41,10 @@ ingester のテストに PBT (hypothesis) が 1 件も存在せず、 shiguredo-
 - PBT で代替できないテスト (test_keep_latest_objects_does_not_expand_all_objects / test_collect_update_targets_does_not_expand_all_objects の tracemalloc メモリ検証、 test_is_after_s3_cursor_rejects_tz_naive_* のエラーパス) は残す
 - 既存の単体テストが引き続き通過する
 - ruff / ty が引き続き通過する
+
+## 解決方法
+
+- `ingester/pyproject.toml` のテスト依存に `hypothesis>=6.165,<6.166` を追加し、 pytest の `python_files` に `prop_*.py` を加えて収集対象にした
+- `ingester/tests/prop_run.py` を新設し、 `keep_latest_objects` と `collect_update_targets` がナイーブな参照実装と一致することを hypothesis で検証した。 入力は object_name を一意にし、 last_modified は少数の tz-aware datetime 候補から選んで同値グループを含める
+- `get_target_urls` の単体テストを `ingester/tests/test_run_unit.py` に追加した
+- PBT で代替できる `test_keep_latest_objects_limits_memory` と `test_collect_update_targets_limits_memory` を削除した。 同値キー・空入力・tracemalloc・tz-naive エラーパスの既存単体テストは残した
