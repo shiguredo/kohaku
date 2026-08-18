@@ -218,7 +218,9 @@ def _run_mc_init(env: dict[str, str]) -> tuple[int, str]:
         container.stop()
 
 
-@pytest.mark.parametrize("missing_var", MC_INIT_REQUIRED_VARS)
+@pytest.mark.parametrize(
+    "missing_var", MC_INIT_REQUIRED_VARS, ids=MC_INIT_REQUIRED_VARS
+)
 def test_mc_init_rejects_missing_required_var(missing_var: str) -> None:
     """いずれかの必須環境変数が欠けると exit 非 0 で is required を出すことを確認する。"""
     env = _full_mc_init_env()
@@ -241,6 +243,7 @@ def test_mc_init_rejects_missing_required_var(missing_var: str) -> None:
         "0",  # 0 は明示的に弾かれる
         "-1",  # 負数
     ],
+    ids=["abc", "0", "-1"],
 )
 def test_mc_init_rejects_invalid_max_retries(invalid_value: str) -> None:
     """MC_INIT_MAX_RETRIES が正の整数でない場合に、エラー終了することを確認する。
@@ -267,6 +270,7 @@ def test_mc_init_rejects_invalid_max_retries(invalid_value: str) -> None:
         "abc",  # 非数値
         "-1",  # 負数
     ],
+    ids=["abc", "-1"],
 )
 def test_mc_init_rejects_invalid_retry_interval(invalid_value: str) -> None:
     """MC_INIT_RETRY_INTERVAL が非負整数でない場合に、エラー終了することを確認する。
@@ -317,10 +321,10 @@ def test_mc_init_accepts_zero_retry_interval() -> None:
 @pytest.mark.parametrize(
     ("dirty_env_key", "dirty_value"),
     [
-        ("AWS_ACCESS_KEY_ID", 'access"key'),
-        ("AWS_SECRET_ACCESS_KEY", 'secret"key'),
-        ("AWS_ACCESS_KEY_ID", "access\\key"),
-        ("AWS_SECRET_ACCESS_KEY", "secret\\key"),
+        pytest.param("AWS_ACCESS_KEY_ID", 'access"key', id='access"key'),
+        pytest.param("AWS_SECRET_ACCESS_KEY", 'secret"key', id='secret"key'),
+        pytest.param("AWS_ACCESS_KEY_ID", "access\\key", id="access\\key"),
+        pytest.param("AWS_SECRET_ACCESS_KEY", "secret\\key", id="secret\\key"),
     ],
 )
 def test_mc_init_rejects_json_unsafe_credential(

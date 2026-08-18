@@ -1,7 +1,7 @@
 # parametrize の ids 未指定が多数
 
 - Created: 2026-08-14
-- Completed: {YYYY-MM-DD}
+- Completed: 2026-08-18
 - Branch: feature/refactor-add-parametrize-ids
 - Polished: 2026-08-14
 - Priority: Medium
@@ -45,3 +45,10 @@ pytest 9.0.3 では、 制御文字の parametrize はデフォルトで ASCII �
 - ids 未指定の parametrize が残っていないことを確認する (ruff に parametrize の ids を要求するルールがないため、 コードレビューで確認する)
 - 全テストが引き続き通過する (ruff / ty 含む)
 - CHANGES.md の `### misc` セクションに変更履歴が追記される (テストのみのリファクタリングのため)
+
+## 解決方法
+
+- `ingester/tests/test_run_unit.py` / `test_run_sh.py` と `scripts/tests/test_mc_init.py` / `test_run_ingester.py` の ids 未指定 parametrize に ids を付与した
+- 必須環境変数系は `ids=定数名`、 値がそのまま分かる系統は値を id に、 タプルは入力値のみ、 制御文字は nul/lf/cr/tab/unit-separator/del、 関数オブジェクトは pytest.param の id にした
+- stacked parametrize は各デコレータに個別に ids を付けた。 既存の ids 付き parametrize は変更していない
+- CHANGES.md はリポジトリ管理外のため、 本ブランチのコミットには含めていない

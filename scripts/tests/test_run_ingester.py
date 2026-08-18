@@ -82,8 +82,8 @@ def _run_script(subcommand: str, env: dict[str, str]) -> tuple[int, str]:
         container.stop()
 
 
-@pytest.mark.parametrize("missing_var", S3_REQUIRED_VARS)
-@pytest.mark.parametrize("subcommand", ["init", "update"])
+@pytest.mark.parametrize("missing_var", S3_REQUIRED_VARS, ids=S3_REQUIRED_VARS)
+@pytest.mark.parametrize("subcommand", ["init", "update"], ids=["init", "update"])
 def test_run_ingester_init_or_update_rejects_missing_required_var(
     subcommand: str, missing_var: str
 ) -> None:
@@ -103,7 +103,7 @@ def test_run_ingester_init_or_update_rejects_missing_required_var(
     )
 
 
-@pytest.mark.parametrize("missing_var", DELETE_REQUIRED_VARS)
+@pytest.mark.parametrize("missing_var", DELETE_REQUIRED_VARS, ids=DELETE_REQUIRED_VARS)
 def test_run_ingester_delete_rejects_missing_required_var(missing_var: str) -> None:
     """delete でいずれかの必須環境変数が欠けると exit 非 0 で is required を出すことを確認する。"""
     env = _full_delete_env()
