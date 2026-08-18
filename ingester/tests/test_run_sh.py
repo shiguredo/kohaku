@@ -84,7 +84,7 @@ def _run_script(env: dict[str, str]) -> tuple[int, str]:
         container.stop()
 
 
-@pytest.mark.parametrize("missing_var", REQUIRED_VARS)
+@pytest.mark.parametrize("missing_var", REQUIRED_VARS, ids=REQUIRED_VARS)
 def test_run_sh_rejects_missing_required_var(missing_var: str) -> None:
     """必須環境変数を 1 つでも欠くと exit 非 0 で is required を出すことを確認する。"""
     env = _full_env()

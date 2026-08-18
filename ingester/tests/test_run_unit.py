@@ -19,7 +19,7 @@ import run
 from .helpers import full_args
 
 
-@pytest.mark.parametrize("value", ["0", "-1", "-100"])
+@pytest.mark.parametrize("value", ["0", "-1", "-100"], ids=["0", "-1", "-100"])
 def test_positive_int_rejects_non_positive(value: str) -> None:
     """0 以下の値で argparse 引数エラーになることを確認する。"""
     with pytest.raises(argparse.ArgumentTypeError, match="value must be >= 1"):
@@ -28,7 +28,11 @@ def test_positive_int_rejects_non_positive(value: str) -> None:
 
 @pytest.mark.parametrize(
     ("value", "expected"),
-    [("1", 1), ("100", 100), ("999999", 999999)],
+    [
+        pytest.param("1", 1, id="1"),
+        pytest.param("100", 100, id="100"),
+        pytest.param("999999", 999999, id="999999"),
+    ],
 )
 def test_positive_int_accepts_positive(value: str, expected: int) -> None:
     """正の整数文字列を int に変換して返すことを確認する。"""
@@ -406,12 +410,12 @@ def test_ensure_safe_sql_string_literal_neutralizes_injection_payload() -> None:
 @pytest.mark.parametrize(
     "control_char",
     [
-        "\x00",  # NUL
-        "\n",  # LF
-        "\r",  # CR
-        "\t",  # TAB
-        "\x1f",  # 制御文字の上限
-        "\x7f",  # DEL
+        pytest.param("\x00", id="nul"),
+        pytest.param("\n", id="lf"),
+        pytest.param("\r", id="cr"),
+        pytest.param("\t", id="tab"),
+        pytest.param("\x1f", id="unit-separator"),
+        pytest.param("\x7f", id="del"),
     ],
 )
 def test_ensure_safe_sql_string_literal_rejects_control_characters(
@@ -742,7 +746,13 @@ def test_update_rejects_missing_s3_credentials(tmp_path: pathlib.Path) -> None:
         run.update(args)
 
 
-@pytest.mark.parametrize("subcommand", [run.update, run.delete])
+@pytest.mark.parametrize(
+    "subcommand",
+    [
+        pytest.param(run.update, id="update"),
+        pytest.param(run.delete, id="delete"),
+    ],
+)
 def test_update_or_delete_raises_file_not_found_when_db_missing(
     subcommand: Callable[[run.Args], None], tmp_path: pathlib.Path
 ) -> None:
@@ -763,6 +773,11 @@ def test_update_or_delete_raises_file_not_found_when_db_missing(
 @pytest.mark.parametrize(
     "message",
     [
+        "Database file is corrupt",
+        "invalid database file",
+        "File is not a valid duckdb file",
+    ],
+    ids=[
         "Database file is corrupt",
         "invalid database file",
         "File is not a valid duckdb file",
