@@ -125,6 +125,33 @@ def test_delete_returns_without_copy_when_no_rows_deleted(
     assert os.path.exists(f"{db_path}.copy") is False
 
 
+def test_delete_skips_when_log_target_tables_are_missing(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """LOG_TARGETS テーブルが無い DB に対して delete がスキップして完走することを確認する。
+
+    空バケット init 相当: s3_objects のみあり、 rtc_stats / session_webhook は未作成。
+    本番では update のたびに delete が走るため、 この状態でも例外を出さずスキップする。
+    完走と .copy 不在だけではテーブルあり・0 行削除と同じ挙動のため、 stderr の
+    「Table ... does not exist.」 でスキップ経路の実行を直接証明する。
+    """
+    db_path = tmp_path / "delete_skip_missing_tables.db"
+    with duckdb.connect(str(db_path)) as con:
+        con.execute(
+            "CREATE TABLE s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)"
+        )
+
+    args = full_args(db=str(db_path), retention_period=1)
+    run.delete(args)
+
+    captured = capsys.readouterr()
+    assert "Table rtc_stats does not exist." in captured.err
+    assert "Table session_webhook does not exist." in captured.err
+
+    assert os.path.exists(f"{db_path}.copy") is False
+    assert os.path.exists(f"{db_path}.copy.wal") is False
+
+
 def test_delete_handles_single_quote_in_db_path(tmp_path: pathlib.Path) -> None:
     """シングルクォートを含む DB ファイルパスでも ATTACH 文が成立し、delete が完走することを確認する。
 
