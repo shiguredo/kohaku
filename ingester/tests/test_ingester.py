@@ -9,8 +9,7 @@ import pathlib
 import sys
 import tracemalloc
 import uuid
-from collections.abc import Iterator, Sequence
-from typing import Any
+from collections.abc import Iterator
 
 import duckdb
 import minio
@@ -85,8 +84,22 @@ def reset_bucket(s3_client: minio.Minio, bucket_name: str) -> None:
     s3_client.make_bucket(bucket_name)
 
 
+def as_rtc_stats_row(obj: object) -> tuple[datetime.datetime, str, str, str]:
+    """rtc_stats の 1 行を (timestamp, connection_id, rtc_id, rtc_type) として取り出す。"""
+    assert isinstance(obj, tuple)
+    assert len(obj) == 4
+    org_timestamp, connection_id, rtc_id, rtc_type = obj
+    assert isinstance(org_timestamp, datetime.datetime)
+    assert isinstance(connection_id, str)
+    assert isinstance(rtc_id, str)
+    assert isinstance(rtc_type, str)
+    return (org_timestamp, connection_id, rtc_id, rtc_type)
+
+
 def update_timestamp_for_rtc_stats(
-    con: duckdb.DuckDBPyConnection, obj: Sequence[Any], period: int
+    con: duckdb.DuckDBPyConnection,
+    obj: tuple[datetime.datetime, str, str, str],
+    period: int,
 ) -> None:
     """rtc_stats の timestamp を現在時刻から period 日だけ過去に更新する。"""
     org_timestamp, connection_id, rtc_id, rtc_type = obj
@@ -138,7 +151,7 @@ def make_args_for_delete(
     return full_args(db=duckdb_filepath, retention_period=retention_period)
 
 
-def get_latest_object(s3_client: minio.Minio, bucket: str, prefix: str) -> Any:
+def get_latest_object(s3_client: minio.Minio, bucket: str, prefix: str) -> Object:
     """オブジェクトストレージ上で最新のオブジェクトを返す。
 
     本番コードの list_objects と同じく (last_modified, object_name) を比較キーにする。
@@ -845,7 +858,7 @@ def test_all_delete(
         objects = duckdb_connection.fetchall()
         # すべてのオブジェクトの timestamp を 2 日前に更新する
         for obj in objects:
-            update_timestamp_for_rtc_stats(duckdb_connection, obj, 2)
+            update_timestamp_for_rtc_stats(duckdb_connection, as_rtc_stats_row(obj), 2)
 
     # delete 関数を呼び出すための引数を設定
     # retention_period を 1 日に設定して、2 日前のデータが削除されることを確認する
@@ -893,10 +906,14 @@ def test_delete(
         for i, obj in enumerate(objects):
             if i % 2 == 0:
                 # 偶数番目のオブジェクトは 2 日前に更新
-                update_timestamp_for_rtc_stats(duckdb_connection, obj, 2)
+                update_timestamp_for_rtc_stats(
+                    duckdb_connection, as_rtc_stats_row(obj), 2
+                )
             else:
                 # 奇数番目のオブジェクトは今の日時に更新
-                update_timestamp_for_rtc_stats(duckdb_connection, obj, 0)
+                update_timestamp_for_rtc_stats(
+                    duckdb_connection, as_rtc_stats_row(obj), 0
+                )
 
     # delete 関数を呼び出すための引数を設定
     # retention_period を 1 日に設定して、2 日前のデータが削除されることを確認する
@@ -944,10 +961,14 @@ def test_delete_within_retention_period(
         for i, obj in enumerate(objects):
             if i % 2 == 0:
                 # 偶数番目のオブジェクトは 2 日前に更新
-                update_timestamp_for_rtc_stats(duckdb_connection, obj, 2)
+                update_timestamp_for_rtc_stats(
+                    duckdb_connection, as_rtc_stats_row(obj), 2
+                )
             else:
                 # 奇数番目のオブジェクトは今の日時に更新
-                update_timestamp_for_rtc_stats(duckdb_connection, obj, 0)
+                update_timestamp_for_rtc_stats(
+                    duckdb_connection, as_rtc_stats_row(obj), 0
+                )
 
     # delete 関数を呼び出すための引数を設定
     # retention_period を 3 日に設定して、対象のオブジェクトがないため、データが削除されないことを確認する

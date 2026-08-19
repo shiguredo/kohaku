@@ -58,14 +58,11 @@ extend-select = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# 型ヒントの網羅性チェック (ANN) は Any の整理を伴う別作業の対象ファイルでは
-# 型ヒント自体の変更が衝突するため、その作業の完了まで除外する
-# (Any 以外の型ヒント付与も含めて扱う)
+# 型ヒントの網羅性チェック (ANN) は、テスト関数全体への型ヒント付与が未着手の
+# 統合テストファイルでは除外する。 Grafana 側はダッシュボード JSON の Any
+# (ANN401) も残る
 "tests/test_fluent_bit_rustfs_integration.py" = ["ANN"]
 "tests/test_grafana_integration.py" = ["ANN"]
-# Any の使用そのもの (ANN401) は Any の整理を伴う別作業の対象のため除外する
-# (型ヒントの網羅性チェック (ANN001/ANN201 等) は対象)
-"tests/test_ingester.py" = ["ANN401"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
