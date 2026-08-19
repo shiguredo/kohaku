@@ -17,6 +17,9 @@ from testcontainers.core.exceptions import ContainerStartException
 
 from .helpers import wait_until
 
+# Grafana API / ダッシュボード JSON はネストが深く具象型が存在しないため Any を使う
+type GrafanaJson = dict[str, Any]
+
 # 使用する Grafana の Docker イメージタグ
 GRAFANA_IMAGE = "grafana/grafana:12.4.3-ubuntu"
 # 一時ファイルの group を gid=0 に揃えるための軽量イメージ
@@ -39,6 +42,22 @@ ADMIN_PASSWORD = "password"
 DATA_SOURCE_NAME = "motherduck-duckdb-datasource"
 
 
+def as_grafana_json(value: object) -> GrafanaJson:
+    """JSON オブジェクトを GrafanaJson として取り出す。キーが str でない場合は失敗する。"""
+    assert isinstance(value, dict)
+    result: GrafanaJson = {}
+    for key, item in value.items():
+        assert isinstance(key, str)
+        result[key] = item
+    return result
+
+
+def as_grafana_json_list(value: object) -> list[GrafanaJson]:
+    """JSON 配列を GrafanaJson のリストとして取り出す。配列でない場合は失敗する。"""
+    assert isinstance(value, list)
+    return [as_grafana_json(item) for item in value]
+
+
 def build_auth_header(user: str, password: str) -> dict[str, str]:
     """Grafana の Basic 認証ヘッダーを生成する。"""
     token = base64.b64encode(f"{user}:{password}".encode()).decode("ascii")
@@ -48,9 +67,9 @@ def build_auth_header(user: str, password: str) -> dict[str, str]:
 def request_json(
     url: str,
     method: str = "GET",
-    body: Any = None,
+    body: Mapping[str, object] | None = None,
     headers: Mapping[str, str] | None = None,
-) -> Any:
+) -> GrafanaJson | None:
     """JSON API を呼び出してレスポンスを辞書として返す。空レスポンスは None。"""
     request_headers = {"Accept": "application/json"}
     if headers:
@@ -72,7 +91,8 @@ def request_json(
         ) from error
     if not payload:
         return None
-    return json.loads(payload.decode("utf-8"))
+    parsed: object = json.loads(payload.decode("utf-8"))
+    return as_grafana_json(parsed)
 
 
 def create_duckdb_readonly_copy(base_dir: Path) -> Path:
@@ -126,7 +146,7 @@ def assign_root_group(path: Path) -> None:
     )
 
 
-def collect_datasource_uids(dashboard: Mapping[str, Any]) -> set[str]:
+def collect_datasource_uids(dashboard: GrafanaJson) -> set[str]:
     """ダッシュボード JSON からパネルとテンプレート変数が参照する datasource uid を収集する。
 
     パネルとテンプレート変数の datasource が uid を持つ辞書の場合にその uid を返す。
@@ -135,12 +155,13 @@ def collect_datasource_uids(dashboard: Mapping[str, Any]) -> set[str]:
     """
     uids: set[str] = set()
 
-    for variable in dashboard.get("templating", {}).get("list", []):
+    templating = as_grafana_json(dashboard.get("templating", {}))
+    for variable in as_grafana_json_list(templating.get("list", [])):
         datasource = variable.get("datasource")
         if isinstance(datasource, dict) and datasource.get("uid"):
             uids.add(datasource["uid"])
 
-    def visit(panels: list[Mapping[str, Any]]) -> None:
+    def visit(panels: list[GrafanaJson]) -> None:
         for panel in panels:
             datasource = panel.get("datasource")
             if (
@@ -149,27 +170,29 @@ def collect_datasource_uids(dashboard: Mapping[str, Any]) -> set[str]:
                 and datasource["uid"] != "-- Dashboard --"
             ):
                 uids.add(datasource["uid"])
-            visit(panel.get("panels", []))
+            visit(as_grafana_json_list(panel.get("panels", [])))
 
-    visit(dashboard.get("panels", []))
+    visit(as_grafana_json_list(dashboard.get("panels", [])))
     return uids
 
 
-def collect_dashboard_inheriting_panels(dashboard: Mapping[str, Any]) -> list[str]:
+def collect_dashboard_inheriting_panels(dashboard: GrafanaJson) -> list[str]:
     """ダッシュボードルートの datasource を継承する ("-- Dashboard --") パネルのタイトル一覧を返す。"""
     titles: list[str] = []
 
-    def visit(panels: list[Mapping[str, Any]]) -> None:
+    def visit(panels: list[GrafanaJson]) -> None:
         for panel in panels:
             datasource = panel.get("datasource")
             if (
                 isinstance(datasource, dict)
                 and datasource.get("uid") == "-- Dashboard --"
             ):
-                titles.append(panel.get("title", ""))
-            visit(panel.get("panels", []))
+                title = panel.get("title", "")
+                assert isinstance(title, str)
+                titles.append(title)
+            visit(as_grafana_json_list(panel.get("panels", [])))
 
-    visit(dashboard.get("panels", []))
+    visit(as_grafana_json_list(dashboard.get("panels", [])))
     return titles
 
 
@@ -242,7 +265,9 @@ def test_dashboard_panels_reference_provisioned_datasource_uid(tmp_path):
         provisioned_uid = datasource["uid"]
 
         dashboard_path = GRAFANA_DASHBOARDS_DIR / "kohaku" / "rtc-stats.json"
-        dashboard = json.loads(dashboard_path.read_text(encoding="utf-8"))
+        dashboard = as_grafana_json(
+            json.loads(dashboard_path.read_text(encoding="utf-8"))
+        )
         referenced_uids = collect_datasource_uids(dashboard)
         inheriting_panels = collect_dashboard_inheriting_panels(dashboard)
 
@@ -269,10 +294,14 @@ def test_dashboard_panels_reference_provisioned_datasource_uid(tmp_path):
         )
         assert kohaku_dashboard is not None
 
-        def assert_datasource_resolved(datasource: Any) -> None:
-            if isinstance(datasource, dict) and datasource.get("uid"):
-                assert datasource["uid"] == provisioned_uid, (
-                    f"Kohaku.json のパネルが参照する uid {datasource['uid']} が "
+        def assert_datasource_resolved(datasource: object) -> None:
+            if not isinstance(datasource, dict):
+                return
+            resolved = as_grafana_json(datasource)
+            uid = resolved.get("uid")
+            if uid:
+                assert uid == provisioned_uid, (
+                    f"Kohaku.json のパネルが参照する uid {uid} が "
                     f"provisioning の uid {provisioned_uid} と一致しません"
                 )
 
@@ -285,8 +314,8 @@ def test_dashboard_panels_reference_provisioned_datasource_uid(tmp_path):
 
 
 def extract_first_table_value(
-    response: Mapping[str, Any], ref_id: str = "A", field_name: str = "count"
-) -> Any:
+    response: GrafanaJson, ref_id: str = "A", field_name: str = "count"
+) -> object:
     """/api/ds/query の結果から最初のテーブル値を取り出す。"""
     frame = response["results"][ref_id]["frames"][0]
     field_names = [field["name"] for field in frame["schema"]["fields"]]
@@ -296,7 +325,7 @@ def extract_first_table_value(
 
 def query_grafana_datasource(
     base_url: str, auth_header: Mapping[str, str], datasource_uid: str
-) -> Any:
+) -> GrafanaJson | None:
     """Grafana の datasource に対して DuckDB の件数取得クエリを実行する。"""
     query_body = {
         "queries": [
@@ -344,10 +373,8 @@ def wait_for_grafana(base_url: str, auth_header: Mapping[str, str]) -> None:
 
     def health_is_ready() -> bool:
         try:
-            return (
-                request_json(f"{base_url}/api/health", headers=auth_header)["database"]
-                == "ok"
-            )
+            payload = request_json(f"{base_url}/api/health", headers=auth_header)
+            return payload is not None and payload["database"] == "ok"
         except Exception:
             return False
 

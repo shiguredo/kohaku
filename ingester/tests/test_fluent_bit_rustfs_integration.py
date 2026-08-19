@@ -1,8 +1,8 @@
+import datetime
 import json
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any
 
 import duckdb
 import minio
@@ -18,11 +18,13 @@ from .helpers import WaitTimeoutError, wait_until
 FLUENT_BIT_IMAGE = "fluent/fluent-bit:5.0.9"
 
 
-def fetch_scalar(con: duckdb.DuckDBPyConnection, query: str) -> Any:
-    """SELECT で 1 行 1 列を返すクエリの最初のカラム値を取得する。"""
+def fetch_scalar(con: duckdb.DuckDBPyConnection, query: str) -> int:
+    """SELECT COUNT(*) の件数を int として返す。"""
     row = con.execute(query).fetchone()
     assert row is not None
-    return row[0]
+    value = row[0]
+    assert isinstance(value, int)
+    return value
 
 
 def count_objects(client: minio.Minio, prefix: str) -> int:
@@ -149,12 +151,18 @@ def append_rtc_stats_log(log_dir: Path) -> None:
 
 def get_s3_cursor(
     con: duckdb.DuckDBPyConnection, log_type: str
-) -> tuple[Any, ...] | None:
+) -> tuple[datetime.datetime, str] | None:
     """指定ログ種別の S3 カーソル (last_modified, object_name) を返す。未登録時は None。"""
-    return con.execute(
+    row = con.execute(
         "SELECT last_modified, object_name FROM s3_objects WHERE type=?",
         (log_type,),
     ).fetchone()
+    if row is None:
+        return None
+    last_modified, object_name = row
+    assert isinstance(last_modified, datetime.datetime)
+    assert isinstance(object_name, str)
+    return (last_modified, object_name)
 
 
 def test_runpy_init_with_fluent_bit_and_rustfs(tmp_path, rustfs_network_ready):
