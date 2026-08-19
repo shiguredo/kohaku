@@ -1,7 +1,7 @@
 # delete の LOG_TARGETS テーブル不在スキップ経路が未テスト
 
 - Created: 2026-08-14
-- Completed: {YYYY-MM-DD}
+- Completed: 2026-08-19
 - Branch: feature/add-delete-skip-test
 - Polished: 2026-08-14
 - Priority: Medium
@@ -32,3 +32,11 @@ ingester/src/run.py の delete_log_by_timestamp が LOG_TARGETS テーブル不�
 - .copy ファイルが作られないことを検証する
 - 全テストが引き続き通過する (ruff / ty 含む)
 - CHANGES.md の `### misc` セクションに変更履歴が追記される (テストのみの追加のため)
+
+## 解決方法
+
+- `ingester/tests/test_run_unit.py` に `test_delete_skips_when_log_target_tables_are_missing` を追加した
+- 空バケット init 相当として `s3_objects` のみの DB を作り、 `run.delete` が例外なく完走することを確認する
+- スキップ経路は `capsys` で stderr の `Table {target} does not exist.` を `LOG_TARGETS` 全件について検証する
+- COPY 非実行は inode 不変と `.copy` 不在で検証する (`.copy` 不在だけでは COPY + move 完了と区別できないため)
+- CHANGES.md はリポジトリ管理外のため、 本ブランチのコミットには含めていない
