@@ -132,24 +132,31 @@ def test_delete_skips_when_log_target_tables_are_missing(
 
     空バケット init 相当: s3_objects のみあり、 rtc_stats / session_webhook は未作成。
     本番では update のたびに delete が走るため、 この状態でも例外を出さずスキップする。
-    完走と .copy 不在だけではテーブルあり・0 行削除と同じ挙動のため、 stderr の
+    完走と .copy 不在だけではテーブルあり・ 0 行削除と同じ挙動のため、 stderr の
     「Table ... does not exist.」 でスキップ経路の実行を直接証明する。
     """
     db_path = tmp_path / "delete_skip_missing_tables.db"
+    # init を経由せず s3_objects だけ作る。
     with duckdb.connect(str(db_path)) as con:
         con.execute(
             "CREATE TABLE s3_objects (type TEXT PRIMARY KEY, object_name TEXT, last_modified TIMESTAMPTZ)"
         )
 
+    before_stat = db_path.stat()
+
     args = full_args(db=str(db_path), retention_period=1)
     run.delete(args)
 
     captured = capsys.readouterr()
-    assert "Table rtc_stats does not exist." in captured.err
-    assert "Table session_webhook does not exist." in captured.err
+    assert run.LOG_TARGETS
+    for target in run.LOG_TARGETS:
+        assert f"Table {target} does not exist." in captured.err
 
+    # DB ファイルが shutil.move で置き換わっていないこと (inode 不変)、COPY 用一時ファイルが
+    # 作られていないことを確認する。
+    assert db_path.exists()
+    assert db_path.stat().st_ino == before_stat.st_ino
     assert os.path.exists(f"{db_path}.copy") is False
-    assert os.path.exists(f"{db_path}.copy.wal") is False
 
 
 def test_delete_handles_single_quote_in_db_path(tmp_path: pathlib.Path) -> None:
